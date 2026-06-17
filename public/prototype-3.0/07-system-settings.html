@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>系统配置 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i>智能客服</a>
+        <a class="nav-link" href="01-task-workbench.html"><i data-lucide="workflow"></i>智能供应链</a>
+        <a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link active" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
+      </nav>
+      <div class="user-chip"><span>Admin · 简中</span><span class="avatar">AD</span></div>
+    </header>
+
+    <main class="page fit-screen">
+      <div class="settings-grid screen-fill">
+        <aside class="panel scroll-panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="panel-left"></i>配置菜单</h2>
+          </div>
+          <div class="panel-body stack">
+            <button class="settings-nav selected" data-settings-section="customers">
+              <span>客户配置</span>
+              <small>基础信息、识别规则、催发周期、物料映射</small>
+            </button>
+            <button class="settings-nav" data-settings-section="users">
+              <span>用户管理</span>
+              <small>账号、角色、状态</small>
+            </button>
+            <button class="settings-nav" data-settings-section="mailbox">
+              <span>统一邮箱</span>
+              <small>监听邮箱、同步、连接测试</small>
+            </button>
+          </div>
+        </aside>
+
+        <section class="panel scroll-panel">
+          <div class="settings-section active" data-settings-panel="customers">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="building-2"></i>客户配置</h2>
+              <div class="list-actions">
+                <button class="btn small"><i data-lucide="plus"></i>新增客户</button>
+                <button class="btn small primary"><i data-lucide="save"></i>保存</button>
+              </div>
+            </div>
+            <div class="panel-body stack">
+              <div class="settings-inner-split">
+                <div class="card stack">
+                  <div class="row"><p class="mini-title" style="margin-bottom:0">客户列表</p><span class="badge blue">4</span></div>
+                  <input class="input" value="VW" aria-label="搜索客户">
+                  <div class="list-item selected"><p class="item-title">天津旭阳 / VW</p><p class="item-meta">1032000000 · active</p></div>
+                  <div class="list-item"><p class="item-title">WLB1343</p><p class="item-meta">1045000001 · active</p></div>
+                  <div class="list-item"><p class="item-title">Audi Q5L</p><p class="item-meta">1032000002 · active</p></div>
+                  <div class="list-item"><p class="item-title">BYD 合肥</p><p class="item-meta">1051000000 · disabled</p></div>
+                </div>
+
+                <div class="stack">
+                  <div class="row">
+                    <p class="item-title">天津旭阳 / VW</p>
+                    <button class="btn small">停用客户</button>
+                  </div>
+                  <div class="tabs settings-tabs">
+                    <span class="active" data-customer-config-tab="basic">基础信息</span>
+                    <span data-customer-config-tab="recognition">发件人识别</span>
+                    <span data-customer-config-tab="schedule">催发周期</span>
+                    <span data-customer-config-tab="materials">物料映射</span>
+                  </div>
+
+                  <div class="tab-panel active" data-customer-config-panel="basic">
+                    <div class="grid-2">
+                      <label class="filter-field"><span class="filter-label">客户名称</span><span class="filter-value">天津旭阳 / VW</span></label>
+                      <label class="filter-field"><span class="filter-label">客户编码</span><span class="filter-value">1032000000</span></label>
+                      <label class="filter-field"><span class="filter-label">OEM</span><span class="filter-value">VW</span></label>
+                      <label class="filter-field"><span class="filter-label">Program</span><span class="filter-value">当前未选择</span></label>
+                      <label class="filter-field"><span class="filter-label">默认客服负责人</span><span class="filter-value">Cathy Zhang</span></label>
+                      <label class="filter-field"><span class="filter-label">状态</span><span class="filter-value">active</span></label>
+                    </div>
+                  </div>
+
+                  <div class="tab-panel" data-customer-config-panel="recognition">
+                    <div class="row"><p class="mini-title" style="margin-bottom:0">识别规则</p><button class="btn small"><i data-lucide="plus"></i>新增规则</button></div>
+                    <div class="scroll-x">
+                      <table class="table">
+                        <thead><tr><th>类型</th><th>值</th><th>优先级</th><th>状态</th><th></th></tr></thead>
+                        <tbody>
+                          <tr><td>sender email</td><td>forecast@vw.example.com</td><td>100</td><td>active</td><td><button class="icon-link"><i data-lucide="ban"></i></button></td></tr>
+                          <tr><td>sender domain</td><td>vw-group.example.com</td><td>80</td><td>active</td><td><button class="icon-link"><i data-lucide="ban"></i></button></td></tr>
+                          <tr><td>subject keyword</td><td>Shipping Plan</td><td>60</td><td>active</td><td><button class="icon-link"><i data-lucide="ban"></i></button></td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="tab-panel" data-customer-config-panel="schedule">
+                    <div class="grid-2">
+                      <label class="filter-field"><span class="filter-label">期望提交频率</span><span class="filter-value">weekly</span></label>
+                      <label class="filter-field"><span class="filter-label">期望提交时间</span><span class="filter-value">周一 10:00</span></label>
+                      <label class="filter-field"><span class="filter-label">Grace Hours</span><span class="filter-value">4</span></label>
+                      <label class="filter-field"><span class="filter-label">Reminder</span><span class="filter-value">enabled</span></label>
+                    </div>
+                    <div class="card">
+                      <p class="item-title">提醒只生成内部任务</p>
+                      <p class="item-meta">客户跟进邮件仍需要人工确认后发送。</p>
+                    </div>
+                  </div>
+
+                  <div class="tab-panel" data-customer-config-panel="materials">
+                    <div class="row">
+                      <div><p class="mini-title" style="margin-bottom:0">物料映射</p><p class="item-meta">导入先预览，确认后才写入主数据。</p></div>
+                      <div class="list-actions"><button class="btn small"><i data-lucide="upload"></i>导入 Excel</button><button class="btn small primary">确认导入</button></div>
+                    </div>
+                    <div class="scroll-x">
+                      <table class="table" style="min-width:900px">
+                        <thead><tr><th>Customer P/N</th><th>Internal P/N</th><th>SA</th><th>Product Type</th><th>Production Line</th><th>OEM</th><th>Program</th><th>Product</th><th>Status</th></tr></thead>
+                        <tbody>
+                          <tr><td>2777977X</td><td>2777977XN</td><td>30478671</td><td>E-pump</td><td>Line A</td><td>VW</td><td>-</td><td>E-pump 2.0</td><td>active</td></tr>
+                          <tr><td>1191923XB</td><td>1191923XB</td><td>30478888</td><td>E-pump</td><td>Line B</td><td>VW</td><td>-</td><td>E-pump 1.0</td><td>active</td></tr>
+                          <tr><td>2372846XL</td><td>2372846XL</td><td>30478120</td><td>Actuator</td><td>Line C</td><td>VW</td><td>-</td><td>Linear Actuator</td><td>active</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section" data-settings-panel="users">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="users"></i>用户管理</h2>
+              <div class="list-actions"><button class="btn small"><i data-lucide="plus"></i>新增用户</button><button class="btn small primary"><i data-lucide="save"></i>保存</button></div>
+            </div>
+            <div class="panel-body">
+              <div class="settings-inner-split">
+                <div class="card stack">
+                  <div class="list-item selected"><p class="item-title">Cathy Zhang</p><p class="item-meta">customerService · active</p></div>
+                  <div class="list-item"><p class="item-title">Planner Li</p><p class="item-meta">planner · active</p></div>
+                  <div class="list-item"><p class="item-title">Finance Wang</p><p class="item-meta">finance · active</p></div>
+                  <div class="list-item"><p class="item-title">Admin Sun</p><p class="item-meta">admin · active</p></div>
+                </div>
+                <div class="stack">
+                  <div class="grid-2">
+                    <label class="filter-field"><span class="filter-label">Email</span><span class="filter-value">cathy.zhang@example.com</span></label>
+                    <label class="filter-field"><span class="filter-label">Display Name</span><span class="filter-value">Cathy Zhang</span></label>
+                    <label class="filter-field"><span class="filter-label">Role</span><span class="filter-value">customerService</span></label>
+                    <label class="filter-field"><span class="filter-label">Status</span><span class="filter-value">active</span></label>
+                  </div>
+                  <div class="card">
+                    <div class="row">
+                      <div><p class="item-title">配置页权限</p><p class="item-meta">第一版只用角色控制系统配置写权限；业务页权限后续再细分。</p></div>
+                      <button class="btn small">重置密码</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section" data-settings-panel="mailbox">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="inbox"></i>统一邮箱</h2>
+              <div class="list-actions"><button class="btn small">测试连接</button><button class="btn small primary"><i data-lucide="save"></i>保存</button></div>
+            </div>
+            <div class="panel-body stack">
+              <div class="grid-2">
+                <label class="filter-field"><span class="filter-label">Mailbox Address</span><span class="filter-value">order-agent@example.com</span></label>
+                <label class="filter-field"><span class="filter-label">Provider Type</span><span class="filter-value">待配置</span></label>
+                <label class="filter-field"><span class="filter-label">Sync Interval</span><span class="filter-value">60 minutes</span></label>
+                <label class="filter-field"><span class="filter-label">Status</span><span class="filter-value">enabled</span></label>
+                <label class="filter-field"><span class="filter-label">Connection</span><span class="filter-value">connected</span></label>
+                <label class="filter-field"><span class="filter-label">Last Sync</span><span class="filter-value">2026-05-15 13:20</span></label>
+              </div>
+              <div class="card">
+                <div class="row">
+                  <div><p class="item-title">密钥不在页面明文展示</p><p class="item-meta">第一版只允许一个 active listener mailbox，页面只显示配置状态和连接测试结果。</p></div>
+                  <button class="btn small cyan">enabled</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="assets/app.js"></script>
+</body>
+</html>

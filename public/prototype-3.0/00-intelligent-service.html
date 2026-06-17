@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智能客服 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link active" href="00-intelligent-service.html"><i data-lucide="headphones"></i>智能客服</a>
+        <a class="nav-link" href="01-task-workbench.html"><i data-lucide="workflow"></i>智能供应链</a>
+        <a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
+      </nav>
+      <div class="user-chip"><span>客服经理 · 简中</span><span class="avatar">CS</span></div>
+    </header>
+
+    <main class="page fit-screen">
+      <div class="grid-3 screen-fill">
+        <aside class="panel scroll-panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="sparkles"></i>昨日工作总结</h2>
+            <span class="badge blue">05/14</span>
+          </div>
+          <div class="panel-body stack">
+            <div class="metric-grid">
+              <div class="metric"><div class="metric-value">14</div><div class="metric-label">完成解析</div></div>
+              <div class="metric"><div class="metric-value">6</div><div class="metric-label">涉及客户</div></div>
+              <div class="metric"><div class="metric-value">3</div><div class="metric-label">进入待办</div></div>
+              <div class="metric"><div class="metric-value">2</div><div class="metric-label">需要跟催</div></div>
+            </div>
+
+            <div class="card">
+              <p class="item-title">AI 自动完成了 14 份客户文件处理</p>
+              <p class="item-meta">其中 9 份更新 Sales Forecast，5 份更新 Shipping Plan。3 封邮件因为需要人工判断被暂停。</p>
+            </div>
+
+            <div class="card">
+              <p class="mini-title">涉及客户</p>
+              <div class="chip-wrap">
+                <span class="badge slate">天津旭阳 / VW</span>
+                <span class="badge slate">WLB1343</span>
+                <span class="badge slate">Audi Q5L</span>
+                <span class="badge slate">BYD 合肥</span>
+                <span class="badge slate">SAIC</span>
+                <span class="badge slate">NIO</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <p class="mini-title">昨日进入待处理</p>
+              <div class="stack">
+                <div>
+                  <p class="item-title">Audi Q5L</p>
+                  <p class="item-meta">邮件正文说明有变更，但附件 checksum 与上一版一致。</p>
+                </div>
+                <div>
+                  <p class="item-title">WLB1343</p>
+                  <p class="item-meta">解析失败一次，系统重跑后仍需要人工确认模板。</p>
+                </div>
+                <div>
+                  <p class="item-title">天津旭阳 / VW</p>
+                  <p class="item-meta">识别到多个可用 skill，需要用户选择后继续。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="panel scroll-panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="calendar-days"></i>客户回邮件节奏</h2>
+            <div class="mode-strip">
+              <button class="btn small primary" data-service-mail-view="activity">30 天</button>
+              <button class="btn small" data-service-mail-view="today">今日</button>
+            </div>
+          </div>
+          <div class="panel-body stack">
+            <div class="tab-panel active" data-service-mail-panel="activity">
+              <div class="heatmap service-heatmap">
+                <strong>客户</strong><span>05/01</span><span>05/02</span><span>05/03</span><span>05/04</span><span>05/05</span><span>05/06</span><span>05/07</span><span>05/08</span><span>05/09</span><span>05/10</span><span>05/11</span><span>05/12</span><span>05/13</span><span>05/14</span>
+                <span>天津旭阳 / VW</span><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/01 天津旭阳邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/02 天津旭阳邮件"></button><button class="heat-cell heat-2" data-open="#mailSheet" aria-label="05/03 天津旭阳邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/04 天津旭阳邮件"></button><button class="heat-cell missed" data-open="#mailSheet" aria-label="05/05 天津旭阳应收未收"></button><button class="heat-cell heat-3" data-open="#mailSheet" aria-label="05/06 天津旭阳邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/07 天津旭阳邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/08 天津旭阳邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/09 天津旭阳邮件"></button><button class="heat-cell missed" data-open="#mailSheet" aria-label="05/10 天津旭阳应收未收"></button><button class="heat-cell heat-2" data-open="#mailSheet" aria-label="05/11 天津旭阳邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/12 天津旭阳邮件"></button><button class="heat-cell heat-4" data-open="#mailSheet" aria-label="05/13 天津旭阳邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/14 天津旭阳邮件"></button>
+                <span>BYD 合肥</span><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/01 BYD 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/02 BYD 邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/03 BYD 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/04 BYD 邮件"></button><button class="heat-cell missed" data-open="#mailSheet" aria-label="05/05 BYD 应收未收"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/06 BYD 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/07 BYD 邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/08 BYD 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/09 BYD 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/10 BYD 邮件"></button><button class="heat-cell missed" data-open="#mailSheet" aria-label="05/11 BYD 应收未收"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/12 BYD 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/13 BYD 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/14 BYD 邮件"></button>
+                <span>WLB1343</span><button class="heat-cell heat-2" data-open="#mailSheet" aria-label="05/01 WLB 邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/02 WLB 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/03 WLB 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/04 WLB 邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/05 WLB 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/06 WLB 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/07 WLB 邮件"></button><button class="heat-cell heat-2" data-open="#mailSheet" aria-label="05/08 WLB 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/09 WLB 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/10 WLB 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/11 WLB 邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/12 WLB 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/13 WLB 邮件"></button><button class="heat-cell heat-2" data-open="#mailSheet" aria-label="05/14 WLB 邮件"></button>
+                <span>SAIC</span><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/01 SAIC 邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/02 SAIC 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/03 SAIC 邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/04 SAIC 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/05 SAIC 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/06 SAIC 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/07 SAIC 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/08 SAIC 邮件"></button><button class="heat-cell missed" data-open="#mailSheet" aria-label="05/09 SAIC 应收未收"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/10 SAIC 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/11 SAIC 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/12 SAIC 邮件"></button><button class="heat-cell heat-1" data-open="#mailSheet" aria-label="05/13 SAIC 邮件"></button><button class="heat-cell heat-0" data-open="#mailSheet" aria-label="05/14 SAIC 邮件"></button>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-service-mail-panel="today">
+              <div class="today-mail-grid">
+                <button class="today-mail-row" data-open="#mailSheet">
+                  <span>天津旭阳 / VW</span>
+                  <strong>3</strong>
+                  <small>1 封需要人工选择 skill</small>
+                </button>
+                <button class="today-mail-row" data-open="#mailSheet">
+                  <span>WLB1343</span>
+                  <strong>2</strong>
+                  <small>1 封解析失败待处理</small>
+                </button>
+                <button class="today-mail-row missed" data-open="#mailSheet">
+                  <span>BYD 合肥</span>
+                  <strong>0</strong>
+                  <small>按计划今日应收到预测邮件</small>
+                </button>
+                <button class="today-mail-row" data-open="#mailSheet">
+                  <span>Audi Q5L</span>
+                  <strong>1</strong>
+                  <small>正文与附件存在冲突</small>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel scroll-panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="list-todo"></i>待处理邮件</h2>
+            <span class="badge red">7</span>
+          </div>
+          <div class="panel-body stack">
+            <a class="list-item selected" href="01-task-workbench.html">
+              <p class="item-title">需要选择 skill</p>
+              <p class="item-meta">天津旭阳 / VW · 09:18 · 系统识别到多个可用 skill，暂停后续解析。</p>
+            </a>
+            <a class="list-item" href="01-task-workbench.html">
+              <p class="item-title">解析失败，需要人工干预</p>
+              <p class="item-meta">WLB1343 · 08:42 · 系统重跑后仍无法解析目标 sheet。</p>
+            </a>
+            <a class="list-item" href="01-task-workbench.html">
+              <p class="item-title">邮件正文与附件冲突</p>
+              <p class="item-meta">Audi Q5L · 05/14 16:30 · 附件与上一封相同，但正文说明数量有变化。</p>
+            </a>
+            <a class="list-item" href="01-task-workbench.html">
+              <p class="item-title">客户识别不确定</p>
+              <p class="item-meta">未知客户 · 05/14 15:06 · 发件人和关键词命中多个客户。</p>
+            </a>
+            <a class="list-item" href="01-task-workbench.html">
+              <p class="item-title">重复 / 修订需要判断</p>
+              <p class="item-meta">SAIC · 05/14 13:20 · 同一期间再次发送，需判断是重复还是修订。</p>
+            </a>
+            <a class="list-item" href="01-task-workbench.html">
+              <p class="item-title">模板或物料映射异常</p>
+              <p class="item-meta">BYD 合肥 · 05/14 11:45 · 发现未知 Customer P/N，需要补充映射后继续。</p>
+            </a>
+            <a class="list-item" href="01-task-workbench.html">
+              <p class="item-title">业务邮件但无可处理附件</p>
+              <p class="item-meta">NIO · 05/14 10:12 · 正文包含预测调整说明，但没有支持格式附件。</p>
+            </a>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <div class="sheet-backdrop" id="mailSheet">
+    <div class="sheet">
+      <div class="panel-head">
+        <h2 class="panel-title">客户邮件</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <a class="list-item selected" href="01-task-workbench.html">
+          <p class="item-title">Forecast update W20 - please use revised qty</p>
+          <p class="item-meta">天津旭阳 / VW · forecast@vw.example.com · 今日 09:18</p>
+          <div class="mail-body compact">Hi, please update W20 quantities based on the latest forecast. The attachment includes the weekly view. Please confirm once processed.</div>
+        </a>
+        <a class="list-item" href="01-task-workbench.html">
+          <p class="item-title">RE: Shipping plan confirmation</p>
+          <p class="item-meta">Audi Q5L · planner@audi.example.com · 05/14 16:30</p>
+          <div class="mail-body compact">The attachment is same as previous one, but please change the right-side pump quantity for next week as discussed.</div>
+        </a>
+        <a class="list-item" href="01-task-workbench.html">
+          <p class="item-title">WLB1343 firm order May</p>
+          <p class="item-meta">WLB1343 · supply@wlb.example.com · 05/14 08:42</p>
+          <div class="mail-body compact">Attached is the latest firm order file for May. Please process it today.</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

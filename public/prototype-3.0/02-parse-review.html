@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>解析审查 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i>智能客服</a>
+        <a class="nav-link active" href="01-task-workbench.html"><i data-lucide="workflow"></i>智能供应链</a>
+        <a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
+      </nav>
+      <div class="user-chip"><span>计划员 · 简中</span><span class="avatar">PL</span></div>
+    </header>
+    <main class="page fit-screen">
+      <div class="subnav"><a href="01-task-workbench.html">客户收件箱</a><a class="active" href="02-parse-review.html">解析审查</a><a href="03-orders.html">订单</a><a href="04-skill-studio.html">技能工坊</a></div>
+      <div class="grid-3 screen-fill">
+        <aside class="panel scroll-panel"><div class="panel-head"><h2 class="panel-title">附件任务</h2><span class="badge amber">等待人工</span></div><div class="panel-body stack">
+          <div class="filter-bar">
+            <details class="filter-select"><summary>状态：等待中</summary><div class="filter-options"><span>进行中</span><span>等待中</span><span>已完成</span><span>失败</span></div></details>
+            <details class="filter-select"><summary>时间：30 天</summary><div class="filter-options"><span>今天</span><span>最近 7 天</span><span>最近 30 天</span><span>最近 60 天</span><span>自定义</span></div></details>
+          </div>
+          <div class="list-item selected"><p class="item-title">Forecast.xlsx</p><p class="item-meta">VW Audi · 收件 2026/05/14 08:42 · 等待确认 Skill 调用</p></div>
+          <div class="list-item"><p class="item-title">FirmOrder.pdf</p><p class="item-meta">WLB1343 · 收件 2026/05/13 17:28 · 已完成并入库</p></div>
+          <div class="list-item"><p class="item-title">BrokenForecast.xlsx</p><p class="item-meta">SAIC · 收件 2026/05/13 14:05 · 解析失败</p></div>
+          <div class="list-item"><p class="item-title">MayShippingPlan.xlsx</p><p class="item-meta">BYD 合肥 · 收件 2026/05/12 09:18 · 进行中</p></div>
+        </div></aside>
+        <section class="panel scroll-panel"><div class="panel-head"><h2 class="panel-title"><i data-lucide="file-search"></i>附件原文预览</h2><span class="badge slate">只读</span></div><div class="panel-body stack">
+          <div class="tabs"><span class="active">Excel 预览</span><span>PDF 预览</span></div>
+          <div class="preview">
+            <div class="native-frame">
+              <div class="native-toolbar"><span>Forecast.xlsx · Sheet: W48-W53</span><span>原始表格预览</span></div>
+              <div class="native-content">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:820px">
+                    <thead><tr><th>Customer</th><th>Customer P/N</th><th>Faurecia P/N</th><th>Program</th><th>2026-W01</th><th>2026-W02</th><th>2026-W03</th></tr></thead>
+                    <tbody>
+                      <tr><td>长春</td><td>2777977X</td><td>2777977XN</td><td>Audi_Q5L</td><td>1200</td><td>1360</td><td class="evidence-highlight">800</td></tr>
+                      <tr><td>长春</td><td>1191923XB</td><td>1191923XB</td><td>E-pump 1.0</td><td>2304</td><td>2304</td><td>2560</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="native-hint" style="margin-top:12px">Excel 预览以表格局部渲染为主；后续真实实现可按 sheet/range 加载，不一次性渲染全文件。</div>
+              </div>
+            </div>
+          </div>
+          <div class="preview">
+          <div class="native-frame">
+            <div class="native-toolbar"><span>FirmOrder.pdf · Page 2 / 6</span><span>PDF 容器示例</span></div>
+            <div class="native-content">
+              <div class="pdf-page">
+                <div class="pdf-line" style="width:58%"></div>
+                <div class="pdf-line" style="width:82%"></div>
+                <div class="pdf-line" style="width:74%"></div>
+                <div class="pdf-table">
+                  <span>Part Number</span><span>Shipping Date</span><span>Actual Qty</span>
+                  <span class="evidence-highlight">1191923XB</span><span class="evidence-highlight">2026/1/4</span><span class="evidence-highlight">2304</span>
+                  <span>2777977XN</span><span>2026/1/5</span><span>1800</span>
+                </div>
+                <div class="native-hint" style="margin-top:20px">高亮不是修改 PDF，而是保存 source reference：page、bbox、field。</div>
+              </div>
+            </div>
+          </div>
+        </div></div></section>
+        <aside class="panel scroll-panel"><div class="panel-head"><h2 class="panel-title"><i data-lucide="bot"></i>Agent 执行流</h2><span class="badge amber">中断等待</span></div><div class="panel-body stack">
+          <div class="timeline">
+            <div class="step"><div class="step-title">接收附件</div><div class="step-meta">Forecast.xlsx 已关联到邮件 Audi Q5L Forecast Update v2。</div></div>
+            <div class="step"><div class="step-title">文档分类</div><div class="step-meta">识别为 Sales Forecast Excel，目标输出为 weekly forecast。</div></div>
+            <div class="step"><div class="step-title">提取结构化结果</div><div class="step-meta">生成 2 个物料、3 个周维度的候选结果。</div></div>
+            <div class="step"><div class="step-title">业务规则检查</div><div class="step-meta">发现 2777977X 在 2026-W03 明显低于历史水平，进入 Skill 判断。</div></div>
+            <div class="step"><div class="step-title">等待确认 Skill 调用</div><div class="step-meta">Agent 推荐调用 “Audi 小批量预测修正建议”。确认后继续执行，不在此页面人工改数。</div><div class="result-actions"><button class="btn small">切换 Skill</button><button class="btn small">确认调用</button></div></div>
+          </div>
+          <button class="btn" data-open="#resultModal">查看结果对比</button>
+        </div></aside>
+      </div>
+    </main>
+  </div>
+  <div class="modal-backdrop" id="resultModal"><div class="modal"><div class="panel-head"><h2 class="panel-title">结果对比</h2><button class="btn" data-close>关闭</button></div><div class="panel-body grid-2"><div class="preview"><div class="native-frame"><div class="native-toolbar">左侧：原文证据</div><div class="native-content"><div class="scroll-x"><table class="table" style="min-width:720px"><thead><tr><th>Customer</th><th>Customer P/N</th><th>Faurecia P/N</th><th>2026-W01</th><th>2026-W02</th><th>2026-W03</th></tr></thead><tbody><tr><td>长春</td><td>2777977X</td><td>2777977XN</td><td>1200</td><td>1360</td><td class="evidence-highlight">800</td></tr></tbody></table></div></div></div></div><div><div class="tabs"><span class="active">Sales Forecast</span><span>Shipping Plan</span></div><table class="table"><thead><tr><th>客户</th><th>物料</th><th>周期</th><th>提取数量</th></tr></thead><tbody><tr><td>VW Audi</td><td>2777977XN</td><td>2026-W01</td><td>1200</td></tr><tr><td>VW Audi</td><td>2777977XN</td><td>2026-W02</td><td>1360</td></tr><tr><td>VW Audi</td><td>2777977XN</td><td>2026-W03</td><td>800</td></tr></tbody></table><p class="item-meta" style="margin-top:14px">此对话框只查看原文与提取结果，不在这里修改数值。若需人工干预，回到右侧执行流确认 skill 或处理异常。</p></div></div></div></div>
+  <script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>客户画像 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i>智能客服</a>
+        <a class="nav-link" href="01-task-workbench.html"><i data-lucide="workflow"></i>智能供应链</a>
+        <a class="nav-link active" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
+      </nav>
+      <div class="user-chip"><span>计划员 · 简中</span><span class="avatar">PL</span></div>
+    </header>
+
+    <main class="page fit-screen">
+      <div class="subnav"><a class="active" href="05-customer-profile.html">客户画像</a><a href="06-financial-reconciliation.html">财务对账</a></div>
+      <div class="grid-3 screen-fill">
+        <aside class="panel scroll-panel">
+          <div class="panel-head"><h2 class="panel-title">客户</h2><button class="btn small primary icon-only" aria-label="刷新画像" title="刷新画像"><i data-lucide="refresh-cw"></i></button></div>
+          <div class="panel-body stack">
+            <div class="list-item selected">
+              <p class="item-title">VW Audi</p>
+              <p class="item-meta">Customer Code 1032000000 · 最近刷新 2026/05/14 09:00</p>
+            </div>
+            <div class="list-item">
+              <p class="item-title">BYD 合肥</p>
+              <p class="item-meta">Customer Code 2088000112 · 最近刷新 2026/05/14 09:00</p>
+            </div>
+            <div class="list-item">
+              <p class="item-title">WLB1343</p>
+              <p class="item-meta">Customer Code 1343000000 · 最近刷新 2026/05/14 09:00</p>
+            </div>
+            <div class="list-item">
+              <p class="item-title">SAIC</p>
+              <p class="item-meta">Customer Code 3011000009 · 最近刷新 2026/05/14 09:00</p>
+            </div>
+          </div>
+        </aside>
+
+        <section class="panel scroll-panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="calendar-range"></i>周发货总览与当周明细</h2>
+            <div class="mode-strip">
+              <button class="btn small primary" data-profile-mode="year">按年</button>
+              <button class="btn small" data-profile-mode="30">近 30 天</button>
+              <button class="btn small" data-profile-mode="60">近 60 天</button>
+              <button class="btn small" data-profile-mode="90">近 90 天</button>
+            </div>
+          </div>
+
+          <div class="panel-body stack">
+            <div class="tab-panel active" data-profile-mode-panel="year">
+              <div class="card">
+                <div class="row" style="align-items:flex-start; margin-bottom:12px">
+                  <div class="row" style="justify-content:flex-start">
+                    <span class="badge slate">2025</span>
+                    <span class="badge blue">2026</span>
+                    <span class="badge slate">2027</span>
+                  </div>
+                  <div class="row" style="justify-content:flex-end">
+                    <span class="badge blue">2026-W03 · 2026/01/12 - 2026/01/18</span>
+                    <button class="btn small" data-profile-view-toggle aria-label="切换视图" title="切换视图"><i data-lucide="panel-top-close"></i></button>
+                  </div>
+                </div>
+                <div class="year-grid" data-profile-heatmap>
+                  <div class="week-block heat-1"><span>W01</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-2"><span>W02</span><span class="week-count">5 次</span></div>
+                  <div class="week-block heat-4 selected"><span>W03</span><span class="week-count">9 次</span></div>
+                  <div class="week-block heat-2"><span>W04</span><span class="week-count">4 次</span></div>
+                  <div class="week-block heat-1"><span>W05</span><span class="week-count">2 次</span></div>
+                  <div class="week-block"><span>W06</span><span class="week-count">0 次</span></div>
+                  <div class="week-block heat-1"><span>W07</span><span class="week-count">1 次</span></div>
+                  <div class="week-block heat-3"><span>W08</span><span class="week-count">7 次</span></div>
+                  <div class="week-block heat-2"><span>W09</span><span class="week-count">4 次</span></div>
+                  <div class="week-block heat-1"><span>W10</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-2"><span>W11</span><span class="week-count">5 次</span></div>
+                  <div class="week-block heat-3"><span>W12</span><span class="week-count">6 次</span></div>
+                  <div class="week-block heat-1"><span>W13</span><span class="week-count">1 次</span></div>
+
+                  <div class="week-block heat-2"><span>W14</span><span class="week-count">3 次</span></div>
+                  <div class="week-block heat-1"><span>W15</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-2"><span>W16</span><span class="week-count">4 次</span></div>
+                  <div class="week-block heat-3"><span>W17</span><span class="week-count">7 次</span></div>
+                  <div class="week-block heat-2"><span>W18</span><span class="week-count">5 次</span></div>
+                  <div class="week-block heat-1"><span>W19</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-1"><span>W20</span><span class="week-count">1 次</span></div>
+                  <div class="week-block heat-2"><span>W21</span><span class="week-count">3 次</span></div>
+                  <div class="week-block heat-3"><span>W22</span><span class="week-count">6 次</span></div>
+                  <div class="week-block heat-2"><span>W23</span><span class="week-count">4 次</span></div>
+                  <div class="week-block heat-2"><span>W24</span><span class="week-count">3 次</span></div>
+                  <div class="week-block heat-1"><span>W25</span><span class="week-count">1 次</span></div>
+                  <div class="week-block"><span>W26</span><span class="week-count">0 次</span></div>
+
+                  <div class="week-block heat-1"><span>W27</span><span class="week-count">1 次</span></div>
+                  <div class="week-block heat-2"><span>W28</span><span class="week-count">3 次</span></div>
+                  <div class="week-block heat-3"><span>W29</span><span class="week-count">7 次</span></div>
+                  <div class="week-block heat-2"><span>W30</span><span class="week-count">4 次</span></div>
+                  <div class="week-block heat-1"><span>W31</span><span class="week-count">1 次</span></div>
+                  <div class="week-block heat-1"><span>W32</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-2"><span>W33</span><span class="week-count">4 次</span></div>
+                  <div class="week-block heat-4"><span>W34</span><span class="week-count">8 次</span></div>
+                  <div class="week-block heat-2"><span>W35</span><span class="week-count">5 次</span></div>
+                  <div class="week-block heat-1"><span>W36</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-1"><span>W37</span><span class="week-count">1 次</span></div>
+                  <div class="week-block"><span>W38</span><span class="week-count">0 次</span></div>
+                  <div class="week-block heat-1"><span>W39</span><span class="week-count">2 次</span></div>
+
+                  <div class="week-block heat-2"><span>W40</span><span class="week-count">3 次</span></div>
+                  <div class="week-block heat-3"><span>W41</span><span class="week-count">6 次</span></div>
+                  <div class="week-block heat-2"><span>W42</span><span class="week-count">5 次</span></div>
+                  <div class="week-block heat-1"><span>W43</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-1"><span>W44</span><span class="week-count">1 次</span></div>
+                  <div class="week-block heat-2"><span>W45</span><span class="week-count">3 次</span></div>
+                  <div class="week-block heat-3"><span>W46</span><span class="week-count">7 次</span></div>
+                  <div class="week-block heat-2"><span>W47</span><span class="week-count">4 次</span></div>
+                  <div class="week-block heat-1"><span>W48</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-1"><span>W49</span><span class="week-count">2 次</span></div>
+                  <div class="week-block heat-2"><span>W50</span><span class="week-count">3 次</span></div>
+                  <div class="week-block heat-3"><span>W51</span><span class="week-count">6 次</span></div>
+                  <div class="week-block heat-2"><span>W52</span><span class="week-count">4 次</span></div>
+                </div>
+              </div>
+
+              <div class="detail-tabs">
+                <span class="detail-tab active" data-profile-tab="shipping">本周发货详情</span>
+                <span class="detail-tab" data-profile-tab="forecast">客户预测情况</span>
+              </div>
+              <div class="tab-panel active" data-profile-panel="shipping">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:980px">
+                    <thead><tr><th>日期</th><th>物料</th><th>Program</th><th>发货数量</th><th>Delivery Note</th><th>Source.Name</th></tr></thead>
+                    <tbody>
+                      <tr><td>2026/01/12</td><td>2777977XN</td><td>Audi_Q5L</td><td>1,800</td><td>45810466</td><td>FirmOrder.pdf</td></tr>
+                      <tr><td>2026/01/13</td><td>2777977XN</td><td>Audi_Q5L</td><td>1,500</td><td>45810512</td><td>FirmOrder.pdf</td></tr>
+                      <tr><td>2026/01/15</td><td>2777977XN</td><td>Audi_Q5L</td><td>2,000</td><td>45810610</td><td>Pan Dandan-May.xlsx</td></tr>
+                      <tr><td>2026/01/17</td><td>2777977XN</td><td>Audi_Q5L</td><td>2,000</td><td>45810688</td><td>Pan Dandan-May.xlsx</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="tab-panel" data-profile-panel="forecast">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:1080px">
+                    <thead><tr><th>物料</th><th>Program</th><th>本周最终 Shipping</th><th>05/01 Forecast</th><th>05/03 Forecast</th><th>05/08 Forecast</th><th>05/12 Forecast</th><th>当前判断</th></tr></thead>
+                    <tbody>
+                      <tr><td><a href="#" data-open="#sourceTrace">2777977XN</a></td><td>Audi_Q5L</td><td><strong>7,300</strong></td><td>12,000</td><td>11,000</td><td>8,000</td><td>7,600</td><td><span class="badge amber">逐步收敛</span></td></tr>
+                      <tr><td><a href="#" data-open="#sourceTrace">1191923XB</a></td><td>E-pump 1.0</td><td><strong>2,560</strong></td><td>2,304</td><td>2,304</td><td>2,560</td><td>2,560</td><td><span class="badge green">稳定</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-profile-mode-panel="30">
+              <div class="card">
+                <div class="row" style="align-items:flex-start; margin-bottom:12px">
+                  <p class="mini-title" style="margin-bottom:0">近 30 天连续周带</p>
+                  <div class="row" style="justify-content:flex-end">
+                    <span class="badge blue">2025/12/24 - 2026/01/22 · 选中 2026-W02</span>
+                    <button class="btn small" data-profile-view-toggle aria-label="切换视图" title="切换视图"><i data-lucide="panel-top-close"></i></button>
+                  </div>
+                </div>
+                <div class="rolling-strip" data-profile-heatmap>
+                  <div class="rolling-week heat-1"><span>2025-W52</span><span class="week-count">1 次</span></div>
+                  <div class="rolling-week heat-2"><span>2026-W01</span><span class="week-count">3 次</span></div>
+                  <div class="rolling-week heat-4 selected"><span>2026-W02</span><span class="week-count">6 次</span></div>
+                  <div class="rolling-week heat-2"><span>2026-W03</span><span class="week-count">4 次</span></div>
+                  <div class="rolling-week heat-1"><span>2026-W04</span><span class="week-count">2 次</span></div>
+                </div>
+              </div>
+              <div class="detail-tabs">
+                <span class="detail-tab active" data-profile-tab="shipping">本周发货详情</span>
+                <span class="detail-tab" data-profile-tab="forecast">客户预测情况</span>
+              </div>
+              <div class="tab-panel active" data-profile-panel="shipping">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:980px">
+                    <thead><tr><th>日期</th><th>物料</th><th>Program</th><th>发货数量</th><th>Delivery Note</th><th>Source.Name</th></tr></thead>
+                    <tbody>
+                      <tr><td>2026/01/05</td><td>1191923XB</td><td>E-pump 1.0</td><td>1,280</td><td>45800110</td><td>FirmOrder.pdf</td></tr>
+                      <tr><td>2026/01/07</td><td>2777977XN</td><td>Audi_Q5L</td><td>1,950</td><td>45800188</td><td>FirmOrder.pdf</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="tab-panel" data-profile-panel="forecast">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:1080px">
+                    <thead><tr><th>物料</th><th>Program</th><th>本周最终 Shipping</th><th>12/26 Forecast</th><th>01/02 Forecast</th><th>当前判断</th></tr></thead>
+                    <tbody>
+                      <tr><td><a href="#" data-open="#sourceTrace">2777977XN</a></td><td>Audi_Q5L</td><td><strong>1,950</strong></td><td>2,800</td><td>2,100</td><td><span class="badge amber">收敛</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-profile-mode-panel="60">
+              <div class="card">
+                <div class="row" style="align-items:flex-start; margin-bottom:12px">
+                  <p class="mini-title" style="margin-bottom:0">近 60 天连续周带</p>
+                  <div class="row" style="justify-content:flex-end">
+                    <span class="badge blue">2025/12/01 - 2026/01/30 · 选中 2026-W03</span>
+                    <button class="btn small" data-profile-view-toggle aria-label="切换视图" title="切换视图"><i data-lucide="panel-top-close"></i></button>
+                  </div>
+                </div>
+                <div class="rolling-strip" data-profile-heatmap>
+                  <div class="rolling-week heat-1"><span>2025-W49</span><span class="week-count">1 次</span></div>
+                  <div class="rolling-week heat-1"><span>2025-W50</span><span class="week-count">2 次</span></div>
+                  <div class="rolling-week heat-2"><span>2025-W51</span><span class="week-count">3 次</span></div>
+                  <div class="rolling-week heat-1"><span>2025-W52</span><span class="week-count">1 次</span></div>
+                  <div class="rolling-week heat-2"><span>2026-W01</span><span class="week-count">5 次</span></div>
+                  <div class="rolling-week heat-4 selected"><span>2026-W03</span><span class="week-count">9 次</span></div>
+                  <div class="rolling-week heat-2"><span>2026-W04</span><span class="week-count">4 次</span></div>
+                  <div class="rolling-week heat-1"><span>2026-W05</span><span class="week-count">2 次</span></div>
+                </div>
+              </div>
+              <div class="detail-tabs">
+                <span class="detail-tab active" data-profile-tab="shipping">本周发货详情</span>
+                <span class="detail-tab" data-profile-tab="forecast">客户预测情况</span>
+              </div>
+              <div class="tab-panel active" data-profile-panel="shipping">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:980px">
+                    <thead><tr><th>日期</th><th>物料</th><th>Program</th><th>发货数量</th><th>Delivery Note</th><th>Source.Name</th></tr></thead>
+                    <tbody>
+                      <tr><td>2026/01/12</td><td>2777977XN</td><td>Audi_Q5L</td><td>1,800</td><td>45810466</td><td>FirmOrder.pdf</td></tr>
+                      <tr><td>2026/01/13</td><td>2777977XN</td><td>Audi_Q5L</td><td>1,500</td><td>45810512</td><td>FirmOrder.pdf</td></tr>
+                      <tr><td>2026/01/15</td><td>2777977XN</td><td>Audi_Q5L</td><td>2,000</td><td>45810610</td><td>Pan Dandan-May.xlsx</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="tab-panel" data-profile-panel="forecast">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:1080px">
+                    <thead><tr><th>物料</th><th>Program</th><th>本周最终 Shipping</th><th>05/01 Forecast</th><th>05/03 Forecast</th><th>05/08 Forecast</th><th>05/12 Forecast</th><th>当前判断</th></tr></thead>
+                    <tbody>
+                      <tr><td><a href="#" data-open="#sourceTrace">2777977XN</a></td><td>Audi_Q5L</td><td><strong>7,300</strong></td><td>12,000</td><td>11,000</td><td>8,000</td><td>7,600</td><td><span class="badge amber">逐步收敛</span></td></tr>
+                      <tr><td><a href="#" data-open="#sourceTrace">1191923XB</a></td><td>E-pump 1.0</td><td><strong>2,560</strong></td><td>2,304</td><td>2,304</td><td>2,560</td><td>2,560</td><td><span class="badge green">稳定</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-profile-mode-panel="90">
+              <div class="card">
+                <div class="row" style="align-items:flex-start; margin-bottom:12px">
+                  <p class="mini-title" style="margin-bottom:0">近 90 天连续周带</p>
+                  <div class="row" style="justify-content:flex-end">
+                    <span class="badge blue">2025/11/10 - 2026/02/08 · 选中 2026-W05</span>
+                    <button class="btn small" data-profile-view-toggle aria-label="切换视图" title="切换视图"><i data-lucide="panel-top-close"></i></button>
+                  </div>
+                </div>
+                <div class="rolling-strip" data-profile-heatmap>
+                  <div class="rolling-week heat-1"><span>2025-W46</span><span class="week-count">1 次</span></div>
+                  <div class="rolling-week heat-1"><span>2025-W47</span><span class="week-count">2 次</span></div>
+                  <div class="rolling-week heat-2"><span>2025-W48</span><span class="week-count">3 次</span></div>
+                  <div class="rolling-week heat-1"><span>2025-W49</span><span class="week-count">2 次</span></div>
+                  <div class="rolling-week heat-2"><span>2025-W50</span><span class="week-count">4 次</span></div>
+                  <div class="rolling-week heat-2"><span>2025-W51</span><span class="week-count">3 次</span></div>
+                  <div class="rolling-week heat-1"><span>2025-W52</span><span class="week-count">1 次</span></div>
+                  <div class="rolling-week heat-2"><span>2026-W01</span><span class="week-count">5 次</span></div>
+                  <div class="rolling-week heat-3"><span>2026-W02</span><span class="week-count">7 次</span></div>
+                  <div class="rolling-week heat-2"><span>2026-W03</span><span class="week-count">4 次</span></div>
+                  <div class="rolling-week heat-4 selected"><span>2026-W05</span><span class="week-count">8 次</span></div>
+                  <div class="rolling-week heat-1"><span>2026-W06</span><span class="week-count">2 次</span></div>
+                </div>
+              </div>
+              <div class="detail-tabs">
+                <span class="detail-tab active" data-profile-tab="shipping">本周发货详情</span>
+                <span class="detail-tab" data-profile-tab="forecast">客户预测情况</span>
+              </div>
+              <div class="tab-panel active" data-profile-panel="shipping">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:980px">
+                    <thead><tr><th>日期</th><th>物料</th><th>Program</th><th>发货数量</th><th>Delivery Note</th><th>Source.Name</th></tr></thead>
+                    <tbody>
+                      <tr><td>2026/02/03</td><td>21779866XT</td><td>Audi_Q5L</td><td>6,400</td><td>45820810</td><td>FirmOrder.pdf</td></tr>
+                      <tr><td>2026/02/05</td><td>2777977XN</td><td>Audi_Q5L</td><td>2,200</td><td>45820888</td><td>Pan Dandan-May.xlsx</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="tab-panel" data-profile-panel="forecast">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:1080px">
+                    <thead><tr><th>物料</th><th>Program</th><th>本周最终 Shipping</th><th>01/10 Forecast</th><th>01/18 Forecast</th><th>01/26 Forecast</th><th>当前判断</th></tr></thead>
+                    <tbody>
+                      <tr><td><a href="#" data-open="#sourceTrace">21779866XT</a></td><td>Audi_Q5L</td><td><strong>6,400</strong></td><td>8,900</td><td>7,600</td><td>6,800</td><td><span class="badge amber">逐步收敛</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel scroll-panel">
+          <div class="panel-head"><h2 class="panel-title"><i data-lucide="line-chart"></i>物料历史预测曲线</h2><span class="badge cyan">按选中周显示</span></div>
+          <div class="panel-body stack">
+            <div class="tab-panel active" data-profile-mode-panel="year">
+              <div class="card">
+                <p class="item-title">当前选中物料</p>
+                <p class="item-meta">2777977XN · 2026-W03 · 最终 weekly shipping 7,300</p>
+              </div>
+              <div class="chart"><div class="chart-line"></div><div class="chart-line cyan"></div></div>
+              <div class="chart-legend"><span>蓝线：forecast versions</span><span>青线：weekly shipping total</span></div>
+              <div class="card">
+                <p class="item-title">历史预测版本</p>
+                <table class="table table-compact">
+                  <thead><tr><th>收件时间</th><th>Forecast Qty</th><th>与最终差异</th></tr></thead>
+                  <tbody>
+                    <tr><td>2026/05/01 08:12</td><td>12,000</td><td>+4,700</td></tr>
+                    <tr><td>2026/05/03 09:20</td><td>11,000</td><td>+3,700</td></tr>
+                    <tr><td>2026/05/08 08:40</td><td>8,000</td><td>+700</td></tr>
+                    <tr><td>2026/05/12 10:05</td><td>7,600</td><td>+300</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-profile-mode-panel="30">
+              <div class="card">
+                <p class="item-title">当前选中物料</p>
+                <p class="item-meta">2777977XN · 2026-W02 · 最终 weekly shipping 1,950</p>
+              </div>
+              <div class="chart"><div class="chart-line"></div><div class="chart-line cyan"></div></div>
+              <div class="chart-legend"><span>蓝线：forecast versions</span><span>青线：weekly shipping total</span></div>
+              <div class="card">
+                <p class="item-title">历史预测版本</p>
+                <table class="table table-compact">
+                  <thead><tr><th>收件时间</th><th>Forecast Qty</th><th>与最终差异</th></tr></thead>
+                  <tbody>
+                    <tr><td>2025/12/26 08:10</td><td>2,800</td><td>+850</td></tr>
+                    <tr><td>2026/01/02 09:18</td><td>2,100</td><td>+150</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-profile-mode-panel="60">
+              <div class="card">
+                <p class="item-title">当前选中物料</p>
+                <p class="item-meta">2777977XN · 2026-W03 · 最终 weekly shipping 7,300</p>
+              </div>
+              <div class="chart"><div class="chart-line"></div><div class="chart-line cyan"></div></div>
+              <div class="chart-legend"><span>蓝线：forecast versions</span><span>青线：weekly shipping total</span></div>
+              <div class="card">
+                <p class="item-title">历史预测版本</p>
+                <table class="table table-compact">
+                  <thead><tr><th>收件时间</th><th>Forecast Qty</th><th>与最终差异</th></tr></thead>
+                  <tbody>
+                    <tr><td>2026/05/01 08:12</td><td>12,000</td><td>+4,700</td></tr>
+                    <tr><td>2026/05/03 09:20</td><td>11,000</td><td>+3,700</td></tr>
+                    <tr><td>2026/05/08 08:40</td><td>8,000</td><td>+700</td></tr>
+                    <tr><td>2026/05/12 10:05</td><td>7,600</td><td>+300</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" data-profile-mode-panel="90">
+              <div class="card">
+                <p class="item-title">当前选中物料</p>
+                <p class="item-meta">21779866XT · 2026-W05 · 最终 weekly shipping 6,400</p>
+              </div>
+              <div class="chart"><div class="chart-line"></div><div class="chart-line cyan"></div></div>
+              <div class="chart-legend"><span>蓝线：forecast versions</span><span>青线：weekly shipping total</span></div>
+              <div class="card">
+                <p class="item-title">历史预测版本</p>
+                <table class="table table-compact">
+                  <thead><tr><th>收件时间</th><th>Forecast Qty</th><th>与最终差异</th></tr></thead>
+                  <tbody>
+                    <tr><td>2026/01/10 07:48</td><td>8,900</td><td>+2,500</td></tr>
+                    <tr><td>2026/01/18 08:22</td><td>7,600</td><td>+1,200</td></tr>
+                    <tr><td>2026/01/26 09:14</td><td>6,800</td><td>+400</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <div class="sheet-backdrop" id="sourceTrace">
+    <div class="sheet">
+      <div class="panel-head"><h2 class="panel-title">选中周物料追溯</h2><button class="btn" data-close>关闭</button></div>
+      <div class="panel-body stack">
+        <div class="card">
+          <p class="item-title">2777977XN</p>
+          <p class="item-meta">本周最终 shipping 由周内日发货记录聚合得到，forecast 版本按邮件收件时间排序。</p>
+        </div>
+        <div class="list-item">
+          <p class="item-title">Forecast Version 1</p>
+          <p class="item-meta">source mail + attachment + source cell 保留在 lineage 记录中。</p>
+        </div>
+        <div class="list-item">
+          <p class="item-title">Final Shipping</p>
+          <p class="item-meta">来自该周内所有 Shipping Plan 行的 weekly aggregation。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

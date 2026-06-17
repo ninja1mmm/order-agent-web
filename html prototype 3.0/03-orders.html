@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>订单 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group"><a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i>智能客服</a><a class="nav-link active" href="01-task-workbench.html"><i data-lucide="workflow"></i>智能供应链</a><a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a><a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a></nav>
+      <div class="user-chip"><span>计划员 · 简中</span><span class="avatar">PL</span></div>
+    </header>
+    <main class="page fit-screen">
+      <div class="subnav"><a href="01-task-workbench.html">客户收件箱</a><a href="02-parse-review.html">解析审查</a><a class="active" href="03-orders.html">订单</a><a href="04-skill-studio.html">技能工坊</a></div>
+      <section class="panel scroll-panel screen-fill">
+        <div class="panel-head"><h2 class="panel-title"><i data-lucide="table-2"></i>标准订单输出表</h2><div class="list-actions"><button class="btn small primary" data-order-view="current">当前值</button><button class="btn small" data-order-view="delta">变化量</button><button class="btn small primary"><i data-lucide="download"></i>导出</button></div></div>
+        <div class="panel-body">
+          <div class="filter-bar" style="margin-bottom:14px; grid-template-columns: repeat(5, minmax(0, 1fr));">
+            <details class="filter-select"><summary>客户：全部</summary><div class="filter-options"><span>全部客户</span><span>长春</span><span>天津旭阳</span><span>WLB1343</span></div></details>
+            <details class="filter-select"><summary>日期：2026-W01 起</summary><div class="filter-options"><span>本月</span><span>未来 4 周</span><span>未来 12 周</span><span>自定义</span></div></details>
+            <details class="filter-select"><summary>料号：全部</summary><div class="filter-options"><span>全部料号</span><span>2777977XN</span><span>1191923XB</span><span>4003304</span></div></details>
+            <details class="filter-select"><summary>变化：全部</summary><div class="filter-options"><span>全部</span><span>有增加</span><span>有减少</span><span>人工修改</span></div></details>
+            <details class="filter-select"><summary>Program：全部</summary><div class="filter-options"><span>全部</span><span>Audi_Q5L</span><span>E-pump 1.0</span><span>E-pump 2.0</span></div></details>
+          </div>
+          <div class="tabs"><span class="active" data-order-tab="forecast">Sales Forecast</span><span data-order-tab="shipping">Shipping Plan</span></div>
+          <div data-order-section="forecast">
+          <div class="scroll-x" data-order-table="current">
+            <table class="table" style="min-width:1280px">
+              <thead>
+                <tr><th>Customer</th><th>Customer Code</th><th>Customer P/N</th><th>Customer#+Ref#</th><th>Faurecia P/N</th><th>OEM</th><th>Program</th><th>2026-W01<br><span class="item-meta">1/5</span></th><th>2026-W02<br><span class="item-meta">1/12</span></th><th>2026-W03<br><span class="item-meta">1/19</span></th><th>2026-W04<br><span class="item-meta">1/26</span></th><th>2026-W05<br><span class="item-meta">2/2</span></th></tr>
+              </thead>
+              <tbody>
+                <tr><td>长春</td><td>1032000000</td><td>2777977X</td><td>1032000000-2777977XN</td><td>2777977XN</td><td>VW</td><td>Audi_Q5L</td><td data-open="#lineageSheet">1200</td><td data-open="#lineageSheet">1360</td><td data-open="#lineageSheet">800</td><td data-open="#lineageSheet">1880</td><td data-open="#lineageSheet">2100</td></tr>
+                <tr><td>天津旭阳</td><td>2082000000</td><td>21779866X</td><td>2082000000-21779866XT</td><td>21779866XT</td><td>VW</td><td>Audi_Q5L</td><td data-open="#lineageSheet">20088</td><td data-open="#lineageSheet">20064</td><td data-open="#lineageSheet">20088</td><td data-open="#lineageSheet">25680</td><td data-open="#lineageSheet">25200</td></tr>
+                <tr><td>WLB1343</td><td>1343000000</td><td>1191923XB</td><td>1343000000-1191923XB</td><td>1191923XB</td><td>VW</td><td>E-pump 1.0</td><td data-open="#lineageSheet">2304</td><td data-open="#lineageSheet">2304</td><td data-open="#lineageSheet">2560</td><td data-open="#lineageSheet">2400</td><td data-open="#lineageSheet">2400</td></tr>
+                <tr><td>Firm 汇总</td><td>-</td><td>-</td><td>-</td><td>2777977XN</td><td>VW</td><td>Audi_Q5L</td><td class="firm-cell" data-open="#shippingLineage">1800</td><td class="firm-cell">0</td><td class="firm-cell">0</td><td class="firm-cell">0</td><td class="firm-cell">0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="scroll-x" data-order-table="delta" style="display:none">
+            <table class="table" style="min-width:1280px">
+              <thead>
+                <tr><th>Customer</th><th>Customer Code</th><th>Customer P/N</th><th>Customer#+Ref#</th><th>Faurecia P/N</th><th>OEM</th><th>Program</th><th>2026-W01<br><span class="item-meta">1/5</span></th><th>2026-W02<br><span class="item-meta">1/12</span></th><th>2026-W03<br><span class="item-meta">1/19</span></th><th>2026-W04<br><span class="item-meta">1/26</span></th><th>2026-W05<br><span class="item-meta">2/2</span></th></tr>
+              </thead>
+              <tbody>
+                <tr><td>长春</td><td>1032000000</td><td>2777977X</td><td>1032000000-2777977XN</td><td>2777977XN</td><td>VW</td><td>Audi_Q5L</td><td class="delta-cell" data-open="#lineageSheet">-250</td><td class="delta-cell">-90</td><td class="delta-cell" data-open="#lineageSheet">-160</td><td class="delta-cell">+80</td><td class="delta-cell">0</td></tr>
+                <tr><td>天津旭阳</td><td>2082000000</td><td>21779866X</td><td>2082000000-21779866XT</td><td>21779866XT</td><td>VW</td><td>Audi_Q5L</td><td class="delta-cell">+0</td><td class="delta-cell" data-open="#lineageSheet">+420</td><td class="delta-cell">+0</td><td class="delta-cell">+1240</td><td class="delta-cell">-480</td></tr>
+                <tr><td>WLB1343</td><td>1343000000</td><td>1191923XB</td><td>1343000000-1191923XB</td><td>1191923XB</td><td>VW</td><td>E-pump 1.0</td><td class="delta-cell">0</td><td class="delta-cell">0</td><td class="delta-cell" data-open="#lineageSheet">人工</td><td class="delta-cell">-160</td><td class="delta-cell">0</td></tr>
+                <tr><td>Firm 汇总</td><td>-</td><td>-</td><td>-</td><td>2777977XN</td><td>VW</td><td>Audi_Q5L</td><td class="firm-cell" data-open="#shippingLineage">1800</td><td class="firm-cell">0</td><td class="firm-cell">0</td><td class="firm-cell">0</td><td class="firm-cell">0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          </div>
+          <div data-order-section="shipping" style="display:none">
+            <div class="scroll-x">
+              <table class="table" style="min-width:1180px">
+                <thead><tr><th>Source.Name</th><th>Customer code</th><th>Customer</th><th>Part Number</th><th>Actual Qty</th><th>Shipping Date</th><th>Delivery Note</th><th>备注</th><th>客服</th><th>一厂OR二厂</th><th>HU</th><th>托数</th><th>Product</th></tr></thead>
+                <tbody>
+                  <tr><td>Pan Dandan-May.xlsx</td><td>1343000000</td><td>WLB1343</td><td>1191923XB</td><td data-open="#shippingLineage">2304</td><td>2026/1/4</td><td>45810432</td><td>261301077</td><td>Pandandan</td><td>二厂</td><td>256</td><td>9</td><td>E-pump 1.0</td></tr>
+                  <tr><td>Pan Dandan-May.xlsx</td><td>1343000000</td><td>WLB1343</td><td>2777977XN</td><td data-open="#shippingLineage">1280</td><td>2026/1/4</td><td>45810432</td><td>261301077</td><td>Pandandan</td><td>二厂</td><td>256</td><td>5</td><td>E-pump 2.0</td></tr>
+                  <tr><td>FirmOrder.pdf</td><td>1032000000</td><td>长春</td><td>2777977XN</td><td data-open="#shippingLineage">1800</td><td>2026/1/5</td><td>45810466</td><td>-</td><td>Li Mei</td><td>一厂</td><td>192</td><td>7</td><td>E-pump 2.0</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="sheet-backdrop" id="lineageSheet"><div class="sheet"><div class="panel-head"><h2 class="panel-title">Sales Forecast 单元格历史</h2><button class="btn" data-close>关闭</button></div><div class="panel-body stack"><div class="card"><p class="item-title">当前值：1200 · 2026-W01</p><p class="item-meta">Customer 1032000000 · Material 2777977XN · 周起始 2026/1/5</p></div><div class="timeline"><div class="step"><div class="step-title">2026/05/01 客户邮件</div><div class="step-meta">附件 Forecast_W18.xlsx · 原始日预测加和到周：1450</div><button class="btn small">打开该版本附件</button></div><div class="step"><div class="step-title">2026/05/03 客户邮件</div><div class="step-meta">附件 Forecast_W19.xlsx · 更新为 1360 · 变化 -90</div><button class="btn small">打开该版本附件</button></div><div class="step"><div class="step-title">2026/05/05 客户邮件</div><div class="step-meta">附件 Forecast_Update_v2.xlsx · 更新为 1200 · 变化 -160</div><button class="btn small">打开该版本附件</button></div><div class="step"><div class="step-title">手动修改记录</div><div class="step-meta">暂无手动修改。若修改，需要保留用户、时间、原值、新值和原因。</div></div></div><div class="card"><p class="item-title">手动调整</p><input class="input" value="1200"><textarea class="input" style="margin-top:10px; min-height:80px">填写调整原因...</textarea><button class="btn primary" style="margin-top:10px">保存调整</button></div><button class="btn">打开原始邮件</button></div></div></div>
+  <div class="sheet-backdrop" id="shippingLineage"><div class="sheet"><div class="panel-head"><h2 class="panel-title">Shipping Plan 行历史</h2><button class="btn" data-close>关闭</button></div><div class="panel-body stack"><div class="card"><p class="item-title">当前发货数量：2304</p><p class="item-meta">WLB1343 · 1191923XB · Shipping Date 2026/1/4 · Delivery Note 45810432</p></div><div class="timeline"><div class="step"><div class="step-title">来源附件</div><div class="step-meta">Pan Dandan-May.xlsx · 收件 2026/05/13 17:28 · Sheet shipping plan</div></div><div class="step"><div class="step-title">AI 入库</div><div class="step-meta">解析完成后自动写入 Shipping Plan 日维度明细。</div></div><div class="step"><div class="step-title">手动修改记录</div><div class="step-meta">暂无手动修改。</div></div></div><button class="btn">打开原始附件</button><button class="btn primary">在 Sheet 中手动修改</button></div></div></div>
+  <script src="assets/app.js"></script>
+</body>
+</html>
