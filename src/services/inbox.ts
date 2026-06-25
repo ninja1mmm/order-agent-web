@@ -34,6 +34,12 @@ export type WorkspaceAttachment = {
   documentType: string | null;
 };
 
+export type InlineImage = {
+  imageId: string;
+  fileArtifactId: string;
+  contentType: string;
+};
+
 export type WorkspaceMail = {
   id: string;
   messageId: string;
@@ -45,6 +51,7 @@ export type WorkspaceMail = {
   customerId: string | null;
   customerName: string | null;
   attachments: WorkspaceAttachment[];
+  inlineImages: InlineImage[];
 };
 
 export type AgentStep = {
@@ -111,6 +118,15 @@ type WorkspaceAttachmentRaw = {
   documentType?: string | null;
 };
 
+type InlineImageRaw = {
+  image_id?: string;
+  imageId?: string;
+  file_artifact_id?: string;
+  fileArtifactId?: string;
+  content_type?: string;
+  contentType?: string;
+};
+
 type WorkspaceMailRaw = {
   mail_id?: string;
   id?: string;
@@ -130,6 +146,8 @@ type WorkspaceMailRaw = {
   customer_name?: string | null;
   customerName?: string | null;
   attachments?: WorkspaceAttachmentRaw[];
+  inline_images?: InlineImageRaw[];
+  inlineImages?: InlineImageRaw[];
 };
 
 type TraceStepRaw = {
@@ -196,6 +214,14 @@ function normalizeAttachment(raw: WorkspaceAttachmentRaw): WorkspaceAttachment {
   };
 }
 
+function normalizeInlineImage(raw: InlineImageRaw): InlineImage {
+  return {
+    imageId: raw.imageId ?? raw.image_id ?? "",
+    fileArtifactId: raw.fileArtifactId ?? raw.file_artifact_id ?? "",
+    contentType: raw.contentType ?? raw.content_type ?? "",
+  };
+}
+
 function normalizeMail(raw: WorkspaceMailRaw): WorkspaceMail {
   const receivedAt = raw.receivedAt ?? raw.received_at ?? raw.createdAt ?? raw.created_at ?? "";
   const createdAt = raw.createdAt ?? raw.created_at ?? raw.receivedAt ?? raw.received_at ?? "";
@@ -210,6 +236,7 @@ function normalizeMail(raw: WorkspaceMailRaw): WorkspaceMail {
     customerId: raw.customerId ?? raw.customer_id ?? null,
     customerName: raw.customerName ?? raw.customer_name ?? null,
     attachments: (raw.attachments ?? []).map(normalizeAttachment),
+    inlineImages: (raw.inlineImages ?? raw.inline_images ?? []).map(normalizeInlineImage),
   };
 }
 

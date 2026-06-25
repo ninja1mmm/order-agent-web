@@ -51,15 +51,15 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [parsingIds, setParsingIds] = useState<Set<string>>(new Set());
 
-  const handleParse = useCallback(async (mailId: string, attachmentId: string) => {
-    setParsingIds((prev) => new Set(prev).add(attachmentId));
+  const handleParse = useCallback(async (mailId: string, attachmentIds: string[]) => {
+    for (const id of attachmentIds) setParsingIds((prev) => new Set(prev).add(id));
     try {
-      await processMail(mailId, [attachmentId]);
+      await processMail(mailId, attachmentIds.length > 0 ? attachmentIds : undefined);
       await refresh();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Parse failed");
     } finally {
-      setParsingIds((prev) => { const next = new Set(prev); next.delete(attachmentId); return next; });
+      setParsingIds((prev) => { const next = new Set(prev); for (const id of attachmentIds) next.delete(id); return next; });
     }
   }, [refresh]);
   const [customerFilter, setCustomerFilter] = useState("__all__");
@@ -208,6 +208,18 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                   </CardDescription>
                 </Card>
                 <div className="mail-body" style={{ whiteSpace: "pre-wrap" }}>{selectedMail.bodyText}</div>
+                {selectedMail.inlineImages?.length > 0 && (
+                  <div className="inline-images" style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                    {selectedMail.inlineImages.map((img) => (
+                      <img
+                        key={img.imageId}
+                        src={`${BACKEND_URL}/api/files/${img.fileArtifactId}/content`}
+                        alt="inline"
+                        style={{ maxWidth: "100%", borderRadius: 4 }}
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <p className="item-meta">{t.noMail}</p>
@@ -240,7 +252,7 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                       {attachment.fileName}
                       <a
                         className="icon-link"
-                        href={attachment.fileArtifactId ? `${BACKEND_URL}/api/files/${attachment.fileArtifactId}/download` : "#"}
+                        href={attachment.fileArtifactId ? `${BACKEND_URL}/api/files/${attachment.fileArtifactId}/content` : "#"}
                         download={attachment.fileName}
                         aria-label={`${t.download} ${attachment.fileName}`}
                       >
@@ -260,7 +272,7 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                         variant={isParsing ? "primary" : "default"}
                         size="sm"
                         className={isParsing ? "btn-parsing" : ""}
-                        onClick={() => handleParse(selectedMail.id, attachment.attachmentId)}
+                        onClick={() => handleParse(selectedMail.id, [attachment.attachmentId])}
                       >
                         {isParsing ? "解析中..." : canReparse ? t.reparse : t.trigger}
                       </Button>
@@ -280,6 +292,9 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                 const dtype = task.taskType?.replace("extract_", "") || null;
                 const targetLabel = dtype && docTypeLabel[dtype] ? docTypeLabel[dtype][locale] : null;
                 const targetBadgeVariant = dtype && docTypeBadge[dtype] ? docTypeBadge[dtype] : "slate";
+                const canReparse = task.status === "completed" || task.status === "published";
+                const canStartParse = task.status === "waiting_human_decision";
+                const showParseButton = canStartParse || canReparse;
                 const reviewHref = task.id
                   ? `/parse-review?taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
                   : "";
@@ -296,6 +311,15 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                       </div>
                     )}
                     <div className="result-actions">
+                      {showParseButton && selectedMail ? (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleParse(selectedMail.id, [])}
+                        >
+                          {canReparse ? t.reparse : t.trigger}
+                        </Button>
+                      ) : null}
                       {reviewHref ? (
                         <Link href={reviewHref}>
                           <Button variant="default" size="sm">{reviewLabel}</Button>

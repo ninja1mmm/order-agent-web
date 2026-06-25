@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { FileSearch, LoaderCircle, RefreshCw } from "lucide-react";
 
+import { BACKEND_URL } from "../../../api/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FilterSelect } from "@/components/ui/select";
@@ -21,8 +22,9 @@ import {
 } from "./shared";
 import { PdfViewer, ExcelViewer } from "./components";
 
-const DEFAULT_STATUS_FILTER = "__active__";
-const DEFAULT_VISIBLE_STATUSES = new Set(["queued", "pending", "running", "processing", "waiting_human_decision"]);
+const DEFAULT_STATUS_FILTER = "__all__";
+const ACTIVE_ONLY_FILTER = "__active__";
+const ACTIVE_STATUSES = new Set(["queued", "pending", "running", "processing", "waiting_human_decision"]);
 type StatusBadgeVariant = "green" | "amber" | "red" | "slate";
 
 function isExcelFile(fileName: string): boolean {
@@ -76,6 +78,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const statusOptions = useMemo(
     () => [
       { value: DEFAULT_STATUS_FILTER, label: t.all },
+      { value: ACTIVE_ONLY_FILTER, label: locale === "en" ? "Active" : "进行中" },
       { value: "queued", label: taskStatusLabel("queued", locale) },
       { value: "running", label: taskStatusLabel("running", locale) },
       { value: "waiting_human_decision", label: taskStatusLabel("waiting_human_decision", locale) },
@@ -101,7 +104,9 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
         if (task.status === "skipped") return false;
         if (customerFilter !== "__all__" && task.customerId !== customerFilter) return false;
         if (statusFilter === DEFAULT_STATUS_FILTER) {
-          if (!DEFAULT_VISIBLE_STATUSES.has(task.status)) return false;
+          // show all (no status filter)
+        } else if (statusFilter === ACTIVE_ONLY_FILTER) {
+          if (!ACTIVE_STATUSES.has(task.status)) return false;
         } else if (statusFilter === "running") {
           if (task.status !== "running" && task.status !== "processing") return false;
         } else if (task.status !== statusFilter) {
@@ -116,12 +121,29 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
         return taskTime(b.receivedAt) - taskTime(a.receivedAt);
       });
   }, [customerFilter, referenceTime, statusFilter, tasks, timeFilter]);
-  const selectedTask =
-    filteredTasks.find((task) => task.id === effectiveTaskId) ??
-    (!hasUserSelected && targetTaskId ? tasks.find((task) => task.id === targetTaskId) : undefined) ??
-    filteredTasks[0];
+
+  const instanceItems = useMemo(() => {
+    const grouped = new Map<string, typeof filteredTasks>();
+    for (const task of filteredTasks) {
+      const key = `${task.mailMessageId}::${task.attachmentId ?? "__body__"}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(task);
+    }
+    return Array.from(grouped.values()).map((group) => group[0]);
+  }, [filteredTasks]);
+
+  const selectedTask = (() => {
+    const fromEffective = filteredTasks.find((task) => task.id === effectiveTaskId);
+    if (fromEffective) return fromEffective;
+    if (!hasUserSelected && targetTaskId) {
+      const fromAll = tasks.find((task) => task.id === targetTaskId);
+      if (fromAll) return fromAll;
+    }
+    return instanceItems[0];
+  })();
   const selectedMail = mails.find((mail) => mail.id === selectedTask?.mailMessageId);
-  const selectedAttachment = selectedMail?.attachments.find((a) => a.attachmentId === selectedTask?.attachmentId);
+  const isBodyTextTask = selectedTask?.attachmentId === null;
+  const selectedAttachment = isBodyTextTask ? undefined : selectedMail?.attachments.find((a) => a.attachmentId === selectedTask?.attachmentId);
   const rows = Object.values(selectedTask?.resultRows ?? {});
   const agentSteps = selectedTask?.agentSummary ?? [];
   const isTaskRunning = selectedTask?.status === "running" || selectedTask?.status === "processing";
@@ -170,82 +192,94 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                 onChange={setTimeFilter}
               />
             </div>
-            {filteredTasks.map((task) => (
-              <button
-                type="button"
-                key={task.id}
-                className={`list-item ${task.id === selectedTask?.id ? "selected" : ""}`}
-                onClick={() => { setSelectedTaskId(task.id); setHasUserSelected(true); }}
-              >
-                <p className="item-title task-filename" title={task.attachmentFileName ?? task.id}>{task.attachmentFileName ?? task.id}</p>
-                <p className="item-meta task-status-desc">
-                  {customerLabelFromId(customers, task.customerId, task.customerName)} · {t.receivedAt} {formatDateTime(task.receivedAt ?? task.mailCreatedAt, locale)} ·{" "}
-                  {taskStatusLabel(task.status, locale)}
-                </p>
-              </button>
-            ))}
+            {instanceItems.map((task) => {
+              const taskLabel = task.attachmentId === null ? "Email Body" : (task.attachmentFileName ?? task.id);
+              const instanceKey = `${task.mailMessageId}::${task.attachmentId ?? "__body__"}`;
+              const selectedKey = selectedTask ? `${selectedTask.mailMessageId}::${selectedTask.attachmentId ?? "__body__"}` : "";
+              return (
+                <button
+                  type="button"
+                  key={instanceKey}
+                  className={`list-item ${instanceKey === selectedKey ? "selected" : ""}`}
+                  onClick={() => { setSelectedTaskId(task.id); setHasUserSelected(true); }}
+                >
+                  <p className="item-title task-filename" title={taskLabel}>{taskLabel}</p>
+                  <p className="item-meta task-status-desc">
+                    {customerLabelFromId(customers, task.customerId, task.customerName)} · {t.receivedAt} {formatDateTime(task.receivedAt ?? task.mailCreatedAt, locale)} ·{" "}
+                    {taskStatusLabel(task.status, locale)}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </aside>
         <section className="panel scroll-panel">
           <div className="panel-head">
-            <h2 className="panel-title truncate" title={selectedAttachment?.fileName}>{selectedAttachment?.fileName ?? t.attachmentPreview}</h2>
+            <h2 className="panel-title truncate" title={isBodyTextTask ? "Email Body" : selectedAttachment?.fileName}>
+              {isBodyTextTask ? "Email Body" : (selectedAttachment?.fileName ?? t.attachmentPreview)}
+            </h2>
             <Badge variant="slate">{t.readonly}</Badge>
           </div>
           <div className="panel-body stack">
-            {selectedAttachment?.fileArtifactId ? (
+            {isBodyTextTask && selectedMail ? (
+              <>
+                <div className="mail-body" style={{ whiteSpace: "pre-wrap", padding: 16 }}>{selectedMail.bodyText}</div>
+                {selectedMail.inlineImages?.length > 0 && (
+                  <div className="inline-images" style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 16px 16px" }}>
+                    {selectedMail.inlineImages.map((img) => (
+                      <img
+                        key={img.imageId}
+                        src={`${BACKEND_URL}/api/files/${img.fileArtifactId}/content`}
+                        alt="inline"
+                        style={{ maxWidth: "100%", borderRadius: 4 }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : selectedAttachment?.fileArtifactId ? (
               isExcelFile(selectedAttachment.fileName)
                 ? <ExcelViewer fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} />
-                : <PdfViewer fileArtifactId={selectedAttachment.fileArtifactId} fileName={selectedAttachment.fileName} locale={locale} />
+                : <PdfViewer fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} />
             ) : (
               <p className="item-meta">{t.noAttachment}</p>
             )}
             {rows.length > 0 ? (
               <div className="scroll-x">
-                {selectedTask?.taskType === "extract_forecast" ? (
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Material Number</th>
-                        <th>Designation</th>
-                        <th>Week</th>
-                        <th>Quantity</th>
-                        <th>Sched. Agreement</th>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Customer P/N</th>
+                      <th>Internal P/N</th>
+                      <th>Designation</th>
+                      <th>Quantity</th>
+                      <th>Date</th>
+                      <th>Week</th>
+                      <th>Mapping</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, idx) => (
+                      <tr key={idx}>
+                        <td>{String(row.customerPartNumber ?? "")}</td>
+                        <td>{String(row.internalPartNumber ?? "")}</td>
+                        <td>{String(row.designation ?? "")}</td>
+                        <td>{String(row.quantity ?? "")}</td>
+                        <td>{String(row.expandedDay ?? row.dateInfo ?? "")}</td>
+                        <td>{String(row.expandedWeek ?? "")}</td>
+                        <td>
+                          {row.mappingStatus === "unmapped" ? (
+                            <Badge variant="amber">unmapped</Badge>
+                          ) : row.mappingStatus === "mapped" ? (
+                            <Badge variant="green">mapped</Badge>
+                          ) : (
+                            String(row.mappingStatus ?? "")
+                          )}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((row, idx) => (
-                        <tr key={idx}>
-                          <td>{String(row.materialNumber ?? "")}</td>
-                          <td>{String(row.designation ?? "")}</td>
-                          <td>{String(row.weekKey ?? "")}</td>
-                          <td>{String(row.quantity ?? "")}</td>
-                          <td>{String(row.scheduleAgreement ?? "")}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>materialNumber</th>
-                        <th>designation</th>
-                        <th>shippingDate</th>
-                        <th>actualQty</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((row, idx) => (
-                        <tr key={idx}>
-                          <td>{String(row.materialNumber ?? "")}</td>
-                          <td>{String(row.designation ?? "")}</td>
-                          <td>{String(row.shippingDate ?? "")}</td>
-                          <td>{String(row.actualQty ?? "")}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : null}
           </div>

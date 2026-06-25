@@ -133,14 +133,6 @@ function PreviewState({ label, error }: { label: string; error?: string }) {
   );
 }
 
-function blobWithPreviewType(blob: Blob, fileName: string): Blob {
-  if (blob.type && blob.type !== "application/octet-stream") return blob;
-  if (fileName.toLowerCase().endsWith(".pdf")) {
-    return new Blob([blob], { type: "application/pdf" });
-  }
-  return blob;
-}
-
 export function ExcelViewer({ fileArtifactId, locale }: { fileArtifactId: string; locale: Locale }) {
   const t = copy[locale];
   const [requestedSheet, setRequestedSheet] = React.useState("");
@@ -230,7 +222,7 @@ export function ExcelViewer({ fileArtifactId, locale }: { fileArtifactId: string
   );
 }
 
-export function PdfViewer({ fileArtifactId, fileName, locale }: { fileArtifactId: string; fileName: string; locale: Locale }) {
+export function PdfViewer({ fileArtifactId, locale }: { fileArtifactId: string; locale: Locale }) {
   const t = copy[locale];
   const [scale, setScale] = useState(100);
   const [page, setPage] = useState(1);
@@ -242,19 +234,18 @@ export function PdfViewer({ fileArtifactId, fileName, locale }: { fileArtifactId
 
   React.useEffect(() => {
     const controller = new AbortController();
-    let previewUrl: string | null = null;
+    let blobUrl: string | null = null;
 
-    fetch(`${BACKEND_URL}/api/files/${fileArtifactId}/download`, {
+    fetch(`${BACKEND_URL}/api/files/${fileArtifactId}/content`, {
       signal: controller.signal,
-      headers: { Accept: "application/pdf,*/*" },
     })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.blob();
       })
       .then((blob) => {
-        previewUrl = URL.createObjectURL(blobWithPreviewType(blob, fileName));
-        setPreview({ key: fileArtifactId, objectUrl: previewUrl, error: null });
+        blobUrl = URL.createObjectURL(blob);
+        setPreview({ key: fileArtifactId, objectUrl: blobUrl, error: null });
       })
       .catch((err) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
@@ -267,9 +258,9 @@ export function PdfViewer({ fileArtifactId, fileName, locale }: { fileArtifactId
 
     return () => {
       controller.abort();
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
-  }, [fileArtifactId, fileName, t.previewLoadFailed]);
+  }, [fileArtifactId, t.previewLoadFailed]);
 
   return (
     <div className="pdf-viewer">

@@ -383,7 +383,6 @@ export function LiveSystemSettings() {
                               <tr>
                                 <th>Customer P/N</th>
                                 <th>Internal P/N</th>
-                                <th>Schedule Agreement</th>
                                 <th style={{ width: 48 }}></th>
                               </tr>
                             </thead>
@@ -413,20 +412,6 @@ export function LiveSystemSettings() {
                                         materialMappings[index] = {
                                           ...mapping,
                                           internalPartNumber: event.target.value,
-                                        };
-                                        setDraft({ ...draft, materialMappings });
-                                      }}
-                                    />
-                                  </td>
-                                  <td>
-                                    <Input
-                                      value={mapping.scheduleAgreement ?? ""}
-                                      placeholder="Schedule Agreement"
-                                      onChange={(event) => {
-                                        const materialMappings = [...(draft.materialMappings ?? [])];
-                                        materialMappings[index] = {
-                                          ...mapping,
-                                          scheduleAgreement: event.target.value || null,
                                         };
                                         setDraft({ ...draft, materialMappings });
                                       }}

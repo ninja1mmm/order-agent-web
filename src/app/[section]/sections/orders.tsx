@@ -183,7 +183,7 @@ export function LiveOrders({ locale }: { locale: Locale }) {
   );
   const [viewMode, setViewMode] = useState<"current" | "delta">("current");
   const [customerFilter, setCustomerFilter] = useState("__all__");
-  const [dateFilter, setDateFilter] = useState("未来 4 周");
+  const [dateFilter, setDateFilter] = useState("全部");
   const [materialFilter, setMaterialFilter] = useState("全部料号");
   const [changeFilter, setChangeFilter] = useState("全部");
   const [programFilter, setProgramFilter] = useState("全部");
@@ -264,7 +264,7 @@ export function LiveOrders({ locale }: { locale: Locale }) {
         <div className="panel-body">
           <div className="filter-bar" style={{ marginBottom: 14, gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
             <FilterSelect label={t.filterCustomer} value={customerFilter} options={customerOptions} onChange={setCustomerFilter} />
-            <FilterSelect label={t.filterDate} value={dateFilter} options={["本月", "未来 4 周", "未来 12 周", "自定义"]} onChange={setDateFilter} />
+            <FilterSelect label={t.filterDate} value={dateFilter} options={["全部", "本月", "未来 4 周", "未来 12 周"]} onChange={setDateFilter} />
             <FilterSelect label={t.filterMaterial} value={materialFilter} options={materials} onChange={setMaterialFilter} />
             <FilterSelect label={t.filterChange} value={changeFilter} options={["全部", "有增加", "有减少", "人工修改"]} onChange={setChangeFilter} />
             <FilterSelect label={t.filterProgram} value={programFilter} options={["全部", "Audi_Q5L", "E-pump 1.0", "E-pump 2.0"]} onChange={setProgramFilter} />
