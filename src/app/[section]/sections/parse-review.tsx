@@ -194,8 +194,8 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
           <div className="panel-body stack">
             {selectedAttachment?.fileArtifactId ? (
               isExcelFile(selectedAttachment.fileName)
-                ? <ExcelViewer attachmentId={selectedAttachment.fileArtifactId} locale={locale} />
-                : <PdfViewer attachmentId={selectedAttachment.fileArtifactId} fileName={selectedAttachment.fileName} locale={locale} />
+                ? <ExcelViewer fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} />
+                : <PdfViewer fileArtifactId={selectedAttachment.fileArtifactId} fileName={selectedAttachment.fileName} locale={locale} />
             ) : (
               <p className="item-meta">{t.noAttachment}</p>
             )}

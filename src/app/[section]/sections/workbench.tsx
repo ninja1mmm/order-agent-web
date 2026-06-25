@@ -240,7 +240,7 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                       {attachment.fileName}
                       <a
                         className="icon-link"
-                        href={attachment.fileArtifactId ? `${BACKEND_URL}/api/files/${attachment.fileArtifactId}` : "#"}
+                        href={attachment.fileArtifactId ? `${BACKEND_URL}/api/files/${attachment.fileArtifactId}/download` : "#"}
                         download={attachment.fileName}
                         aria-label={`${t.download} ${attachment.fileName}`}
                       >
@@ -274,6 +274,37 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                 </div>
               );
             })}
+            {selectedTasks
+              .filter((task) => task.attachmentId === null)
+              .map((task) => {
+                const dtype = task.taskType?.replace("extract_", "") || null;
+                const targetLabel = dtype && docTypeLabel[dtype] ? docTypeLabel[dtype][locale] : null;
+                const targetBadgeVariant = dtype && docTypeBadge[dtype] ? docTypeBadge[dtype] : "slate";
+                const reviewHref = task.id
+                  ? `/parse-review?taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
+                  : "";
+                const reviewLabel = task.status === "completed" || task.status === "published" ? t.review : t.view;
+                return (
+                  <div className="result-block" key={task.id}>
+                    <div className="result-title">
+                      <span className="result-name">Email Body</span>
+                      <Badge variant="slate">{taskStatusLabel(task.status, locale)}</Badge>
+                    </div>
+                    {targetLabel && (
+                      <div style={{ marginTop: 6 }}>
+                        <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>
+                      </div>
+                    )}
+                    <div className="result-actions">
+                      {reviewHref ? (
+                        <Link href={reviewHref}>
+                          <Button variant="default" size="sm">{reviewLabel}</Button>
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </aside>
       </div>

@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileOutput } from "lucide-react";
 
 import {
   getSalesForecast,
   getShippingPlan,
-  type SalesForecast,
+  type SalesForecastLine,
   type SalesForecastResponse,
-  type ShippingLine,
-  type ShippingPlan,
+  type ShippingPlanLine,
   type ShippingPlanResponse,
 } from "../../../services/orders";
 import { Button } from "@/components/ui/button";
@@ -27,15 +26,8 @@ type MaterialRow = {
   customerId: string;
   customerName: string;
   updatedAt: string;
-  sourceTaskIds: string[];
-  weekSourceTaskIds: Record<string, string[]>;
+  sourceTaskId: string | null;
   weekQty: Record<string, number>;
-};
-
-type FlatShippingRow = ShippingLine & {
-  customerId: string;
-  planId: string;
-  updatedAt: string;
 };
 
 const ORDER_HIGHLIGHT_BG = "rgb(236 253 245)";
@@ -52,73 +44,45 @@ function findMaterialMapping(customer: CustomerConfig | undefined, materialNumbe
   );
 }
 
-function buildWeeklyPivot(forecasts: SalesForecast[], customers: CustomerConfig[]) {
+function buildWeeklyPivot(lines: SalesForecastLine[], customers: CustomerConfig[]) {
   const weekSet = new Set<string>();
   const materialMap = new Map<string, MaterialRow>();
 
-  for (const forecast of forecasts) {
-    const customer = findCustomer(customers, forecast.customerId);
-    const customerName = customer?.name ?? forecast.customerId;
+  for (const line of lines) {
+    const customer = findCustomer(customers, line.customerId);
+    const customerName = customer?.name ?? line.customerName ?? line.customerId;
+    const mapping = findMaterialMapping(customer, line.customerPartNumber);
+    const internalPN = mapping?.internalPartNumber ?? line.internalPartNumber;
+    const key = `${line.customerId}:${line.customerPartNumber}`;
 
-    for (const line of forecast.lines) {
-      const mapping = findMaterialMapping(customer, line.customerPartNumber);
-      const internalPN = mapping?.internalPartNumber ?? line.internalPartNumber;
-      const key = `${forecast.customerId}:${line.customerPartNumber}`;
+    let row = materialMap.get(key);
+    if (!row) {
+      row = {
+        rowKey: key,
+        customerPartNumber: line.customerPartNumber,
+        internalPartNumber: internalPN,
+        customerId: line.customerId,
+        customerName,
+        updatedAt: line.updatedAt ?? "",
+        sourceTaskId: line.sourceTaskId,
+        weekQty: {},
+      };
+      materialMap.set(key, row);
+    }
 
-      let row = materialMap.get(key);
-      if (!row) {
-        row = {
-          rowKey: key,
-          customerPartNumber: line.customerPartNumber,
-          internalPartNumber: internalPN,
-          customerId: forecast.customerId,
-          customerName,
-          updatedAt: forecast.updatedAt ?? "",
-          sourceTaskIds: [],
-          weekSourceTaskIds: {},
-          weekQty: {},
-        };
-        materialMap.set(key, row);
-      }
+    for (const [weekKey, qty] of Object.entries(line.weekQuantities)) {
+      weekSet.add(weekKey);
+      row.weekQty[weekKey] = (row.weekQty[weekKey] ?? 0) + qty;
+    }
 
-      for (const wq of line.weekQuantities) {
-        weekSet.add(wq.weekKey);
-        row.weekQty[wq.weekKey] = (row.weekQty[wq.weekKey] ?? 0) + wq.quantity;
-        if (wq.sourceTaskId) {
-          const weekTaskIds = row.weekSourceTaskIds[wq.weekKey] ?? [];
-          if (!weekTaskIds.includes(wq.sourceTaskId)) {
-            row.weekSourceTaskIds[wq.weekKey] = [...weekTaskIds, wq.sourceTaskId];
-          }
-          if (!row.sourceTaskIds.includes(wq.sourceTaskId)) {
-            row.sourceTaskIds.push(wq.sourceTaskId);
-          }
-        }
-      }
-
-      if (forecast.updatedAt && forecast.updatedAt > row.updatedAt) {
-        row.updatedAt = forecast.updatedAt;
-      }
+    if (line.updatedAt && line.updatedAt > row.updatedAt) {
+      row.updatedAt = line.updatedAt;
     }
   }
 
   const weeks = Array.from(weekSet).sort();
   const rows = Array.from(materialMap.values()).sort((a, b) => a.rowKey.localeCompare(b.rowKey));
   return { weeks, rows };
-}
-
-function flattenShippingPlans(plans: ShippingPlan[]): FlatShippingRow[] {
-  const rows: FlatShippingRow[] = [];
-  for (const plan of plans) {
-    for (const line of plan.lines) {
-      rows.push({
-        ...line,
-        customerId: plan.customerId,
-        planId: plan.id,
-        updatedAt: plan.updatedAt ?? "",
-      });
-    }
-  }
-  return rows;
 }
 
 function formatWeekLabel(weekKey: string): string {
@@ -132,8 +96,56 @@ function formatNum(n: number | undefined): string {
   return n.toLocaleString();
 }
 
-function sourceMatches(taskIds: string[] | undefined, sourceTaskId: string) {
-  return Boolean(sourceTaskId && taskIds?.includes(sourceTaskId));
+function isoWeekKey(date: Date): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+function isoDateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function computeWeekRange(filter: string): { weekFrom?: string; weekTo?: string } {
+  const now = new Date();
+  if (filter === "本月") {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { weekFrom: isoWeekKey(monthStart), weekTo: isoWeekKey(monthEnd) };
+  }
+  if (filter === "未来 4 周") {
+    const end = new Date(now);
+    end.setDate(end.getDate() + 4 * 7);
+    return { weekFrom: isoWeekKey(now), weekTo: isoWeekKey(end) };
+  }
+  if (filter === "未来 12 周") {
+    const end = new Date(now);
+    end.setDate(end.getDate() + 12 * 7);
+    return { weekFrom: isoWeekKey(now), weekTo: isoWeekKey(end) };
+  }
+  return {};
+}
+
+function computeDateRange(filter: string): { dateFrom?: string; dateTo?: string } {
+  const now = new Date();
+  if (filter === "本月") {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { dateFrom: isoDateKey(monthStart), dateTo: isoDateKey(monthEnd) };
+  }
+  if (filter === "未来 4 周") {
+    const end = new Date(now);
+    end.setDate(end.getDate() + 4 * 7);
+    return { dateFrom: isoDateKey(now), dateTo: isoDateKey(end) };
+  }
+  if (filter === "未来 12 周") {
+    const end = new Date(now);
+    end.setDate(end.getDate() + 12 * 7);
+    return { dateFrom: isoDateKey(now), dateTo: isoDateKey(end) };
+  }
+  return {};
 }
 
 const forecastCopy: Record<Locale, Record<string, string>> = {
@@ -164,8 +176,8 @@ export function LiveOrders({ locale }: { locale: Locale }) {
   const params = useSearchParams();
   const requestedTab = params.get("tab");
   const highlightedSourceTaskId = params.get("sourceTaskId") ?? "";
-  const [forecasts, setForecasts] = useState<SalesForecast[]>([]);
-  const [shippingPlans, setShippingPlans] = useState<ShippingPlan[]>([]);
+  const [forecastLines, setForecastLines] = useState<SalesForecastLine[]>([]);
+  const [shippingLines, setShippingLines] = useState<ShippingPlanLine[]>([]);
   const [activeTab, setActiveTab] = useState<"forecast" | "shipping">(
     requestedTab === "shipping" ? "shipping" : "forecast",
   );
@@ -179,16 +191,23 @@ export function LiveOrders({ locale }: { locale: Locale }) {
   const ft = forecastCopy[locale];
   const { customers } = useCustomerConfig();
 
-  useEffect(() => {
-    getShippingPlan()
-      .then((result: ShippingPlanResponse) => setShippingPlans(result.plans))
-      .catch(() => setShippingPlans([]));
-    getSalesForecast()
-      .then((result: SalesForecastResponse) => setForecasts(result.forecasts))
-      .catch(() => setForecasts([]));
-  }, []);
+  const fetchData = useCallback(() => {
+    const weekRange = computeWeekRange(dateFilter);
+    const dateRange = computeDateRange(dateFilter);
 
-  const { weeks, rows: pivotRows } = useMemo(() => buildWeeklyPivot(forecasts, customers), [customers, forecasts]);
+    getShippingPlan(dateRange)
+      .then((result: ShippingPlanResponse) => setShippingLines(result.lines))
+      .catch(() => setShippingLines([]));
+    getSalesForecast(weekRange)
+      .then((result: SalesForecastResponse) => setForecastLines(result.lines))
+      .catch(() => setForecastLines([]));
+  }, [dateFilter]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const { weeks, rows: pivotRows } = useMemo(() => buildWeeklyPivot(forecastLines, customers), [customers, forecastLines]);
 
   const filteredPivot = useMemo(() => {
     return pivotRows.filter((row) => {
@@ -202,21 +221,19 @@ export function LiveOrders({ locale }: { locale: Locale }) {
     });
   }, [pivotRows, materialFilter, customerFilter]);
 
-  const flatShipping = useMemo(() => flattenShippingPlans(shippingPlans), [shippingPlans]);
-
   const customerOptions = [
     { value: "__all__", label: "全部客户" },
     ...customers.map((customer) => ({ value: customer.id, label: customerLabel(customer) })),
   ];
   const forecastMaterials = ["全部料号", ...Array.from(new Set(pivotRows.map((r) => r.customerPartNumber).filter(Boolean)))];
 
-  const shippingMaterials = ["全部料号", ...Array.from(new Set(flatShipping.map((item) => item.materialNumber).filter(Boolean)))];
+  const shippingMaterials = ["全部料号", ...Array.from(new Set(shippingLines.map((item) => item.internalPartNumber).filter(Boolean)))];
 
   const materials = activeTab === "forecast" ? forecastMaterials : shippingMaterials;
 
-  const filteredShipping = flatShipping.filter((item) => {
+  const filteredShipping = shippingLines.filter((item) => {
     if (customerFilter !== "__all__" && item.customerId !== customerFilter) return false;
-    if (materialFilter !== "全部料号" && item.materialNumber !== materialFilter) return false;
+    if (materialFilter !== "全部料号" && item.internalPartNumber !== materialFilter) return false;
     return true;
   });
 
@@ -281,7 +298,7 @@ export function LiveOrders({ locale }: { locale: Locale }) {
                   <tbody>
                     {filteredPivot.map((row) => {
                       const total = Object.values(row.weekQty).reduce((a, b) => a + b, 0);
-                      const isHighlighted = sourceMatches(row.sourceTaskIds, highlightedSourceTaskId);
+                      const isHighlighted = Boolean(highlightedSourceTaskId && row.sourceTaskId === highlightedSourceTaskId);
                       return (
                         <tr className={isHighlighted ? "order-highlight-row" : ""} key={row.rowKey}>
                           <td style={{ position: "sticky", left: 0, zIndex: 1, background: "white", fontWeight: 800 }}>{customerLabelFromId(customers, row.customerId, row.customerName)}</td>
@@ -294,10 +311,6 @@ export function LiveOrders({ locale }: { locale: Locale }) {
                           </td>
                           {weeks.map((wk) => {
                             const qty = row.weekQty[wk];
-                            const isCellHighlighted = sourceMatches(
-                              row.weekSourceTaskIds[wk],
-                              highlightedSourceTaskId,
-                            );
                             return (
                               <td
                                 key={wk}
@@ -305,9 +318,7 @@ export function LiveOrders({ locale }: { locale: Locale }) {
                                   textAlign: "right",
                                   fontVariantNumeric: "tabular-nums",
                                   fontWeight: qty ? 800 : 400,
-                                  color: isCellHighlighted ? "var(--success)" : qty ? "var(--ink)" : "var(--muted)",
-                                  background: isCellHighlighted ? ORDER_HIGHLIGHT_BG : undefined,
-                                  boxShadow: isCellHighlighted ? "inset 0 0 0 1px #a7f3d0" : undefined,
+                                  color: qty ? "var(--ink)" : "var(--muted)",
                                 }}
                               >
                                 {formatNum(qty)}
@@ -323,7 +334,7 @@ export function LiveOrders({ locale }: { locale: Locale }) {
                   </tbody>
                 </table>
               </div>
-              {forecasts.length === 0 ? <p className="empty-table-hint">{t.noForecast}</p> : null}
+              {forecastLines.length === 0 ? <p className="empty-table-hint">{t.noForecast}</p> : null}
             </>
           ) : (
             <div className="scroll-x">
@@ -331,10 +342,8 @@ export function LiveOrders({ locale }: { locale: Locale }) {
                 <thead>
                   <tr>
                     <th>Customer</th>
-                    <th>Material Number</th>
-                    <th>Order Number</th>
-                    <th>Order Line</th>
-                    <th>Actual Qty</th>
+                    <th>Internal P/N</th>
+                    <th>Quantity</th>
                     <th>Shipping Date</th>
                     <th>Delivery Note</th>
                     <th>{ft.updatedAt}</th>
@@ -345,12 +354,10 @@ export function LiveOrders({ locale }: { locale: Locale }) {
                     const isHighlighted = Boolean(highlightedSourceTaskId && row.sourceTaskId === highlightedSourceTaskId);
                     const cellBackground = isHighlighted ? ORDER_HIGHLIGHT_BG : undefined;
                     return (
-                      <tr className={isHighlighted ? "order-highlight-row" : ""} key={row.lineId}>
-                        <td style={{ background: cellBackground }}>{customerLabelFromId(customers, row.customerId)}</td>
-                        <td style={{ background: cellBackground }}>{row.materialNumber}</td>
-                        <td style={{ background: cellBackground }}>{row.orderNumber ?? ""}</td>
-                        <td style={{ background: cellBackground }}>{row.orderLine ?? ""}</td>
-                        <td style={{ background: cellBackground }}>{row.actualQty ?? ""}</td>
+                      <tr className={isHighlighted ? "order-highlight-row" : ""} key={row.id}>
+                        <td style={{ background: cellBackground }}>{customerLabelFromId(customers, row.customerId, row.customerName)}</td>
+                        <td style={{ background: cellBackground }}>{row.internalPartNumber}</td>
+                        <td style={{ background: cellBackground }}>{row.quantity ?? ""}</td>
                         <td style={{ background: cellBackground }}>{row.shippingDate}</td>
                         <td style={{ background: cellBackground }}>{row.deliveryNote ?? ""}</td>
                         <td style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap", background: cellBackground }}>{row.updatedAt ? formatDateTime(row.updatedAt, locale) : ""}</td>

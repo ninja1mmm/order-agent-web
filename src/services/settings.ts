@@ -53,33 +53,6 @@ export type MailboxSettings = {
   lastSkipped: number;
 };
 
-type CustomerRaw = {
-  customer_id?: string;
-  customer_name?: string;
-  customer_code?: string;
-  default_owner?: string;
-  sender_rules?: Array<{
-    rule_id?: string;
-    value?: string;
-    status?: string;
-  }>;
-  material_mappings?: Array<{
-    mapping_id?: string;
-    customer_part_number?: string;
-    faurecia_part_number?: string;
-    customer_ref?: string;
-  }>;
-  id?: string;
-  name?: string;
-  abbreviation?: string;
-  code?: string;
-  contacts?: Contact[];
-  materialMappings?: MaterialMapping[];
-  submissionSchedules?: SubmissionSchedule[];
-  createdAt?: string | null;
-  updatedAt?: string | null;
-};
-
 type MailboxRaw = {
   address?: string;
   provider_type?: string;
@@ -102,55 +75,21 @@ type MailboxRaw = {
   lastSkipped?: number;
 };
 
-function normalizeCustomer(raw: CustomerRaw): CustomerConfig {
-  return {
-    id: raw.id ?? raw.customer_id ?? "",
-    name: raw.name ?? raw.customer_name ?? "",
-    abbreviation: raw.abbreviation ?? raw.customer_code ?? "",
-    code: raw.code ?? raw.customer_code ?? "",
-    contacts:
-      raw.contacts ??
-      (raw.sender_rules ?? []).map((rule) => ({
-        contactId: rule.rule_id,
-        email: rule.value ?? "",
-      })),
-    materialMappings:
-      raw.materialMappings ??
-      (raw.material_mappings ?? []).map((mapping) => ({
-        mappingId: mapping.mapping_id ?? "",
-        customerPartNumber: mapping.customer_part_number ?? "",
-        internalPartNumber: mapping.faurecia_part_number ?? "",
-        scheduleAgreement: mapping.customer_ref ?? null,
-        productType: null,
-        productionLine: null,
-        oem: null,
-        program: null,
-        product: null,
-        status: "active",
-      })),
-    submissionSchedules: raw.submissionSchedules ?? [],
-    createdAt: raw.createdAt ?? null,
-    updatedAt: raw.updatedAt ?? null,
-  };
-}
-
-function denormalizeCustomer(payload: Partial<CustomerConfig>) {
-  return {
-    customer_id: payload.id,
-    customer_name: payload.name,
-    customer_code: payload.code ?? payload.abbreviation,
-    default_owner: "",
-    sender_rules: (payload.contacts ?? []).map((contact) => ({
-      rule_id: contact.contactId,
-      value: contact.email,
-      status: "active",
-    })),
-    material_mappings: (payload.materialMappings ?? []).map((mapping) => ({
-      mapping_id: mapping.mappingId,
-      customer_part_number: mapping.customerPartNumber,
-      faurecia_part_number: mapping.internalPartNumber,
-    })),
-  };
+async function fetchAllPages<T>(
+  path: string, key: string, size = 100
+): Promise<T[]> {
+  let page = 1;
+  const all: T[] = [];
+  for (;;) {
+    const res = await apiRequest<Record<string, unknown>>(
+      `${path}?page=${page}&size=${size}`
+    );
+    const items = (res[key] ?? []) as T[];
+    all.push(...items);
+    if (all.length >= (res.total as number)) break;
+    page++;
+  }
+  return all;
 }
 
 function normalizeMailbox(raw: MailboxRaw): MailboxSettings {
@@ -171,28 +110,25 @@ function normalizeMailbox(raw: MailboxRaw): MailboxSettings {
 }
 
 export async function listCustomers(): Promise<CustomerConfig[]> {
-  const result = await apiRequest<{ customers: CustomerRaw[] }>("/api/settings/customers");
-  return result.customers.map(normalizeCustomer);
+  return fetchAllPages<CustomerConfig>("/api/customers/", "customers");
 }
 
 export async function createCustomer(payload: Partial<CustomerConfig>): Promise<CustomerConfig> {
-  const result = await apiRequest<{ customer: CustomerRaw }>("/api/settings/customers", {
+  return apiRequest<CustomerConfig>("/api/customers/", {
     method: "POST",
-    body: JSON.stringify(denormalizeCustomer(payload)),
+    body: JSON.stringify(payload),
   });
-  return normalizeCustomer(result.customer);
 }
 
 export async function updateCustomer(customerId: string, payload: Partial<CustomerConfig>): Promise<CustomerConfig> {
-  const result = await apiRequest<{ customer: CustomerRaw }>(`/api/settings/customers/${customerId}`, {
+  return apiRequest<CustomerConfig>(`/api/customers/${customerId}`, {
     method: "PUT",
-    body: JSON.stringify(denormalizeCustomer(payload)),
+    body: JSON.stringify(payload),
   });
-  return normalizeCustomer(result.customer);
 }
 
 export async function deleteCustomer(customerId: string): Promise<void> {
-  await apiRequest(`/api/settings/customers/${customerId}`, { method: "DELETE" });
+  await apiRequest(`/api/customers/${customerId}`, { method: "DELETE" });
 }
 
 export async function getMailboxSettings(): Promise<MailboxSettings> {

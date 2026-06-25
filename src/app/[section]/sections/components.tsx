@@ -141,10 +141,10 @@ function blobWithPreviewType(blob: Blob, fileName: string): Blob {
   return blob;
 }
 
-export function ExcelViewer({ attachmentId, locale }: { attachmentId: string; locale: Locale }) {
+export function ExcelViewer({ fileArtifactId, locale }: { fileArtifactId: string; locale: Locale }) {
   const t = copy[locale];
   const [requestedSheet, setRequestedSheet] = React.useState("");
-  const requestKey = `${attachmentId}:${requestedSheet}`;
+  const requestKey = `${fileArtifactId}:${requestedSheet}`;
   const [preview, setPreview] = React.useState<{
     key: string;
     sheetNames: string[];
@@ -157,8 +157,8 @@ export function ExcelViewer({ attachmentId, locale }: { attachmentId: string; lo
   const fetchSheet = React.useCallback(
     (sheet?: string) => {
       const query = sheet ? `?sheet=${encodeURIComponent(sheet)}` : "";
-      const key = `${attachmentId}:${sheet ?? ""}`;
-      fetch(`${BACKEND_URL}/api/files/${attachmentId}/excel-preview${query}`)
+      const key = `${fileArtifactId}:${sheet ?? ""}`;
+      fetch(`${BACKEND_URL}/api/files/${fileArtifactId}/excel-preview${query}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
@@ -184,7 +184,7 @@ export function ExcelViewer({ attachmentId, locale }: { attachmentId: string; lo
           });
         });
     },
-    [attachmentId, t.previewLoadFailed],
+    [fileArtifactId, t.previewLoadFailed],
   );
 
   React.useEffect(() => {
@@ -230,13 +230,13 @@ export function ExcelViewer({ attachmentId, locale }: { attachmentId: string; lo
   );
 }
 
-export function PdfViewer({ attachmentId, fileName, locale }: { attachmentId: string; fileName: string; locale: Locale }) {
+export function PdfViewer({ fileArtifactId, fileName, locale }: { fileArtifactId: string; fileName: string; locale: Locale }) {
   const t = copy[locale];
   const [scale, setScale] = useState(100);
   const [page, setPage] = useState(1);
   const [preview, setPreview] = React.useState<{ key: string; objectUrl: string | null; error: string | null } | null>(null);
-  const objectUrl = preview?.key === attachmentId ? preview.objectUrl : null;
-  const error = preview?.key === attachmentId ? preview.error : null;
+  const objectUrl = preview?.key === fileArtifactId ? preview.objectUrl : null;
+  const error = preview?.key === fileArtifactId ? preview.error : null;
   const loading = !objectUrl && !error;
   const src = objectUrl ? `${objectUrl}#toolbar=0&navpanes=0&page=${page}&zoom=${scale}` : "";
 
@@ -244,7 +244,7 @@ export function PdfViewer({ attachmentId, fileName, locale }: { attachmentId: st
     const controller = new AbortController();
     let previewUrl: string | null = null;
 
-    fetch(`${BACKEND_URL}/api/files/${attachmentId}`, {
+    fetch(`${BACKEND_URL}/api/files/${fileArtifactId}/download`, {
       signal: controller.signal,
       headers: { Accept: "application/pdf,*/*" },
     })
@@ -254,12 +254,12 @@ export function PdfViewer({ attachmentId, fileName, locale }: { attachmentId: st
       })
       .then((blob) => {
         previewUrl = URL.createObjectURL(blobWithPreviewType(blob, fileName));
-        setPreview({ key: attachmentId, objectUrl: previewUrl, error: null });
+        setPreview({ key: fileArtifactId, objectUrl: previewUrl, error: null });
       })
       .catch((err) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setPreview({
-          key: attachmentId,
+          key: fileArtifactId,
           objectUrl: null,
           error: err instanceof Error ? err.message : t.previewLoadFailed,
         });
@@ -269,7 +269,7 @@ export function PdfViewer({ attachmentId, fileName, locale }: { attachmentId: st
       controller.abort();
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
-  }, [attachmentId, fileName, t.previewLoadFailed]);
+  }, [fileArtifactId, fileName, t.previewLoadFailed]);
 
   return (
     <div className="pdf-viewer">

@@ -98,6 +98,8 @@ type PendingTaskSummaryRaw = {
 type WorkspaceAttachmentRaw = {
   attachment_id?: string;
   attachmentId?: string;
+  file_artifact_id?: string | null;
+  fileArtifactId?: string | null;
   file_name?: string;
   fileName?: string;
   content_type?: string;
@@ -185,7 +187,7 @@ function normalizeAttachment(raw: WorkspaceAttachmentRaw): WorkspaceAttachment {
   const attachmentId = raw.attachmentId ?? raw.attachment_id ?? "";
   return {
     attachmentId,
-    fileArtifactId: attachmentId || null,
+    fileArtifactId: raw.fileArtifactId ?? raw.file_artifact_id ?? null,
     fileName: raw.fileName ?? raw.file_name ?? "",
     contentType: raw.contentType ?? raw.content_type ?? "",
     status: raw.status ?? "",
