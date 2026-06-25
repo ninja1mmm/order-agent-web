@@ -4,14 +4,15 @@ import Link from "next/link";
 import type { PendingTaskSummary } from "../../../services/inbox";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
-import { type Locale, copy, taskStatusLabel, useWorkspacePolling } from "./shared";
+import { type Locale, copy, customerLabel, customerLabelFromId, taskStatusLabel, useCustomerConfig, useWorkspacePolling } from "./shared";
 import { CustomerHeatmap } from "./components";
 
 export function LiveDashboard({ locale }: { locale: Locale }) {
   const t = copy[locale];
   const { loading, error, mails, stats } = useWorkspacePolling();
+  const { customers } = useCustomerConfig();
   const pendingTasks = stats?.pendingTasks ?? [];
-  const customerNames = stats?.customerNames ?? [];
+  const customerNames = customers.map(customerLabel);
 
   return (
     <div className="grid-3 screen-fill">
@@ -28,7 +29,7 @@ export function LiveDashboard({ locale }: { locale: Locale }) {
               <div className="metric-label">{t.completedParse}</div>
             </div>
             <div className="metric">
-              <div className="metric-value">{stats?.customerCount ?? 0}</div>
+              <div className="metric-value">{customers.length || stats?.customerCount || 0}</div>
               <div className="metric-label">{t.involvedCustomers}</div>
             </div>
             <div className="metric">
@@ -60,9 +61,11 @@ export function LiveDashboard({ locale }: { locale: Locale }) {
             <Card>
               <p className="mini-title">{t.yesterdayPending}</p>
               <div className="stack">
-                {pendingTasks.map((item: PendingTaskSummary) => (
-                  <div key={item.task_id}>
-                    <CardTitle>{item.customer_name ?? item.file_name}</CardTitle>
+                {pendingTasks.map((item: PendingTaskSummary, idx: number) => (
+                  <div key={item.taskId || `pending-${idx}`}>
+                    <CardTitle title={customerLabelFromId(customers, null, item.customerName ?? item.fileName)}>
+                      {customerLabelFromId(customers, null, item.customerName ?? item.fileName)}
+                    </CardTitle>
                     <CardDescription>{item.reason}</CardDescription>
                   </div>
                 ))}
@@ -72,7 +75,7 @@ export function LiveDashboard({ locale }: { locale: Locale }) {
         </div>
       </aside>
       <section className="panel scroll-panel">
-        <CustomerHeatmap mails={mails} customerNames={customerNames} locale={locale} />
+        <CustomerHeatmap mails={mails} customers={customers} locale={locale} />
       </section>
       <aside className="panel scroll-panel">
         <div className="panel-head">
@@ -80,11 +83,11 @@ export function LiveDashboard({ locale }: { locale: Locale }) {
           <Badge variant="red">{pendingTasks.length}</Badge>
         </div>
         <div className="panel-body stack">
-          {pendingTasks.map((item) => (
-            <Link className="list-item" href={`/parse-review?taskId=${item.task_id}`} key={item.task_id}>
-              <p className="item-title">{item.file_name}</p>
+          {pendingTasks.map((item, idx) => (
+            <Link className="list-item" href={`/parse-review?taskId=${item.taskId}`} key={item.taskId || `task-${idx}`}>
+              <p className="item-title" title={item.fileName}>{item.fileName}</p>
               <p className="item-meta">
-                {item.customer_name ?? "-"} · {taskStatusLabel(item.status, locale)} · {item.reason}
+                {customerLabelFromId(customers, null, item.customerName)} · {taskStatusLabel(item.status, locale)} · {item.reason}
               </p>
             </Link>
           ))}

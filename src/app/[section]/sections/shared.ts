@@ -9,8 +9,45 @@ import {
   type WorkspaceStats,
   type WorkspaceTask,
 } from "../../../services/inbox";
+import { listCustomers, type CustomerConfig } from "../../../services/settings";
 
 export type Locale = "zh-CN" | "zh-TW" | "en";
+export const BEIJING_TIME_ZONE = "Asia/Shanghai";
+
+const API_DATETIME_WITHOUT_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
+const API_DATETIME_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:?\d{2})$/i;
+
+export function parseBackendDate(value: string | Date): Date {
+  if (value instanceof Date) return value;
+  const normalized = API_DATETIME_WITHOUT_ZONE.test(value) && !API_DATETIME_WITH_ZONE.test(value)
+    ? `${value}Z`
+    : value;
+  return new Date(normalized);
+}
+
+export function backendDateMs(value: string | Date | null | undefined): number {
+  if (!value) return 0;
+  const time = parseBackendDate(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+export function beijingDateKey(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  try {
+    const date = parseBackendDate(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: BEIJING_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const part = (type: string) => parts.find((item) => item.type === type)?.value ?? "";
+    return `${part("year")}-${part("month")}-${part("day")}`;
+  } catch {
+    return "";
+  }
+}
 
 export const copy: Record<
   Locale,
@@ -20,10 +57,13 @@ export const copy: Record<
     order: string;
     newMail: string;
     trigger: string;
+    reparse: string;
     refresh: string;
     add: string;
     download: string;
     review: string;
+    view: string;
+    viewResult: string;
     yesterdaySummary: string;
     completedParse: string;
     involvedCustomers: string;
@@ -60,6 +100,8 @@ export const copy: Record<
     submit: string;
     noMail: string;
     noAttachment: string;
+    loadingPreview: string;
+    previewLoadFailed: string;
     noForecast: string;
     readonly: string;
     customerLabel: string;
@@ -75,10 +117,13 @@ export const copy: Record<
     order: "订单",
     newMail: "新增邮件",
     trigger: "开始解析",
+    reparse: "重新解析",
     refresh: "刷新",
     add: "新增",
     download: "下载",
     review: "审查结果",
+    view: "查看",
+    viewResult: "查看结果",
     yesterdaySummary: "昨日工作总结",
     completedParse: "完成解析",
     involvedCustomers: "涉及客户",
@@ -115,6 +160,8 @@ export const copy: Record<
     submit: "提交",
     noMail: "暂无邮件",
     noAttachment: "暂无附件",
+    loadingPreview: "正在加载附件预览...",
+    previewLoadFailed: "附件预览加载失败",
     noForecast: "当前暂无 Sales Forecast 数据。",
     readonly: "只读",
     customerLabel: "客户",
@@ -129,10 +176,13 @@ export const copy: Record<
     order: "訂單",
     newMail: "新增郵件",
     trigger: "開始解析",
+    reparse: "重新解析",
     refresh: "刷新",
     add: "新增",
     download: "下載",
     review: "審查結果",
+    view: "查看",
+    viewResult: "查看結果",
     yesterdaySummary: "昨日工作總結",
     completedParse: "完成解析",
     involvedCustomers: "涉及客戶",
@@ -169,6 +219,8 @@ export const copy: Record<
     submit: "提交",
     noMail: "暫無郵件",
     noAttachment: "暫無附件",
+    loadingPreview: "正在載入附件預覽...",
+    previewLoadFailed: "附件預覽載入失敗",
     noForecast: "當前暫無 Sales Forecast 數據。",
     readonly: "唯讀",
     customerLabel: "客戶",
@@ -183,10 +235,13 @@ export const copy: Record<
     order: "Orders",
     newMail: "New Mail",
     trigger: "Parse",
+    reparse: "Reparse",
     refresh: "Refresh",
     add: "Add",
     download: "Download",
     review: "Review",
+    view: "View",
+    viewResult: "View Result",
     yesterdaySummary: "Yesterday Summary",
     completedParse: "Parsed",
     involvedCustomers: "Customers",
@@ -223,6 +278,8 @@ export const copy: Record<
     submit: "Submit",
     noMail: "No mail",
     noAttachment: "No attachment",
+    loadingPreview: "Loading attachment preview...",
+    previewLoadFailed: "Attachment preview failed",
     noForecast: "No Sales Forecast data yet.",
     readonly: "Read-only",
     customerLabel: "Customer",
@@ -270,37 +327,96 @@ export function useWorkspacePolling() {
   return { loading, error, mails, tasks, stats, refresh: load };
 }
 
+export function useCustomerConfig() {
+  const [customers, setCustomers] = useState<CustomerConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    try {
+      setCustomers(await listCustomers());
+    } catch {
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(load, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return { customers, loading, refreshCustomers: load };
+}
+
+export function customerLabel(customer: Pick<CustomerConfig, "id" | "name">) {
+  return customer.name || customer.id;
+}
+
+export function customerLabelFromId(customers: CustomerConfig[], customerId: string | null | undefined, fallback?: string | null) {
+  const config = customers.find((customer) => customer.id === customerId);
+  if (config) return customerLabel(config);
+  return fallback || customerId || "-";
+}
+
 export function formatShortDate(value: string | Date) {
-  const date = value instanceof Date ? value : new Date(value);
-  return `${date.getMonth() + 1}/${String(date.getDate()).padStart(2, "0")}`;
+  const date = parseBackendDate(value);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BEIJING_TIME_ZONE,
+    month: "numeric",
+    day: "2-digit",
+  }).formatToParts(date);
+  const month = parts.find((item) => item.type === "month")?.value ?? "";
+  const day = parts.find((item) => item.type === "day")?.value ?? "";
+  return `${month}/${day}`;
 }
 
 export function formatDateTime(value: string | null | undefined, locale: Locale) {
   if (!value) return "-";
-  return new Date(value).toLocaleString(locale === "en" ? "en-US" : locale);
+  const date = parseBackendDate(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString(locale === "en" ? "en-US" : locale, {
+    timeZone: BEIJING_TIME_ZONE,
+    hour12: false,
+  });
 }
 
 export function taskStatusLabel(status: string, locale: Locale) {
   const map: Record<Locale, Record<string, string>> = {
     "zh-CN": {
       completed: "已完成",
+      published: "已完成",
       failed: "解析失败",
       running: "进行中",
-      queued: "排队中",
+      processing: "进行中",
+      queued: "待解析",
+      pending: "待解析",
+      skipped: "已跳过",
+      cancelled: "已取消",
       waiting_human_decision: "等待人工",
     },
     "zh-TW": {
       completed: "已完成",
+      published: "已完成",
       failed: "解析失敗",
       running: "進行中",
-      queued: "排隊中",
+      processing: "進行中",
+      queued: "待解析",
+      pending: "待解析",
+      skipped: "已跳過",
+      cancelled: "已取消",
       waiting_human_decision: "等待人工",
     },
     en: {
       completed: "Completed",
+      published: "Completed",
       failed: "Failed",
       running: "Running",
-      queued: "Queued",
+      processing: "Running",
+      queued: "Pending",
+      pending: "Pending",
+      skipped: "Skipped",
+      cancelled: "Cancelled",
       waiting_human_decision: "Needs review",
     },
   };

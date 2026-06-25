@@ -5,25 +5,56 @@ import React, { useCallback, useMemo, useState } from "react";
 import { RefreshCw, Plus, Download } from "lucide-react";
 
 import { BACKEND_URL } from "../../../api/client";
-import { createManualMail, parseAttachment } from "../../../services/mail";
+import { createManualMail, processMail } from "../../../services/mail";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FilterSelect } from "@/components/ui/select";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
-import { type Locale, copy, formatDateTime, taskStatusLabel, useWorkspacePolling } from "./shared";
+import {
+  type Locale,
+  copy,
+  customerLabel,
+  customerLabelFromId,
+  backendDateMs,
+  formatDateTime,
+  taskStatusLabel,
+  useCustomerConfig,
+  useWorkspacePolling,
+} from "./shared";
 import { NewMailModal } from "./components";
+
+const docTypeLabel: Record<string, Record<Locale, string>> = {
+  supplier_release: { "zh-CN": "Sales Forecast", "zh-TW": "Sales Forecast", en: "Sales Forecast" },
+  forecast_excel: { "zh-CN": "Sales Forecast", "zh-TW": "Sales Forecast", en: "Sales Forecast" },
+  shipping_plan_excel: { "zh-CN": "Shipping Plan", "zh-TW": "Shipping Plan", en: "Shipping Plan" },
+  manifest: { "zh-CN": "Shipping Plan", "zh-TW": "Shipping Plan", en: "Shipping Plan" },
+  pallet_label: { "zh-CN": "Shipping Plan", "zh-TW": "Shipping Plan", en: "Shipping Plan" },
+};
+
+const docTypeBadge: Record<string, "blue" | "green" | "amber" | "slate"> = {
+  supplier_release: "blue",
+  forecast_excel: "blue",
+  shipping_plan_excel: "green",
+  manifest: "green",
+  pallet_label: "green",
+};
+
+function parseReviewStatus(status: string) {
+  return status === "processing" ? "running" : status;
+}
 
 export function LiveWorkbench({ locale }: { locale: Locale }) {
   const { mails, tasks, refresh } = useWorkspacePolling();
+  const { customers } = useCustomerConfig();
   const [selectedMailId, setSelectedMailId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [parsingIds, setParsingIds] = useState<Set<string>>(new Set());
 
-  const handleParse = useCallback(async (attachmentId: string) => {
+  const handleParse = useCallback(async (mailId: string, attachmentId: string) => {
     setParsingIds((prev) => new Set(prev).add(attachmentId));
     try {
-      await parseAttachment(attachmentId);
+      await processMail(mailId, [attachmentId]);
       await refresh();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Parse failed");
@@ -31,19 +62,22 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
       setParsingIds((prev) => { const next = new Set(prev); next.delete(attachmentId); return next; });
     }
   }, [refresh]);
-  const [customerFilter, setCustomerFilter] = useState("全部");
+  const [customerFilter, setCustomerFilter] = useState("__all__");
   const [timeFilter, setTimeFilter] = useState("最近 30 天");
   const [attachmentFilter, setAttachmentFilter] = useState("全部邮件");
   const [statusFilter, setStatusFilter] = useState("全部状态");
   const [referenceTime] = useState(() => Date.now());
   const t = copy[locale];
 
-  const selectedMail = mails.find((mail) => mail.mail_id === selectedMailId) ?? mails[0];
-  const selectedTasks = tasks.filter((task) => task.mail_id === selectedMail?.mail_id);
+  const selectedMail = mails.find((mail) => mail.id === selectedMailId) ?? mails[0];
+  const selectedTasks = tasks.filter((task) => task.mailMessageId === selectedMail?.id);
 
-  const customers = useMemo(
-    () => ["全部", ...Array.from(new Set(mails.map((mail) => mail.customer_name || mail.customer_id).filter(Boolean) as string[]))],
-    [mails],
+  const customerOptions = useMemo(
+    () => [
+      { value: "__all__", label: t.all },
+      ...customers.map((customer) => ({ value: customer.id, label: customerLabel(customer) })),
+    ],
+    [customers, t.all],
   );
 
   const filteredMails = useMemo(() => {
@@ -58,14 +92,13 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
             : 30 * dayMs;
 
     return mails.filter((mail) => {
-      const customerName = mail.customer_name || mail.customer_id || "";
-      if (customerFilter !== "全部" && customerName !== customerFilter) return false;
-      if (referenceTime - new Date(mail.received_at).getTime() > timeLimit) return false;
+      if (customerFilter !== "__all__" && mail.customerId !== customerFilter) return false;
+      if (referenceTime - backendDateMs(mail.receivedAt) > timeLimit) return false;
       const hasAttachment = mail.attachments.length > 0;
       if (attachmentFilter === "有附件" && !hasAttachment) return false;
       if (attachmentFilter === "无附件" && hasAttachment) return false;
       if (statusFilter !== "全部状态") {
-        const mailTasks = tasks.filter((task) => task.mail_id === mail.mail_id);
+        const mailTasks = tasks.filter((task) => task.mailMessageId === mail.id);
         const statusMap: Record<string, string[]> = {
           待处理: ["queued"],
           处理中: ["running"],
@@ -119,7 +152,7 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
           </div>
           <div className="panel-body stack">
             <div className="filter-bar">
-              <FilterSelect label={t.filterCustomer} value={customerFilter} options={customers} onChange={setCustomerFilter} />
+              <FilterSelect label={t.filterCustomer} value={customerFilter} options={customerOptions} onChange={setCustomerFilter} />
               <FilterSelect
                 label={t.filterTime}
                 value={timeFilter}
@@ -142,18 +175,16 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
             {filteredMails.map((mail) => (
               <button
                 type="button"
-                className={`mail-card ${mail.mail_id === selectedMail?.mail_id ? "selected" : ""}`}
-                key={mail.mail_id}
-                onClick={() => setSelectedMailId(mail.mail_id)}
+                className={`mail-card ${mail.id === selectedMail?.id ? "selected" : ""}`}
+                key={mail.id}
+                onClick={() => setSelectedMailId(mail.id)}
               >
-                <div className="mail-sender">{mail.sender}</div>
-                <div className="mail-subject">{mail.subject}</div>
-                <div className="mail-time">
-                  {t.receivedAt}：{formatDateTime(mail.received_at, locale)}
+                <div className="mail-card-top">
+                  <span className="mail-customer">{customerLabelFromId(customers, mail.customerId, mail.customerName)}</span>
+                  <span className="mail-time">{formatDateTime(mail.receivedAt, locale)}</span>
                 </div>
-                {mail.customer_name || mail.customer_id ? (
-                  <Badge variant="blue" className="mt-2">{mail.customer_name || mail.customer_id}</Badge>
-                ) : null}
+                <div className="mail-subject">{mail.subject}</div>
+                <div className="mail-preview">{mail.bodyText || "-"}</div>
               </button>
             ))}
           </div>
@@ -168,15 +199,15 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                 <Card>
                   <div className="row">
                     <CardTitle>{selectedMail.subject}</CardTitle>
-                    {(selectedMail.customer_name || selectedMail.customer_id) && (
-                      <Badge variant="blue">{selectedMail.customer_name || selectedMail.customer_id}</Badge>
+                    {(selectedMail.customerName || selectedMail.customerId) && (
+                      <Badge variant="blue">{customerLabelFromId(customers, selectedMail.customerId, selectedMail.customerName)}</Badge>
                     )}
                   </div>
                   <CardDescription>
-                    From: {selectedMail.sender} · {t.receivedAt}: {formatDateTime(selectedMail.received_at, locale)}
+                    From: {selectedMail.fromEmail} · {t.receivedAt}: {formatDateTime(selectedMail.receivedAt, locale)}
                   </CardDescription>
                 </Card>
-                <div className="mail-body">{selectedMail.body_text}</div>
+                <div className="mail-body" style={{ whiteSpace: "pre-wrap" }}>{selectedMail.bodyText}</div>
               </>
             ) : (
               <p className="item-meta">{t.noMail}</p>
@@ -189,35 +220,54 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
           </div>
           <div className="panel-body stack">
             {selectedMail?.attachments.map((attachment) => {
-              const task = selectedTasks.find((item) => item.attachment_id === attachment.attachment_id);
+              const task = selectedTasks.find((item) => item.attachmentId === attachment.attachmentId);
+              const dtype = attachment.documentType || task?.taskType?.replace("extract_", "") || null;
+              const isSkipped = attachment.status === "skipped" || task?.status === "skipped";
+              const targetLabel = dtype && docTypeLabel[dtype] ? docTypeLabel[dtype][locale] : null;
+              const targetBadgeVariant = dtype && docTypeBadge[dtype] ? docTypeBadge[dtype] : "slate";
+              const isParsing = parsingIds.has(attachment.attachmentId);
+              const canStartParse = task?.status === "waiting_human_decision";
+              const canReparse = task?.status === "completed" || attachment.status === "published";
+              const showParseButton = canStartParse || canReparse || isParsing;
+              const reviewHref = task?.id
+                ? `/parse-review?taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
+                : "";
+              const reviewLabel = task?.status === "completed" || task?.status === "published" ? t.review : t.view;
               return (
-                <div className="result-block" key={attachment.attachment_id}>
+                <div className="result-block" key={attachment.attachmentId}>
                   <div className="result-title">
-                    <span className="result-name">
-                      {attachment.file_name}
+                    <span className="result-name" title={attachment.fileName}>
+                      {attachment.fileName}
                       <a
                         className="icon-link"
-                        href={`${BACKEND_URL}/api/files/${attachment.attachment_id}`}
-                        download={attachment.file_name}
-                        aria-label={`${t.download} ${attachment.file_name}`}
+                        href={attachment.fileArtifactId ? `${BACKEND_URL}/api/files/${attachment.fileArtifactId}` : "#"}
+                        download={attachment.fileName}
+                        aria-label={`${t.download} ${attachment.fileName}`}
                       >
                         <Download className="h-3 w-3" />
                       </a>
                     </span>
                     <Badge variant="slate">{task ? taskStatusLabel(task.status, locale) : attachment.status}</Badge>
                   </div>
+                  {targetLabel && !isSkipped && (
+                    <div style={{ marginTop: 6 }}>
+                      <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>
+                    </div>
+                  )}
                   <div className="result-actions">
-                    <Button
-                      variant={parsingIds.has(attachment.attachment_id) ? "primary" : "default"}
-                      size="sm"
-                      className={parsingIds.has(attachment.attachment_id) ? "btn-parsing" : ""}
-                      onClick={() => handleParse(attachment.attachment_id)}
-                    >
-                      {parsingIds.has(attachment.attachment_id) ? "解析中..." : t.trigger}
-                    </Button>
-                    {task?.task_id ? (
-                      <Link className="btn small" href={`/parse-review?taskId=${task.task_id}`}>
-                        {t.review}
+                    {showParseButton ? (
+                      <Button
+                        variant={isParsing ? "primary" : "default"}
+                        size="sm"
+                        className={isParsing ? "btn-parsing" : ""}
+                        onClick={() => handleParse(selectedMail.id, attachment.attachmentId)}
+                      >
+                        {isParsing ? "解析中..." : canReparse ? t.reparse : t.trigger}
+                      </Button>
+                    ) : null}
+                    {reviewHref ? (
+                      <Link href={reviewHref}>
+                        <Button variant="default" size="sm">{reviewLabel}</Button>
                       </Link>
                     ) : null}
                   </div>
@@ -227,7 +277,14 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
           </div>
         </aside>
       </div>
-      <NewMailModal open={modalOpen} locale={locale} submitting={submitting} onClose={() => setModalOpen(false)} onSubmit={handleCreate} />
+      <NewMailModal
+        open={modalOpen}
+        locale={locale}
+        customers={customers}
+        submitting={submitting}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleCreate}
+      />
     </>
   );
 }

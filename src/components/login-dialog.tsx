@@ -18,7 +18,7 @@ export function LoginDialog({ open, onLogin }: LoginDialogProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      setError("请输入用户名和密码");
+      setError("Please enter username and password");
       return;
     }
     setLoading(true);
@@ -26,7 +26,7 @@ export function LoginDialog({ open, onLogin }: LoginDialogProps) {
     try {
       await onLogin(username, password);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "登录失败");
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -36,39 +36,43 @@ export function LoginDialog({ open, onLogin }: LoginDialogProps) {
     <div className="modal-backdrop open">
       <div className="modal" style={{ maxWidth: 400, margin: "120px auto" }}>
         <div className="panel-head">
-          <h2 className="panel-title">Supply Chain Agent 登录</h2>
+          <h2 className="panel-title">Supply Chain Agent</h2>
         </div>
         <form className="panel-body stack" onSubmit={handleSubmit}>
           <label className="filter-field">
-            <span className="filter-label">用户名</span>
+            <span className="filter-label">Username</span>
             <input
               className="input"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin / planner / cathy"
               autoFocus
               autoComplete="username"
             />
           </label>
           <label className="filter-field">
-            <span className="filter-label">密码</span>
+            <span className="filter-label">Password</span>
             <input
               className="input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="123456"
               autoComplete="current-password"
             />
           </label>
-          {error && <p style={{ color: "var(--danger)", fontSize: 13, margin: 0 }}>{error}</p>}
-          <button className="btn primary" type="submit" disabled={loading} style={{ width: "100%" }}>
-            {loading ? "登录中..." : "登录"}
+          {error && (
+            <p style={{ color: "var(--danger)", fontSize: 13, margin: 0 }}>
+              {error}
+            </p>
+          )}
+          <button
+            className="btn primary"
+            type="submit"
+            disabled={loading}
+            style={{ width: "100%" }}
+          >
+            {loading ? "Signing in..." : "Sign In"}
           </button>
-          <p className="item-meta" style={{ textAlign: "center" }}>
-            POC 测试账号：admin / planner / cathy，密码：123456
-          </p>
         </form>
       </div>
     </div>

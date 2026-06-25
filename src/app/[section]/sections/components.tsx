@@ -1,22 +1,24 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
 
 import { BACKEND_URL } from "../../../api/client";
 import type { WorkspaceMail } from "../../../services/inbox";
+import type { CustomerConfig } from "../../../services/settings";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { FilterSelect } from "@/components/ui/select";
 import { DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogBody } from "@/components/ui/dialog";
-import { type Locale, copy, formatShortDate } from "./shared";
+import { type Locale, beijingDateKey, copy, customerLabel, customerLabelFromId, formatShortDate } from "./shared";
 
 function buildHeatmapColumns(days = 14) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const [year, month, day] = beijingDateKey(new Date()).split("-").map(Number);
+  const today = new Date(Date.UTC(year, month - 1, day));
   return Array.from({ length: days }, (_, index) => {
     const date = new Date(today);
-    date.setDate(today.getDate() - (days - 1 - index));
-    return date;
+    date.setUTCDate(today.getUTCDate() - (days - 1 - index));
+    return beijingDateKey(date);
   });
 }
 
@@ -30,47 +32,44 @@ function heatLevel(count: number) {
 
 export function CustomerHeatmap({
   mails,
-  customerNames,
+  customers,
   locale,
 }: {
   mails: WorkspaceMail[];
-  customerNames: string[];
+  customers: CustomerConfig[];
   locale: Locale;
 }) {
   const t = copy[locale];
   const [view, setView] = useState<"activity" | "today">("activity");
   const columns = useMemo(() => buildHeatmapColumns(14), []);
-  const customers = customerNames.length
-    ? customerNames
-    : Array.from(new Set(mails.map((mail) => mail.customer_name || mail.customer_id).filter(Boolean) as string[]));
+  const configuredCustomerNames = customers.map(customerLabel);
+  const fallbackCustomers = Array.from(new Set(mails.map((mail) => mail.customerName || mail.customerId).filter(Boolean) as string[]));
+  const displayCustomers = configuredCustomerNames.length ? configuredCustomerNames : fallbackCustomers;
 
   const countsByCustomerDay = useMemo(() => {
     const map = new Map<string, number>();
     for (const mail of mails) {
-      const customer = mail.customer_name || mail.customer_id;
-      if (!customer) continue;
-      const day = new Date(mail.received_at);
-      day.setHours(0, 0, 0, 0);
-      const key = `${customer}|${day.toISOString()}`;
+      const customer = customerLabelFromId(customers, mail.customerId, mail.customerName);
+      const dayKey = beijingDateKey(mail.receivedAt);
+      if (!customer || !dayKey) continue;
+      const key = `${customer}|${dayKey}`;
       map.set(key, (map.get(key) ?? 0) + Math.max(mail.attachments.length, 1));
     }
     return map;
-  }, [mails]);
+  }, [customers, mails]);
 
   const todayCards = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return customers.map((customer) => {
+    const today = beijingDateKey(new Date());
+    return displayCustomers.map((customer) => {
       const todayMails = mails.filter((mail) => {
-        const name = mail.customer_name || mail.customer_id;
-        if (name !== customer) return false;
-        const received = new Date(mail.received_at);
-        received.setHours(0, 0, 0, 0);
-        return received.getTime() === today.getTime();
+        const name = customerLabelFromId(customers, mail.customerId, mail.customerName);
+        const dayKey = beijingDateKey(mail.receivedAt);
+        if (name !== customer || !dayKey) return false;
+        return dayKey === today;
       });
       return { customer, count: todayMails.length };
     });
-  }, [customers, mails]);
+  }, [customers, displayCustomers, mails]);
 
   return (
     <>
@@ -90,18 +89,18 @@ export function CustomerHeatmap({
           <div className="heatmap service-heatmap">
             <strong>{t.customerLabel}</strong>
             {columns.map((date) => (
-              <span key={date.toISOString()}>{formatShortDate(date)}</span>
+              <span key={date}>{formatShortDate(date)}</span>
             ))}
-            {customers.length === 0 ? (
+            {displayCustomers.length === 0 ? (
               <span style={{ gridColumn: "1 / -1" }} className="item-meta">
                 暂无客户邮件数据
               </span>
             ) : (
-              customers.map((customer) => (
+              displayCustomers.map((customer) => (
                 <React.Fragment key={customer}>
                   <span>{customer}</span>
                   {columns.map((date) => {
-                    const key = `${customer}|${date.toISOString()}`;
+                    const key = `${customer}|${date}`;
                     const count = countsByCustomerDay.get(key) ?? 0;
                     return <span key={key} className={`heat-cell ${heatLevel(count)}`} aria-label={`${formatShortDate(date)} ${customer}`} />;
                   })}
@@ -125,32 +124,179 @@ export function CustomerHeatmap({
   );
 }
 
-export function PdfViewer({ attachmentId, locale }: { attachmentId: string; locale: Locale }) {
+function PreviewState({ label, error }: { label: string; error?: string }) {
+  return (
+    <div className="preview-state" role="status" aria-live="polite">
+      {error ? null : <LoaderCircle className="preview-spinner" aria-hidden="true" />}
+      <p className={error ? "preview-error" : "item-meta"}>{error ?? label}</p>
+    </div>
+  );
+}
+
+function blobWithPreviewType(blob: Blob, fileName: string): Blob {
+  if (blob.type && blob.type !== "application/octet-stream") return blob;
+  if (fileName.toLowerCase().endsWith(".pdf")) {
+    return new Blob([blob], { type: "application/pdf" });
+  }
+  return blob;
+}
+
+export function ExcelViewer({ attachmentId, locale }: { attachmentId: string; locale: Locale }) {
+  const t = copy[locale];
+  const [requestedSheet, setRequestedSheet] = React.useState("");
+  const requestKey = `${attachmentId}:${requestedSheet}`;
+  const [preview, setPreview] = React.useState<{
+    key: string;
+    sheetNames: string[];
+    activeSheet: string;
+    rows: (string | number | null)[][];
+    truncated: boolean;
+    error: string | null;
+  } | null>(null);
+
+  const fetchSheet = React.useCallback(
+    (sheet?: string) => {
+      const query = sheet ? `?sheet=${encodeURIComponent(sheet)}` : "";
+      const key = `${attachmentId}:${sheet ?? ""}`;
+      fetch(`${BACKEND_URL}/api/files/${attachmentId}/excel-preview${query}`)
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          setPreview({
+            key,
+            sheetNames: data.sheetNames ?? [],
+            activeSheet: data.activeSheet ?? "",
+            rows: data.rows ?? [],
+            truncated: data.truncated ?? false,
+            error: null,
+          });
+        })
+        .catch((err) => {
+          setPreview({
+            key,
+            sheetNames: [],
+            activeSheet: "",
+            rows: [],
+            truncated: false,
+            error: err instanceof Error ? err.message : t.previewLoadFailed,
+          });
+        });
+    },
+    [attachmentId, t.previewLoadFailed],
+  );
+
+  React.useEffect(() => {
+    fetchSheet(requestedSheet || undefined);
+  }, [fetchSheet, requestedSheet]);
+
+  const loading = preview?.key !== requestKey;
+  const error = preview?.key === requestKey ? preview.error : null;
+
+  if (loading) return <div className="pdf-viewer"><PreviewState label={t.loadingPreview} /></div>;
+  if (error) return <div className="pdf-viewer"><PreviewState label={t.previewLoadFailed} error={`${t.previewLoadFailed}: ${error}`} /></div>;
+
+  return (
+    <div className="excel-viewer">
+      <div className="excel-sheet-tabs">
+        {(preview?.sheetNames ?? []).map((name) => (
+          <button
+            type="button"
+            key={name}
+            className={`excel-tab ${name === preview?.activeSheet ? "active" : ""}`}
+            onClick={() => setRequestedSheet(name)}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+      <div className="excel-table-wrap">
+        <table className="excel-table">
+          <tbody>
+            {(preview?.rows ?? []).map((row, rowIdx) => (
+              <tr key={rowIdx}>
+                {row.map((cell, colIdx) => {
+                  const Tag = rowIdx === 0 ? "th" : "td";
+                  return <Tag key={colIdx}>{cell != null ? String(cell) : ""}</Tag>;
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {preview?.truncated && <p className="item-meta" style={{ textAlign: "center", padding: 8 }}>... 数据已截断 (最多 200 行)</p>}
+      </div>
+    </div>
+  );
+}
+
+export function PdfViewer({ attachmentId, fileName, locale }: { attachmentId: string; fileName: string; locale: Locale }) {
   const t = copy[locale];
   const [scale, setScale] = useState(100);
   const [page, setPage] = useState(1);
-  const src = `${BACKEND_URL}/api/files/${attachmentId}#toolbar=0&navpanes=0&page=${page}&zoom=${scale}`;
+  const [preview, setPreview] = React.useState<{ key: string; objectUrl: string | null; error: string | null } | null>(null);
+  const objectUrl = preview?.key === attachmentId ? preview.objectUrl : null;
+  const error = preview?.key === attachmentId ? preview.error : null;
+  const loading = !objectUrl && !error;
+  const src = objectUrl ? `${objectUrl}#toolbar=0&navpanes=0&page=${page}&zoom=${scale}` : "";
+
+  React.useEffect(() => {
+    const controller = new AbortController();
+    let previewUrl: string | null = null;
+
+    fetch(`${BACKEND_URL}/api/files/${attachmentId}`, {
+      signal: controller.signal,
+      headers: { Accept: "application/pdf,*/*" },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        previewUrl = URL.createObjectURL(blobWithPreviewType(blob, fileName));
+        setPreview({ key: attachmentId, objectUrl: previewUrl, error: null });
+      })
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setPreview({
+          key: attachmentId,
+          objectUrl: null,
+          error: err instanceof Error ? err.message : t.previewLoadFailed,
+        });
+      });
+
+    return () => {
+      controller.abort();
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [attachmentId, fileName, t.previewLoadFailed]);
 
   return (
     <div className="pdf-viewer">
-      <div className="glass-toolbar">
-        <Button variant="ghost" size="icon-sm" aria-label={t.zoomOut} onClick={() => setScale((value) => Math.max(50, value - 10))}>
-          <ZoomOut className="h-3.5 w-3.5" />
-        </Button>
-        <span className="page-indicator">
-          {t.page} {page} · {scale}%
-        </span>
-        <Button variant="ghost" size="icon-sm" aria-label={t.zoomIn} onClick={() => setScale((value) => Math.min(200, value + 10))}>
-          <ZoomIn className="h-3.5 w-3.5" />
-        </Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => setPage((value) => Math.max(1, value - 1))}>
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </Button>
-        <Button variant="ghost" size="icon-sm" onClick={() => setPage((value) => value + 1)}>
-          <ChevronRight className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-      <iframe title="pdf-preview" src={src} className="pdf-iframe" />
+      {objectUrl && !error ? (
+        <>
+          <div className="glass-toolbar">
+            <Button variant="ghost" size="icon-sm" aria-label={t.zoomOut} onClick={() => setScale((value) => Math.max(50, value - 10))}>
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <span className="page-indicator">
+              {t.page} {page} · {scale}%
+            </span>
+            <Button variant="ghost" size="icon-sm" aria-label={t.zoomIn} onClick={() => setScale((value) => Math.min(200, value + 10))}>
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => setPage((value) => Math.max(1, value - 1))}>
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => setPage((value) => value + 1)}>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <iframe title="pdf-preview" src={src} className="pdf-iframe" />
+        </>
+      ) : null}
+      {loading ? <PreviewState label={t.loadingPreview} /> : null}
+      {error ? <PreviewState label={t.previewLoadFailed} error={`${t.previewLoadFailed}: ${error}`} /> : null}
     </div>
   );
 }
@@ -158,17 +304,29 @@ export function PdfViewer({ attachmentId, locale }: { attachmentId: string; loca
 export function NewMailModal({
   open,
   locale,
+  customers,
   submitting,
   onClose,
   onSubmit,
 }: {
   open: boolean;
   locale: Locale;
+  customers: CustomerConfig[];
   submitting: boolean;
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const t = copy[locale];
+  const [selectedCustomerId, setSelectedCustomerId] = React.useState("");
+  const customerOptions = customers.map((customer) => ({
+    value: customer.id,
+    label: customerLabel(customer),
+  }));
+  const effectiveCustomerId = customers.some((customer) => customer.id === selectedCustomerId)
+    ? selectedCustomerId
+    : customers[0]?.id ?? "";
+  const selectedCustomer = customers.find((customer) => customer.id === effectiveCustomerId);
+
   return (
     <DialogOverlay open={open} onClose={onClose}>
       <DialogContent>
@@ -178,14 +336,20 @@ export function NewMailModal({
         </DialogHeader>
         <DialogBody>
           <form className="flex flex-col gap-3" onSubmit={onSubmit}>
-            <Input name="customerId" placeholder="customerId (slp-mexico)" required />
-            <Input name="customerName" placeholder="customerName" />
+            <FilterSelect
+              label={t.filterCustomer}
+              value={effectiveCustomerId}
+              options={customerOptions}
+              onChange={setSelectedCustomerId}
+            />
+            <input name="customerId" type="hidden" value={selectedCustomer?.id ?? ""} />
+            <input name="customerName" type="hidden" value={selectedCustomer ? customerLabel(selectedCustomer) : ""} />
             <Input name="subject" placeholder="subject" required />
             <Textarea name="bodyText" placeholder="body text" rows={4} required />
             <input name="attachments" type="file" multiple required />
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button variant="default" size="sm" onClick={onClose}>{t.close}</Button>
-              <Button variant="primary" size="sm" type="submit" disabled={submitting}>{submitting ? "..." : t.submit}</Button>
+              <Button variant="primary" size="sm" type="submit" disabled={submitting || !selectedCustomer}>{submitting ? "..." : t.submit}</Button>
             </div>
           </form>
         </DialogBody>

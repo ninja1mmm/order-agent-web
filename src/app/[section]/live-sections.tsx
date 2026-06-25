@@ -6,6 +6,7 @@ import { LiveDashboard } from "./sections/dashboard";
 import { LiveWorkbench } from "./sections/workbench";
 import { LiveParseReview } from "./sections/parse-review";
 import { LiveOrders } from "./sections/orders";
+import { LiveSystemSettings } from "./sections/settings";
 
 export function LiveSectionContent({ section }: { section: string }) {
   const locale = useLocale();
@@ -17,11 +18,7 @@ export function LiveSectionContent({ section }: { section: string }) {
         {section === "task-workbench" && <LiveWorkbench locale={locale} />}
         {section === "parse-review" && <LiveParseReview locale={locale} />}
         {section === "orders" && <LiveOrders locale={locale} />}
-        {section === "system-settings" && (
-          <div className="panel">
-            <div className="panel-body">System settings pending.</div>
-          </div>
-        )}
+        {section === "system-settings" && <LiveSystemSettings />}
       </main>
     </div>
   );

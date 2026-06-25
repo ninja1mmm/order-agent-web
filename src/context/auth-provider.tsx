@@ -1,11 +1,25 @@
 "use client";
 
-import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
+import {
+  BACKEND_URL,
+  storeTokens,
+  clearTokens,
+  setOnUnauthorized,
+} from "../api/client";
 import { LoginDialog } from "../components/login-dialog";
 
 interface User {
+  id: string;
   username: string;
   displayName: string;
+  email: string;
   role: string;
 }
 
@@ -14,58 +28,139 @@ interface AuthContextType {
   token: string | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  ready: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [showLogin, setShowLogin] = useState(false);
+const AUTH_REQUIRED = process.env.NEXT_PUBLIC_AUTH_REQUIRED === "true";
 
-  useEffect(() => {
-    const stored = localStorage.getItem("accessToken");
-    const storedUser = localStorage.getItem("user");
-    if (stored && storedUser) {
-      setToken(stored);
-      setUser(JSON.parse(storedUser));
-    } else {
-      setShowLogin(true);
-    }
-  }, []);
+const localBackendUser: User = {
+  id: "local-backend",
+  username: "local-backend",
+  displayName: "Local Backend",
+  email: "local-backend@localhost",
+  role: "operator",
+};
 
-  const login = useCallback(async (username: string, password: string) => {
-    const mockUsers: Record<string, User> = {
-      admin: { username: "admin", displayName: "Admin Sun", role: "admin" },
-      planner: { username: "planner", displayName: "Planner Li", role: "planner" },
-      cathy: { username: "cathy", displayName: "Cathy Zhang", role: "customerService" },
+function initialAuthState(): {
+  user: User | null;
+  token: string | null;
+  ready: boolean;
+  showLogin: boolean;
+} {
+  if (!AUTH_REQUIRED) {
+    return { user: localBackendUser, token: null, ready: true, showLogin: false };
+  }
+
+  if (typeof window === "undefined") {
+    return { user: null, token: null, ready: false, showLogin: false };
+  }
+
+  const stored = localStorage.getItem("accessToken");
+  const storedUser = localStorage.getItem("user");
+  if (!stored || !storedUser) {
+    return { user: null, token: null, ready: true, showLogin: true };
+  }
+
+  try {
+    return {
+      user: JSON.parse(storedUser) as User,
+      token: stored,
+      ready: true,
+      showLogin: false,
     };
+  } catch {
+    clearTokens();
+    return { user: null, token: null, ready: true, showLogin: true };
+  }
+}
 
-    const matched = mockUsers[username];
-    if (!matched || password !== "123456") {
-      throw new Error("用户名或密码错误");
-    }
-
-    const fakeToken = btoa(`${username}:${Date.now()}`);
-    localStorage.setItem("accessToken", fakeToken);
-    localStorage.setItem("user", JSON.stringify(matched));
-    setToken(fakeToken);
-    setUser(matched);
-    setShowLogin(false);
-  }, []);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [initialState] = useState(initialAuthState);
+  const [user, setUser] = useState<User | null>(initialState.user);
+  const [token, setToken] = useState<string | null>(initialState.token);
+  const [ready] = useState(initialState.ready);
+  const [showLogin, setShowLogin] = useState(initialState.showLogin);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("user");
+    clearTokens();
     setToken(null);
     setUser(null);
-    setShowLogin(true);
+    if (AUTH_REQUIRED) {
+      setShowLogin(true);
+    } else {
+      setUser(localBackendUser);
+      setShowLogin(false);
+    }
   }, []);
 
+  useEffect(() => {
+    setOnUnauthorized(logout);
+  }, [logout]);
+
+  const login = useCallback(
+    async (username: string, password: string) => {
+      if (!AUTH_REQUIRED) {
+        setUser(localBackendUser);
+        setShowLogin(false);
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.append("username", username);
+      params.append("password", password);
+
+      const tokenRes = await fetch(`${BACKEND_URL}/api/auth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params,
+      });
+
+      if (!tokenRes.ok) {
+        if (tokenRes.status === 401 || tokenRes.status === 422) {
+          throw new Error("Invalid username or password");
+        }
+        throw new Error(`Login failed: ${tokenRes.status}`);
+      }
+
+      const tokenData = await tokenRes.json();
+      const accessToken: string = tokenData.accessToken;
+      const refreshToken: string = tokenData.refreshToken;
+
+      storeTokens(accessToken, refreshToken);
+      setToken(accessToken);
+
+      const meRes = await fetch(`${BACKEND_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (!meRes.ok) {
+        throw new Error("Failed to fetch user profile");
+      }
+
+      const profile = await meRes.json();
+      const userData: User = {
+        id: profile.id,
+        username: profile.username,
+        displayName: profile.displayName,
+        email: profile.email,
+        role: profile.role,
+      };
+
+      localStorage.setItem("user", JSON.stringify(userData));
+      setUser(userData);
+      setShowLogin(false);
+    },
+    [],
+  );
+
+  const authenticated = ready && !!user && (!AUTH_REQUIRED || !!token);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
-      {children}
-      <LoginDialog open={showLogin && !token} onLogin={login} />
+    <AuthContext.Provider value={{ user, token, login, logout, ready }}>
+      {authenticated ? children : null}
+      <LoginDialog open={AUTH_REQUIRED && ready && !authenticated} onLogin={login} />
     </AuthContext.Provider>
   );
 }
