@@ -5,7 +5,7 @@ import { LiveSectionContent } from "./live-sections";
 
 export function SectionContent({ section }: { section: string }) {
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <LiveSectionContent section={section} />
     </Suspense>
   );

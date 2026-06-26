@@ -36,11 +36,13 @@ export function LiveSystemSettings() {
   const [message, setMessage] = useState<string | null>(null);
   const urlParamsConsumed = useRef(false);
   const pendingInternalPNFocus = useRef(false);
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
 
   const loadCustomers = useCallback(async () => {
     const items = await listCustomers();
     setCustomers(items);
-    if (!selectedId && items.length > 0) {
+    if (!selectedIdRef.current && items.length > 0) {
       setSelectedId(items[0].id);
       setDraft({
         ...items[0],
@@ -49,7 +51,7 @@ export function LiveSystemSettings() {
         submissionSchedules: (items[0].submissionSchedules ?? []).map((s) => ({ ...s })),
       });
     }
-  }, [selectedId]);
+  }, []);
 
   const loadMailbox = useCallback(async () => {
     setMailbox(await getMailboxSettings());
@@ -84,7 +86,7 @@ export function LiveSystemSettings() {
     setSelectedId(customer.id);
     const newDraft: CustomerConfig = {
       ...customer,
-      contacts: customer.contacts.map((c) => ({ ...c })),
+      contacts: customer.contacts?.map((c) => ({ ...c })) ?? [],
       materialMappings: (customer.materialMappings ?? []).map((m) => ({ ...m })),
       submissionSchedules: (customer.submissionSchedules ?? []).map((s) => ({ ...s })),
     };
@@ -144,7 +146,7 @@ export function LiveSystemSettings() {
     setSelectedId(customer.id);
     setDraft({
       ...customer,
-      contacts: customer.contacts.map((c) => ({ ...c })),
+      contacts: customer.contacts?.map((c) => ({ ...c })) ?? [],
       materialMappings: (customer.materialMappings ?? []).map((mapping) => ({ ...mapping })),
       submissionSchedules: (customer.submissionSchedules ?? []).map((s) => ({ ...s })),
     });
@@ -152,17 +154,25 @@ export function LiveSystemSettings() {
   };
 
   const handleAddCustomer = async () => {
-    const ts = Date.now().toString(36).toUpperCase();
-    const created = await createCustomer({
-      name: `New Customer ${ts}`,
-      abbreviation: ts,
-      code: `CUST-${ts}`,
-      contacts: [],
-      materialMappings: [],
-      submissionSchedules: [],
-    });
-    await loadCustomers();
-    selectCustomer(created);
+    setSaving(true);
+    setMessage(null);
+    try {
+      const ts = Date.now().toString(36).toUpperCase();
+      const created = await createCustomer({
+        name: `New Customer ${ts}`,
+        abbreviation: ts,
+        code: `CUST-${ts}`,
+        contacts: [],
+        materialMappings: [],
+        submissionSchedules: [],
+      });
+      await loadCustomers();
+      selectCustomer(created);
+    } catch {
+      setMessage("新增客户失败");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveCustomer = async () => {

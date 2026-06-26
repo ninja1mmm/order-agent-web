@@ -18,6 +18,11 @@ function UserMenu() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  async function handleLogout() {
+    setOpen(false);
+    await logout();
+  }
+
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
@@ -84,7 +89,7 @@ function UserMenu() {
             </div>
           </div>
           <button
-            onClick={() => { setOpen(false); logout(); }}
+            onClick={() => { void handleLogout(); }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -106,7 +111,7 @@ function UserMenu() {
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            Sign Out
+            退出登录
           </button>
         </div>
       )}

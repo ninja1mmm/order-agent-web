@@ -11,6 +11,7 @@ import {
   BACKEND_URL,
   storeTokens,
   clearTokens,
+  logoutSession,
   setOnUnauthorized,
 } from "../api/client";
 import { LoginDialog } from "../components/login-dialog";
@@ -27,7 +28,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   ready: boolean;
 }
 
@@ -77,13 +78,21 @@ function initialAuthState(): {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
   const [initialState] = useState(initialAuthState);
   const [user, setUser] = useState<User | null>(initialState.user);
   const [token, setToken] = useState<string | null>(initialState.token);
   const [ready] = useState(initialState.ready);
   const [showLogin, setShowLogin] = useState(initialState.showLogin);
 
-  const logout = useCallback(() => {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const logout = useCallback(async () => {
+    if (AUTH_REQUIRED) {
+      await logoutSession();
+    }
     clearTokens();
     setToken(null);
     setUser(null);
@@ -160,7 +169,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, token, login, logout, ready }}>
       {authenticated ? children : null}
-      <LoginDialog open={AUTH_REQUIRED && ready && !authenticated} onLogin={login} />
+      {mounted && (
+        <LoginDialog open={AUTH_REQUIRED && ready && !authenticated} onLogin={login} />
+      )}
     </AuthContext.Provider>
   );
 }

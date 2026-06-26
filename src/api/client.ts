@@ -27,6 +27,27 @@ export function clearTokens(): void {
   localStorage.removeItem("user");
 }
 
+export async function logoutSession(): Promise<void> {
+  const accessToken = getStoredToken();
+  const refreshToken = getStoredRefreshToken();
+  if (!accessToken) return;
+
+  try {
+    await fetch(`${BACKEND_URL}/api/auth/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        refreshToken: refreshToken ?? undefined,
+      }),
+    });
+  } catch {
+    // Best-effort server logout; local session is always cleared afterward.
+  }
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getStoredRefreshToken();
   if (!refreshToken) return null;
