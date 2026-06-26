@@ -7,6 +7,15 @@ import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { type Locale, copy, customerLabel, customerLabelFromId, taskStatusLabel, useCustomerConfig, useWorkspacePolling } from "./shared";
 import { CustomerHeatmap } from "./components";
 
+function statusBadgeVariant(status: string): "amber" | "red" | "blue" | "default" {
+  switch (status) {
+    case "waiting_human_decision": return "amber";
+    case "failed": return "red";
+    case "processing": return "blue";
+    default: return "default";
+  }
+}
+
 export function LiveDashboard({ locale }: { locale: Locale }) {
   const t = copy[locale];
   const { loading, error, mails, stats } = useWorkspacePolling();
@@ -80,14 +89,18 @@ export function LiveDashboard({ locale }: { locale: Locale }) {
       <aside className="panel scroll-panel">
         <div className="panel-head">
           <h2 className="panel-title">{t.pendingTasks}</h2>
-          <Badge variant="red">{pendingTasks.length}</Badge>
+          <Badge variant={pendingTasks.length > 0 ? "red" : "default"}>{pendingTasks.length}</Badge>
         </div>
         <div className="panel-body stack">
           {pendingTasks.map((item, idx) => (
             <Link className="list-item" href={`/parse-review?taskId=${item.taskId}`} key={item.taskId || `task-${idx}`}>
-              <p className="item-title" title={item.fileName}>{item.fileName}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <p className="item-title" style={{ flex: 1, margin: 0 }} title={item.fileName}>{item.fileName}</p>
+                <Badge variant={statusBadgeVariant(item.status)}>{taskStatusLabel(item.status, locale)}</Badge>
+              </div>
               <p className="item-meta">
-                {customerLabelFromId(customers, null, item.customerName)} · {taskStatusLabel(item.status, locale)} · {item.reason}
+                {customerLabelFromId(customers, null, item.customerName)}
+                {item.reason ? ` · ${item.reason}` : ""}
               </p>
             </Link>
           ))}

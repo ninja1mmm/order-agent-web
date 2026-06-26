@@ -261,6 +261,9 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                     </span>
                     <Badge variant="slate">{task ? taskStatusLabel(task.status, locale) : attachment.status}</Badge>
                   </div>
+                  {task?.status === "waiting_human_decision" && task.reviewSummary?.reason ? (
+                    <div className="review-reason-hint">{task.reviewSummary.reason}</div>
+                  ) : null}
                   {targetLabel && !isSkipped && (
                     <div style={{ marginTop: 6 }}>
                       <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>
@@ -305,6 +308,9 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                       <span className="result-name">Email Body</span>
                       <Badge variant="slate">{taskStatusLabel(task.status, locale)}</Badge>
                     </div>
+                    {task.status === "waiting_human_decision" && task.reviewSummary?.reason ? (
+                      <div className="review-reason-hint">{task.reviewSummary.reason}</div>
+                    ) : null}
                     {targetLabel && (
                       <div style={{ marginTop: 6 }}>
                         <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>

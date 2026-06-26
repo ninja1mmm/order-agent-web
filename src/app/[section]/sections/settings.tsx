@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Save, RefreshCw, Trash2 } from "lucide-react";
 
 import {
@@ -22,6 +23,7 @@ type SettingsSection = "customers" | "mailbox";
 type CustomerTab = "basic" | "recognition" | "materials";
 
 export function LiveSystemSettings() {
+  const params = useSearchParams();
   const [section, setSection] = useState<SettingsSection>("customers");
   const [customers, setCustomers] = useState<CustomerConfig[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -32,6 +34,8 @@ export function LiveSystemSettings() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const urlParamsConsumed = useRef(false);
+  const pendingInternalPNFocus = useRef(false);
 
   const loadCustomers = useCallback(async () => {
     const items = await listCustomers();
@@ -65,6 +69,66 @@ export function LiveSystemSettings() {
     }, 15000);
     return () => window.clearInterval(timer);
   }, [section, loadMailbox]);
+
+  useEffect(() => {
+    if (urlParamsConsumed.current || customers.length === 0) return;
+    const urlCustomerId = params.get("customerId");
+    const urlTab = params.get("tab");
+    const urlAddPN = params.get("addPN");
+    if (!urlCustomerId) return;
+
+    urlParamsConsumed.current = true;
+    const customer = customers.find((c) => c.id === urlCustomerId);
+    if (!customer) return;
+
+    setSelectedId(customer.id);
+    const newDraft: CustomerConfig = {
+      ...customer,
+      contacts: customer.contacts.map((c) => ({ ...c })),
+      materialMappings: (customer.materialMappings ?? []).map((m) => ({ ...m })),
+      submissionSchedules: (customer.submissionSchedules ?? []).map((s) => ({ ...s })),
+    };
+
+    if (urlAddPN) {
+      const exists = (newDraft.materialMappings ?? []).some(
+        (m) => m.customerPartNumber === urlAddPN,
+      );
+      if (!exists) {
+        newDraft.materialMappings = [
+          ...(newDraft.materialMappings ?? []),
+          {
+            mappingId: crypto.randomUUID(),
+            customerPartNumber: urlAddPN,
+            internalPartNumber: "",
+            scheduleAgreement: null,
+            productType: null,
+            productionLine: null,
+            oem: null,
+            program: null,
+            product: null,
+            status: "active",
+          },
+        ];
+      }
+      pendingInternalPNFocus.current = true;
+    }
+
+    setDraft(newDraft);
+    if (urlTab === "materials") setTab("materials");
+  }, [customers, params]);
+
+  useEffect(() => {
+    if (!pendingInternalPNFocus.current || tab !== "materials") return;
+    pendingInternalPNFocus.current = false;
+    const raf = requestAnimationFrame(() => {
+      const inputs = document.querySelectorAll<HTMLInputElement>(
+        '.settings-material-table input[placeholder="Internal P/N"]',
+      );
+      const lastInput = inputs[inputs.length - 1];
+      lastInput?.focus();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [tab, draft?.materialMappings?.length]);
 
   const filteredCustomers = useMemo(() => {
     const keyword = search.trim().toLowerCase();

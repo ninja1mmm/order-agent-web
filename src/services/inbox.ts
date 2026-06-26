@@ -64,6 +64,14 @@ export type TraceStep = {
   stepName: string;
   status: string;
   outputSummary: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+};
+
+export type ReviewSummary = {
+  reviewType: string;
+  reason: string;
+  blockedAtStep: string | null;
 };
 
 export type WorkspaceTask = {
@@ -72,6 +80,7 @@ export type WorkspaceTask = {
   attachmentId: string | null;
   taskType: string;
   status: string;
+  pipelineStep: string | null;
   warnings: string[];
   requestedAt?: string | null;
   completedAt?: string | null;
@@ -79,6 +88,8 @@ export type WorkspaceTask = {
   resultRows: Record<string, Record<string, unknown>>;
   attachmentFileName?: string;
   agentSummary?: AgentStep[];
+  resultRevision: number;
+  reviewSummary: ReviewSummary | null;
   customerId?: string | null;
   customerName?: string | null;
   receivedAt?: string | null;
@@ -156,6 +167,18 @@ type TraceStepRaw = {
   status?: string;
   output_summary?: string | null;
   outputSummary?: string | null;
+  started_at?: string | null;
+  startedAt?: string | null;
+  completed_at?: string | null;
+  completedAt?: string | null;
+};
+
+type ReviewSummaryRaw = {
+  review_type?: string;
+  reviewType?: string;
+  reason?: string;
+  blocked_at_step?: string | null;
+  blockedAtStep?: string | null;
 };
 
 type WorkspaceTaskRaw = {
@@ -168,6 +191,8 @@ type WorkspaceTaskRaw = {
   task_type?: string;
   taskType?: string;
   status?: string;
+  pipeline_step?: string | null;
+  pipelineStep?: string | null;
   warnings?: string[];
   requested_at?: string | null;
   requestedAt?: string | null;
@@ -181,6 +206,10 @@ type WorkspaceTaskRaw = {
   attachmentFileName?: string;
   agent_summary?: AgentStep[];
   agentSummary?: AgentStep[];
+  result_revision?: number;
+  resultRevision?: number;
+  review_summary?: ReviewSummaryRaw | null;
+  reviewSummary?: ReviewSummaryRaw | null;
   customer_id?: string | null;
   customerId?: string | null;
   customer_name?: string | null;
@@ -245,6 +274,17 @@ function normalizeTraceStep(raw: TraceStepRaw): TraceStep {
     stepName: raw.stepName ?? raw.step_name ?? "",
     status: raw.status ?? "",
     outputSummary: raw.outputSummary ?? raw.output_summary ?? null,
+    startedAt: raw.startedAt ?? raw.started_at ?? null,
+    completedAt: raw.completedAt ?? raw.completed_at ?? null,
+  };
+}
+
+function normalizeReviewSummary(raw: ReviewSummaryRaw | null | undefined): ReviewSummary | null {
+  if (!raw) return null;
+  return {
+    reviewType: raw.reviewType ?? raw.review_type ?? "",
+    reason: raw.reason ?? "",
+    blockedAtStep: raw.blockedAtStep ?? raw.blocked_at_step ?? null,
   };
 }
 
@@ -255,13 +295,16 @@ function normalizeTask(raw: WorkspaceTaskRaw): WorkspaceTask {
     attachmentId: raw.attachmentId ?? raw.attachment_id ?? null,
     taskType: raw.taskType ?? raw.task_type ?? "",
     status: raw.status ?? "",
+    pipelineStep: raw.pipelineStep ?? raw.pipeline_step ?? null,
     warnings: raw.warnings ?? [],
     requestedAt: raw.requestedAt ?? raw.requested_at ?? null,
     completedAt: raw.completedAt ?? raw.completed_at ?? null,
     traceSteps: (raw.traceSteps ?? raw.trace_steps ?? []).map(normalizeTraceStep),
     resultRows: raw.resultRows ?? raw.result_rows ?? {},
+    resultRevision: raw.resultRevision ?? raw.result_revision ?? 1,
     attachmentFileName: raw.attachmentFileName ?? raw.attachment_file_name,
     agentSummary: raw.agentSummary ?? raw.agent_summary,
+    reviewSummary: normalizeReviewSummary(raw.reviewSummary ?? raw.review_summary),
     customerId: raw.customerId ?? raw.customer_id ?? null,
     customerName: raw.customerName ?? raw.customer_name ?? null,
     receivedAt: raw.receivedAt ?? raw.received_at ?? null,

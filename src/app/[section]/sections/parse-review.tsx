@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
-import { FileSearch, LoaderCircle, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Check, Circle, FileSearch, LoaderCircle, Play, RefreshCw } from "lucide-react";
 
 import { BACKEND_URL } from "../../../api/client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   useWorkspacePolling,
 } from "./shared";
 import { PdfViewer, ExcelViewer } from "./components";
+import { proceedTask } from "../../../services/tasks";
 
 const DEFAULT_STATUS_FILTER = "__all__";
 const ACTIVE_ONLY_FILTER = "__active__";
@@ -54,6 +55,23 @@ function resultTabForTask(taskType: string | undefined): "forecast" | "shipping"
   return taskType === "extract_forecast" ? "forecast" : "shipping";
 }
 
+const PIPELINE_STEPS = ["extraction", "date_expansion", "conflict_resolution", "material_mapping", "published"] as const;
+const STEP_LABELS: Record<string, Record<Locale, string>> = {
+  extraction: { zh: "AI 提取", en: "AI Extraction" },
+  date_expansion: { zh: "日期扩展", en: "Date Expansion" },
+  conflict_resolution: { zh: "冲突检测", en: "Conflict Check" },
+  material_mapping: { zh: "料号匹配", en: "Material Mapping" },
+  published: { zh: "已发布", en: "Published" },
+};
+
+type TimelineEntry = {
+  key: string;
+  label: string;
+  state: "completed" | "current" | "pending" | "failed" | "review";
+  summary: string | null;
+  reviewReason: string | null;
+};
+
 export function LiveParseReview({ locale }: { locale: Locale }) {
   const params = useSearchParams();
   const { tasks, mails, refresh } = useWorkspacePolling();
@@ -66,6 +84,9 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const [timeFilter, setTimeFilter] = useState("最近 30 天");
   const [customerFilter, setCustomerFilter] = useState("__all__");
   const [referenceTime] = useState(() => Date.now());
+  const [orderTypeMap, setOrderTypeMap] = useState<Map<string, "confirmed" | "forecast" | "uncertain">>(new Map());
+  const [isProceedLoading, setIsProceedLoading] = useState(false);
+  const [mappingSortOrder, setMappingSortOrder] = useState<"asc" | "desc" | null>(null);
   const effectiveTaskId = hasUserSelected ? selectedTaskId : (targetTaskId ?? selectedTaskId);
 
   const taskCustomers = useMemo(
@@ -80,11 +101,9 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
       { value: DEFAULT_STATUS_FILTER, label: t.all },
       { value: ACTIVE_ONLY_FILTER, label: locale === "en" ? "Active" : "进行中" },
       { value: "queued", label: taskStatusLabel("queued", locale) },
-      { value: "running", label: taskStatusLabel("running", locale) },
       { value: "waiting_human_decision", label: taskStatusLabel("waiting_human_decision", locale) },
       { value: "completed", label: taskStatusLabel("completed", locale) },
       { value: "failed", label: taskStatusLabel("failed", locale) },
-      { value: "cancelled", label: taskStatusLabel("cancelled", locale) },
     ],
     [locale, t.all],
   );
@@ -101,7 +120,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
             : 30 * dayMs;
     return tasks
       .filter((task) => {
-        if (task.status === "skipped") return false;
+        if (task.status === "skipped" || task.status === "cancelled") return false;
         if (customerFilter !== "__all__" && task.customerId !== customerFilter) return false;
         if (statusFilter === DEFAULT_STATUS_FILTER) {
           // show all (no status filter)
@@ -144,10 +163,116 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const selectedMail = mails.find((mail) => mail.id === selectedTask?.mailMessageId);
   const isBodyTextTask = selectedTask?.attachmentId === null;
   const selectedAttachment = isBodyTextTask ? undefined : selectedMail?.attachments.find((a) => a.attachmentId === selectedTask?.attachmentId);
-  const rows = Object.values(selectedTask?.resultRows ?? {});
-  const agentSteps = selectedTask?.agentSummary ?? [];
+  const rowEntries = useMemo(() => Object.entries(selectedTask?.resultRows ?? {}), [selectedTask?.resultRows]);
+  const displayRowEntries = useMemo(() => {
+    if (!mappingSortOrder) return rowEntries;
+    return [...rowEntries].sort(([, a], [, b]) => {
+      const aUnmapped = String(a.mappingStatus ?? "") === "unmapped" ? 0 : 1;
+      const bUnmapped = String(b.mappingStatus ?? "") === "unmapped" ? 0 : 1;
+      return mappingSortOrder === "asc" ? aUnmapped - bUnmapped : bUnmapped - aUnmapped;
+    });
+  }, [rowEntries, mappingSortOrder]);
+  const rows = useMemo(() => displayRowEntries.map(([, v]) => v), [displayRowEntries]);
+  const rowIds = useMemo(() => displayRowEntries.map(([k]) => k), [displayRowEntries]);
   const isTaskRunning = selectedTask?.status === "running" || selectedTask?.status === "processing";
   const isTaskCompleted = selectedTask?.status === "completed" || selectedTask?.status === "published";
+  const isWaitingHuman = selectedTask?.status === "waiting_human_decision";
+  const isTaskFailed = selectedTask?.status === "failed";
+
+  type OrderType = "confirmed" | "forecast" | "uncertain";
+
+  useEffect(() => {
+    const next = new Map<string, OrderType>();
+    for (const [rowId, row] of rowEntries) {
+      const ot = String(row.classification ?? "uncertain");
+      next.set(rowId, ot === "confirmed" || ot === "forecast" ? ot : "uncertain");
+    }
+    setOrderTypeMap(next);
+  }, [rowEntries]);
+
+  const toggleOrderType = useCallback((rowId: string) => {
+    setOrderTypeMap((prev) => {
+      const next = new Map(prev);
+      const current = next.get(rowId) ?? "uncertain";
+      next.set(rowId, current === "confirmed" ? "forecast" : "confirmed");
+      return next;
+    });
+  }, []);
+
+  const bulkToggleOrderType = useCallback(() => {
+    setOrderTypeMap((prev) => {
+      const values = Array.from(prev.values());
+      const allConfirmed = values.length > 0 && values.every((v) => v === "confirmed");
+      const allForecast = values.length > 0 && values.every((v) => v === "forecast");
+      const target: OrderType = allConfirmed ? "forecast" : allForecast ? "confirmed" : "confirmed";
+      const next = new Map(prev);
+      for (const key of next.keys()) next.set(key, target);
+      return next;
+    });
+  }, []);
+
+  const toggleMappingSort = useCallback(() => {
+    setMappingSortOrder((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null));
+  }, []);
+
+  const handleProceed = useCallback(async () => {
+    if (!selectedTask) return;
+    setIsProceedLoading(true);
+    try {
+      const overrides: Record<string, string> = {};
+      for (const [rowId, classification] of orderTypeMap) {
+        if (classification === "confirmed" || classification === "forecast") {
+          overrides[rowId] = classification;
+        }
+      }
+      await proceedTask(selectedTask.id, selectedTask.resultRevision, overrides);
+      refresh();
+    } catch (err) {
+      console.error("Proceed failed:", err);
+    } finally {
+      setIsProceedLoading(false);
+    }
+  }, [selectedTask, orderTypeMap, refresh]);
+
+  const timeline: TimelineEntry[] = useMemo(() => {
+    if (!selectedTask) return [];
+    const traceMap = new Map<string, typeof selectedTask.traceSteps[number]>();
+    for (const step of selectedTask.traceSteps) {
+      traceMap.set(step.stepName, step);
+    }
+    const currentStep = selectedTask.pipelineStep;
+    const currentIdx = currentStep ? PIPELINE_STEPS.indexOf(currentStep as typeof PIPELINE_STEPS[number]) : -1;
+
+    return PIPELINE_STEPS.map((key, idx) => {
+      const traceEntry = traceMap.get(key);
+      const label = STEP_LABELS[key]?.[locale] ?? key;
+      let state: TimelineEntry["state"] = "pending";
+      let reviewReason: string | null = null;
+
+      const isBlockedHere = isWaitingHuman && selectedTask.reviewSummary?.blockedAtStep === key;
+
+      if (isBlockedHere) {
+        state = "review";
+        reviewReason = selectedTask.reviewSummary?.reason ?? null;
+      } else if (isTaskCompleted) {
+        state = "completed";
+      } else if (traceEntry) {
+        state = traceEntry.status === "completed" ? "completed"
+          : traceEntry.status === "failed" ? "failed"
+          : traceEntry.status === "skipped" ? "completed"
+          : "current";
+      } else if (currentStep === key) {
+        if (isWaitingHuman) state = "review";
+        else if (isTaskFailed) state = "failed";
+        else state = "current";
+      } else if (currentIdx >= 0 && idx < currentIdx) {
+        state = "completed";
+      }
+
+      return { key, label, state, summary: traceEntry?.outputSummary ?? null, reviewReason };
+    });
+  }, [selectedTask, locale, isTaskCompleted, isWaitingHuman, isTaskFailed]);
+
   const resultHref = (() => {
     if (!selectedTask || !isTaskCompleted) return "";
     const resultParams = new URLSearchParams();
@@ -255,29 +380,60 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                       <th>Quantity</th>
                       <th>Date</th>
                       <th>Week</th>
-                      <th>Mapping</th>
+                      <th
+                        style={{ cursor: "pointer", userSelect: "none" }}
+                        title={locale === "zh" ? "点击按映射状态排序" : "Click to sort by mapping status"}
+                        onClick={toggleMappingSort}
+                      >
+                        Mapping{mappingSortOrder === "asc" ? " ▲" : mappingSortOrder === "desc" ? " ▼" : ""}
+                      </th>
+                      <th
+                        className="order-type-header"
+                        title={locale === "zh" ? "点击切换全部" : "Click to toggle all"}
+                        onClick={bulkToggleOrderType}
+                      >
+                        {locale === "zh" ? "订单类型" : "Order Type"}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row, idx) => (
-                      <tr key={idx}>
-                        <td>{String(row.customerPartNumber ?? "")}</td>
-                        <td>{String(row.internalPartNumber ?? "")}</td>
-                        <td>{String(row.designation ?? "")}</td>
-                        <td>{String(row.quantity ?? "")}</td>
-                        <td>{String(row.expandedDay ?? row.dateInfo ?? "")}</td>
-                        <td>{String(row.expandedWeek ?? "")}</td>
-                        <td>
-                          {row.mappingStatus === "unmapped" ? (
-                            <Badge variant="amber">unmapped</Badge>
-                          ) : row.mappingStatus === "mapped" ? (
-                            <Badge variant="green">mapped</Badge>
-                          ) : (
-                            String(row.mappingStatus ?? "")
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {rows.map((row, idx) => {
+                      const rowId = rowIds[idx];
+                      const ot = orderTypeMap.get(rowId) ?? "uncertain";
+                      return (
+                        <tr key={rowId}>
+                          <td>{String(row.customerPartNumber ?? "")}</td>
+                          <td>{String(row.internalPartNumber ?? "")}</td>
+                          <td>{String(row.designation ?? "")}</td>
+                          <td>{String(row.quantity ?? "")}</td>
+                          <td>{String(row.expandedDay ?? row.dateInfo ?? "")}</td>
+                          <td>{String(row.expandedWeek ?? "")}</td>
+                          <td>
+                            {row.mappingStatus === "unmapped" ? (
+                              <Link
+                                href={`/system-settings?tab=materials&customerId=${encodeURIComponent(selectedTask?.customerId ?? "")}&addPN=${encodeURIComponent(String(row.customerPartNumber ?? ""))}${params.get("lang") ? `&lang=${params.get("lang")}` : ""}`}
+                              >
+                                <Badge variant="amber" style={{ cursor: "pointer" }}>unmapped</Badge>
+                              </Link>
+                            ) : row.mappingStatus === "mapped" ? (
+                              <Badge variant="green">mapped</Badge>
+                            ) : (
+                              String(row.mappingStatus ?? "")
+                            )}
+                          </td>
+                          <td>
+                            <div className="order-type-switch" onClick={() => toggleOrderType(rowId)}>
+                              <span className={`order-type-option${ot === "confirmed" ? " active-confirmed" : ""}`}>
+                                {locale === "zh" ? "确认" : "Firm"}
+                              </span>
+                              <span className={`order-type-option${ot === "forecast" ? " active-forecast" : ""}`}>
+                                {locale === "zh" ? "预测" : "Forecast"}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -294,47 +450,82 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
             ) : null}
           </div>
           <div className="panel-body stack timeline">
-            {agentSteps.length > 0 ? (
-              agentSteps.map((step, idx) => (
-                <div className="step" key={`${step.title}-${idx}`}>
-                  <div className="step-title">
-                    {step.status === "running" ? <LoaderCircle className="step-spinner" aria-hidden="true" /> : null}
-                    {step.title}
-                    {step.status === "completed" ? (
-                      <Badge variant="slate" style={{ marginLeft: 6 }}>done</Badge>
-                    ) : step.status === "failed" ? (
-                      <Badge variant="red" style={{ marginLeft: 6 }}>failed</Badge>
-                    ) : step.status === "warning" ? (
-                      <Badge variant="amber" style={{ marginLeft: 6 }}>warn</Badge>
+            {selectedTask && timeline.length > 0 ? (
+              <>
+                {timeline.map((entry, idx) => (
+                  <div className={`step step-${entry.state}`} key={entry.key}>
+                    <div className="step-title">
+                      {entry.state === "completed" ? (
+                        <Check className="h-3.5 w-3.5 step-icon-done" aria-hidden="true" />
+                      ) : entry.state === "current" ? (
+                        <LoaderCircle className="step-spinner" aria-hidden="true" />
+                      ) : entry.state === "review" ? (
+                        <AlertTriangle className="h-3.5 w-3.5 step-icon-review" aria-hidden="true" />
+                      ) : entry.state === "failed" ? (
+                        <AlertTriangle className="h-3.5 w-3.5 step-icon-failed" aria-hidden="true" />
+                      ) : (
+                        <Circle className="h-3.5 w-3.5 step-icon-pending" aria-hidden="true" />
+                      )}
+                      {entry.label}
+                      {entry.state === "completed" ? (
+                        <Badge variant="slate" style={{ marginLeft: 6 }}>done</Badge>
+                      ) : entry.state === "failed" ? (
+                        <Badge variant="red" style={{ marginLeft: 6 }}>failed</Badge>
+                      ) : entry.state === "review" ? (
+                        <Badge variant="amber" style={{ marginLeft: 6 }}>{locale === "zh" ? "待审核" : "review"}</Badge>
+                      ) : null}
+                    </div>
+                    {entry.summary ? <div className="step-meta">{entry.summary}</div> : null}
+                    {entry.reviewReason ? (
+                      <div className="step-meta step-review-reason">{entry.reviewReason}</div>
+                    ) : null}
+                    {entry.state === "review" && isWaitingHuman ? (
+                      <button
+                        type="button"
+                        className="proceed-btn"
+                        disabled={isProceedLoading}
+                        onClick={handleProceed}
+                      >
+                        {isProceedLoading ? (
+                          <LoaderCircle className="animate-spin" />
+                        ) : (
+                          <Play className="h-3 w-3" />
+                        )}
+                        {locale === "zh" ? "继续流程" : "Proceed"}
+                      </button>
+                    ) : null}
+                    {idx === timeline.length - 1 && resultHref ? (
+                      <div className="result-actions">
+                        <Link className="btn small agent-result-link" href={resultHref}>
+                          <FileSearch className="h-3.5 w-3.5" />
+                          {t.viewResult}
+                        </Link>
+                      </div>
                     ) : null}
                   </div>
-                  <div className="step-meta">{step.description}</div>
-                  {idx === agentSteps.length - 1 && isTaskRunning ? (
-                    <div className="step-loading-row" role="status" aria-live="polite">
-                      <LoaderCircle className="step-spinner" aria-hidden="true" />
-                      <span>{taskStatusLabel(selectedTask.status, locale)}</span>
+                ))}
+                {selectedTask.warnings.length > 0 ? (
+                  <div className="step step-warnings">
+                    <div className="step-title">
+                      <AlertTriangle className="h-3.5 w-3.5 step-icon-review" aria-hidden="true" />
+                      {locale === "zh" ? "警告" : "Warnings"}
+                      <Badge variant="amber" style={{ marginLeft: 6 }}>{selectedTask.warnings.length}</Badge>
                     </div>
-                  ) : null}
-                  {idx === agentSteps.length - 1 && resultHref ? (
-                    <div className="result-actions">
-                      <Link className="btn small agent-result-link" href={resultHref}>
-                        <FileSearch className="h-3.5 w-3.5" />
-                        {t.viewResult}
-                      </Link>
-                    </div>
-                  ) : null}
-                </div>
-              ))
+                    <ul className="step-meta" style={{ paddingLeft: 16, margin: 0 }}>
+                      {selectedTask.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                    </ul>
+                  </div>
+                ) : null}
+              </>
             ) : selectedTask && isTaskRunning ? (
               <div className="step">
                 <div className="step-title">
                   <LoaderCircle className="step-spinner" aria-hidden="true" />
-                  Agent 正在执行
+                  {locale === "zh" ? "流程启动中..." : "Pipeline starting..."}
                 </div>
-                <div className="step-meta">正在等待解析步骤回传...</div>
               </div>
             ) : selectedTask ? (
-              <p className="item-meta">暂无执行流数据</p>
+              <p className="item-meta">{locale === "zh" ? "暂无执行流数据" : "No pipeline data yet"}</p>
             ) : null}
           </div>
         </aside>
