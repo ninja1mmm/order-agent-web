@@ -141,15 +141,26 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
       });
   }, [customerFilter, referenceTime, statusFilter, tasks, timeFilter]);
 
+  const imageAttachmentIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const mail of mails) {
+      for (const att of mail.attachments) {
+        if (att.contentType?.startsWith("image/")) ids.add(att.attachmentId);
+      }
+    }
+    return ids;
+  }, [mails]);
+
   const instanceItems = useMemo(() => {
     const grouped = new Map<string, typeof filteredTasks>();
     for (const task of filteredTasks) {
+      if (task.attachmentId && imageAttachmentIds.has(task.attachmentId)) continue;
       const key = `${task.mailMessageId}::${task.attachmentId ?? "__body__"}`;
       if (!grouped.has(key)) grouped.set(key, []);
       grouped.get(key)!.push(task);
     }
     return Array.from(grouped.values()).map((group) => group[0]);
-  }, [filteredTasks]);
+  }, [filteredTasks, imageAttachmentIds]);
 
   const selectedTask = (() => {
     const fromEffective = filteredTasks.find((task) => task.id === effectiveTaskId);
@@ -347,21 +358,39 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
           </div>
           <div className="panel-body stack">
             {isBodyTextTask && selectedMail ? (
-              <>
-                <div className="mail-body" style={{ whiteSpace: "pre-wrap", padding: 16 }}>{selectedMail.bodyText}</div>
-                {selectedMail.inlineImages?.length > 0 && (
-                  <div className="inline-images" style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 16px 16px" }}>
-                    {selectedMail.inlineImages.map((img) => (
-                      <img
-                        key={img.imageId}
-                        src={`${BACKEND_URL}/api/files/${img.fileArtifactId}/content`}
-                        alt="inline"
-                        style={{ maxWidth: "100%", borderRadius: 4 }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
+              <div className="mail-body-viewer">
+                <div style={{ whiteSpace: "pre-wrap", padding: 16, fontSize: 13, lineHeight: 1.7, color: "#334155" }}>
+                  {selectedMail.bodyText}
+                  {(() => {
+                    const seenIds = new Set<string>();
+                    const allImages: { key: string; artifactId: string; alt: string }[] = [];
+                    for (const img of selectedMail.inlineImages ?? []) {
+                      if (!seenIds.has(img.fileArtifactId)) {
+                        seenIds.add(img.fileArtifactId);
+                        allImages.push({ key: img.imageId, artifactId: img.fileArtifactId, alt: "inline" });
+                      }
+                    }
+                    for (const att of selectedMail.attachments) {
+                      if (att.contentType?.startsWith("image/") && att.fileArtifactId && !seenIds.has(att.fileArtifactId)) {
+                        seenIds.add(att.fileArtifactId);
+                        allImages.push({ key: att.attachmentId, artifactId: att.fileArtifactId, alt: att.fileName });
+                      }
+                    }
+                    return allImages.length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                        {allImages.map((img) => (
+                          <img
+                            key={img.key}
+                            src={`${BACKEND_URL}/api/files/${img.artifactId}/content`}
+                            alt={img.alt}
+                            style={{ maxWidth: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 4, alignSelf: "flex-start" }}
+                          />
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
             ) : selectedAttachment?.fileArtifactId ? (
               isExcelFile(selectedAttachment.fileName)
                 ? <ExcelViewer fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} />

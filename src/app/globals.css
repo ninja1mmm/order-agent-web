@@ -522,6 +522,15 @@ h1 {
   font-size: 13px;
 }
 
+.mail-body-viewer {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  overflow-y: auto;
+  max-height: 40vh;
+  flex-shrink: 0;
+}
+
 .mail-body.compact {
   margin-top: 10px;
   min-height: 0;

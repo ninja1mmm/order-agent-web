@@ -207,19 +207,37 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                     From: {selectedMail.fromEmail} · {t.receivedAt}: {formatDateTime(selectedMail.receivedAt, locale)}
                   </CardDescription>
                 </Card>
-                <div className="mail-body" style={{ whiteSpace: "pre-wrap" }}>{selectedMail.bodyText}</div>
-                {selectedMail.inlineImages?.length > 0 && (
-                  <div className="inline-images" style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
-                    {selectedMail.inlineImages.map((img) => (
-                      <img
-                        key={img.imageId}
-                        src={`${BACKEND_URL}/api/files/${img.fileArtifactId}/content`}
-                        alt="inline"
-                        style={{ maxWidth: "100%", borderRadius: 4 }}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div className="mail-body" style={{ whiteSpace: "pre-wrap" }}>
+                  {selectedMail.bodyText}
+                  {(() => {
+                    const seenIds = new Set<string>();
+                    const allImages: { key: string; artifactId: string; alt: string }[] = [];
+                    for (const img of selectedMail.inlineImages ?? []) {
+                      if (!seenIds.has(img.fileArtifactId)) {
+                        seenIds.add(img.fileArtifactId);
+                        allImages.push({ key: img.imageId, artifactId: img.fileArtifactId, alt: "inline" });
+                      }
+                    }
+                    for (const att of selectedMail.attachments) {
+                      if (att.contentType?.startsWith("image/") && att.fileArtifactId && !seenIds.has(att.fileArtifactId)) {
+                        seenIds.add(att.fileArtifactId);
+                        allImages.push({ key: att.attachmentId, artifactId: att.fileArtifactId, alt: att.fileName });
+                      }
+                    }
+                    return allImages.length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                        {allImages.map((img) => (
+                          <img
+                            key={img.key}
+                            src={`${BACKEND_URL}/api/files/${img.artifactId}/content`}
+                            alt={img.alt}
+                            style={{ maxWidth: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 4, alignSelf: "flex-start" }}
+                          />
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
               </>
             ) : (
               <p className="item-meta">{t.noMail}</p>
@@ -231,7 +249,7 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
             <h2 className="panel-title">{t.aiAttachmentResults}</h2>
           </div>
           <div className="panel-body stack">
-            {selectedMail?.attachments.map((attachment) => {
+            {selectedMail?.attachments.filter(a => !a.contentType?.startsWith("image/")).map((attachment) => {
               const task = selectedTasks.find((item) => item.attachmentId === attachment.attachmentId);
               const dtype = attachment.documentType || task?.taskType?.replace("extract_", "") || null;
               const isSkipped = attachment.status === "skipped" || task?.status === "skipped";
