@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense } from "react";
-import { LiveSectionContent } from "./live-sections";
+import dynamic from "next/dynamic";
+
+const LiveSectionContent = dynamic(
+  () => import("./live-sections").then((m) => m.LiveSectionContent),
+  { ssr: false },
+);
 
 export function SectionContent({ section }: { section: string }) {
-  return (
-    <Suspense fallback={null}>
-      <LiveSectionContent section={section} />
-    </Suspense>
-  );
+  return <LiveSectionContent section={section} />;
 }
