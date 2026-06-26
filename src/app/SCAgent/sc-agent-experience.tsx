@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type PointerEvent } from "react";
 import { AlertTriangle, CheckCircle2, FileSearch, Mail, Sparkles, UserCheck } from "lucide-react";
+import { CartoonAgent, type CartoonAgentMood } from "./cartoon-agent";
 import type { WorkspaceMail, WorkspaceTask } from "../../services/inbox";
 import {
   backendDateMs,
@@ -26,6 +27,9 @@ type MessageHistoryItem = {
   eyebrow: string;
   title: string;
 };
+
+type AgentViewMode = "orb" | "employee";
+type AgentMood = CartoonAgentMood;
 
 const TILE_COLUMNS = 18;
 const TILE_ROWS = 10;
@@ -93,6 +97,7 @@ export function SCAgentExperience() {
   const [showMessage, setShowMessage] = useState(false);
   const [history, setHistory] = useState<MessageHistoryItem[]>([]);
   const [activeTile, setActiveTile] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<AgentViewMode>("orb");
 
   const messages = useMemo<AgentMessage[]>(() => {
     const mail = latestMail(mails);
@@ -203,6 +208,13 @@ export function SCAgentExperience() {
 
   const message = messages[activeIndex % messages.length];
   const MessageIcon = message.tone === "todo" ? AlertTriangle : message.tone === "summary" ? CheckCircle2 : Mail;
+  const agentMood: AgentMood = !showMessage
+    ? "idle"
+    : message.tone === "mail"
+      ? "received"
+      : message.tone === "todo"
+        ? "processing"
+        : "complete";
 
   const handlePointerMove = (event: PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -227,7 +239,7 @@ export function SCAgentExperience() {
 
   return (
     <section
-      className={`sc-agent-experience${showMessage ? " notifying" : ""}`}
+      className={`sc-agent-experience ${viewMode}-mode agent-state-${agentMood}${showMessage ? " notifying" : ""}`}
       aria-label="SCAgent 虚拟智能体"
       onPointerMove={handlePointerMove}
       onPointerLeave={() => setActiveTile(null)}
@@ -250,14 +262,32 @@ export function SCAgentExperience() {
         ))}
       </div>
 
-      <div className="sc-agent-nameplate" aria-hidden="true">
-        <span className="agent-title-line top" />
-        <strong>Faurecia</strong>
-        <span className="agent-title-line bottom" />
-      </div>
+      <button
+        className="sc-agent-nameplate agent-flip-toggle"
+        type="button"
+        aria-label={`切换为${viewMode === "orb" ? "卡通数字员工" : "光球智能体"}`}
+        aria-pressed={viewMode === "employee"}
+        onClick={(event) => {
+          event.stopPropagation();
+          setViewMode((current) => current === "orb" ? "employee" : "orb");
+        }}
+      >
+        <span className="agent-title-line top" aria-hidden="true" />
+        <div className="agent-flip-card" aria-hidden="true">
+          <div className="agent-flip-face agent-flip-front">
+            <strong>Faurecia</strong>
+            <small>Light Orb</small>
+          </div>
+          <div className="agent-flip-face agent-flip-back">
+            <strong>Faurecia</strong>
+            <small>Digital Employee</small>
+          </div>
+        </div>
+        <span className="agent-title-line bottom" aria-hidden="true" />
+      </button>
 
       <button
-        className="sc-agent-orb-button"
+        className={`sc-agent-orb-button ${viewMode === "employee" ? "avatar-view" : "orb-view"}`}
         type="button"
         aria-label="推送一条 SCAgent 消息"
         onClick={(event) => {
@@ -265,16 +295,20 @@ export function SCAgentExperience() {
           pushMessage();
         }}
       >
-        <span className="sc-agent-orb">
-          <span className="sc-agent-orb-grid" />
-          <span className="sc-agent-neuron-layer">
-            {Array.from({ length: 7 }, (_, index) => <span className={`neuron-line line-${index + 1}`} key={`line-${index}`} />)}
-            {Array.from({ length: 3 }, (_, index) => <span className={`neuron-trail trail-${index + 1}`} key={`trail-${index}`} />)}
-            {Array.from({ length: 3 }, (_, index) => <span className={`neuron-dot dot-${index + 1}`} key={`dot-${index}`} />)}
+        {viewMode === "orb" ? (
+          <span className="sc-agent-orb">
+            <span className="sc-agent-orb-grid" />
+            <span className="sc-agent-neuron-layer">
+              {Array.from({ length: 7 }, (_, index) => <span className={`neuron-line line-${index + 1}`} key={`line-${index}`} />)}
+              {Array.from({ length: 3 }, (_, index) => <span className={`neuron-trail trail-${index + 1}`} key={`trail-${index}`} />)}
+              {Array.from({ length: 3 }, (_, index) => <span className={`neuron-dot dot-${index + 1}`} key={`dot-${index}`} />)}
+            </span>
+            <span className="sc-agent-orb-aura" />
+            <Sparkles aria-hidden="true" size={32} />
           </span>
-          <span className="sc-agent-orb-aura" />
-          <Sparkles aria-hidden="true" size={32} />
-        </span>
+        ) : (
+          <CartoonAgent mood={agentMood} />
+        )}
       </button>
 
       <aside
