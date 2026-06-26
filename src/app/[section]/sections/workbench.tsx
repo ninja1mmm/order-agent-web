@@ -257,7 +257,7 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
               const targetBadgeVariant = dtype && docTypeBadge[dtype] ? docTypeBadge[dtype] : "slate";
               const isParsing = parsingIds.has(attachment.attachmentId);
               const canStartParse = task?.status === "waiting_human_decision";
-              const canReparse = task?.status === "completed" || attachment.status === "published";
+              const canReparse = task?.status === "completed" || attachment.status === "published" || task?.status === "failed";
               const showParseButton = canStartParse || canReparse || isParsing;
               const reviewHref = task?.id
                 ? `/parse-review?taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
@@ -313,7 +313,7 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                 const dtype = task.taskType?.replace("extract_", "") || null;
                 const targetLabel = dtype && docTypeLabel[dtype] ? docTypeLabel[dtype][locale] : null;
                 const targetBadgeVariant = dtype && docTypeBadge[dtype] ? docTypeBadge[dtype] : "slate";
-                const canReparse = task.status === "completed" || task.status === "published";
+                const canReparse = task.status === "completed" || task.status === "published" || task.status === "failed";
                 const canStartParse = task.status === "waiting_human_decision";
                 const showParseButton = canStartParse || canReparse;
                 const reviewHref = task.id
