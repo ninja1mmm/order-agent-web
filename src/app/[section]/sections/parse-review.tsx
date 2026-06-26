@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, Circle, FileSearch, LoaderCircle, Play, RefreshCw } from "lucide-react";
+import { AlertTriangle, Check, Circle, FileSearch, LoaderCircle, Play, RefreshCw, Trash2 } from "lucide-react";
 
 import { BACKEND_URL } from "../../../api/client";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const [orderTypeMap, setOrderTypeMap] = useState<Map<string, "confirmed" | "forecast" | "uncertain">>(new Map());
   const [isProceedLoading, setIsProceedLoading] = useState(false);
   const [mappingSortOrder, setMappingSortOrder] = useState<"asc" | "desc" | null>(null);
+  const [deletedRowIds, setDeletedRowIds] = useState<Set<string>>(new Set());
   const effectiveTaskId = hasUserSelected ? selectedTaskId : (targetTaskId ?? selectedTaskId);
 
   const taskCustomers = useMemo(
@@ -175,16 +176,51 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const isBodyTextTask = selectedTask?.attachmentId === null;
   const selectedAttachment = isBodyTextTask ? undefined : selectedMail?.attachments.find((a) => a.attachmentId === selectedTask?.attachmentId);
   const rowEntries = useMemo(() => Object.entries(selectedTask?.resultRows ?? {}), [selectedTask?.resultRows]);
+  const visibleRowEntries = useMemo(
+    () => rowEntries.filter(([k]) => !deletedRowIds.has(k)),
+    [rowEntries, deletedRowIds],
+  );
   const displayRowEntries = useMemo(() => {
-    if (!mappingSortOrder) return rowEntries;
-    return [...rowEntries].sort(([, a], [, b]) => {
+    if (!mappingSortOrder) return visibleRowEntries;
+    return [...visibleRowEntries].sort(([, a], [, b]) => {
       const aUnmapped = String(a.mappingStatus ?? "") === "unmapped" ? 0 : 1;
       const bUnmapped = String(b.mappingStatus ?? "") === "unmapped" ? 0 : 1;
       return mappingSortOrder === "asc" ? aUnmapped - bUnmapped : bUnmapped - aUnmapped;
     });
-  }, [rowEntries, mappingSortOrder]);
+  }, [visibleRowEntries, mappingSortOrder]);
   const rows = useMemo(() => displayRowEntries.map(([, v]) => v), [displayRowEntries]);
   const rowIds = useMemo(() => displayRowEntries.map(([k]) => k), [displayRowEntries]);
+
+  const conflictColorMap = useMemo(() => {
+    const GRANULARITY_COLORS = ["conflict-group-orange", "conflict-group-purple", "conflict-group-teal", "conflict-group-pink"];
+    const QUANTITY_COLORS = ["conflict-group-red", "conflict-group-crimson", "conflict-group-rose", "conflict-group-brick"];
+    const partGroups: Record<string, string[]> = {};
+    for (const [, row] of displayRowEntries) {
+      const flag = String(row.conflictFlag ?? "none");
+      if (flag !== "granularity_mismatch" && flag !== "quantity_conflict") continue;
+      const pn = String(row.customerPartNumber ?? "");
+      const key = `${flag}::${pn}`;
+      if (!partGroups[key]) partGroups[key] = [];
+    }
+    const map = new Map<string, string>();
+    let granIdx = 0, qtyIdx = 0;
+    for (const key of Object.keys(partGroups)) {
+      const [flag] = key.split("::");
+      const palette = flag === "granularity_mismatch" ? GRANULARITY_COLORS : QUANTITY_COLORS;
+      const idx = flag === "granularity_mismatch" ? granIdx++ : qtyIdx++;
+      partGroups[key] = [palette[idx % palette.length]];
+    }
+    for (const [, row] of displayRowEntries) {
+      const flag = String(row.conflictFlag ?? "none");
+      if (flag !== "granularity_mismatch" && flag !== "quantity_conflict") continue;
+      const pn = String(row.customerPartNumber ?? "");
+      const key = `${flag}::${pn}`;
+      const cls = partGroups[key]?.[0] ?? "";
+      map.set(`${flag}::${pn}`, cls);
+    }
+    return map;
+  }, [displayRowEntries]);
+
   const isTaskRunning = selectedTask?.status === "running" || selectedTask?.status === "processing";
   const isTaskCompleted = selectedTask?.status === "completed" || selectedTask?.status === "published";
   const isWaitingHuman = selectedTask?.status === "waiting_human_decision";
@@ -199,6 +235,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
       next.set(rowId, ot === "confirmed" || ot === "forecast" ? ot : "uncertain");
     }
     setOrderTypeMap(next);
+    setDeletedRowIds(new Set());
   }, [rowEntries]);
 
   const toggleOrderType = useCallback((rowId: string) => {
@@ -226,6 +263,14 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
     setMappingSortOrder((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null));
   }, []);
 
+  const deleteRow = useCallback((rowId: string) => {
+    setDeletedRowIds((prev) => {
+      const next = new Set(prev);
+      next.add(rowId);
+      return next;
+    });
+  }, []);
+
   const handleProceed = useCallback(async () => {
     if (!selectedTask) return;
     setIsProceedLoading(true);
@@ -236,14 +281,15 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
           overrides[rowId] = classification;
         }
       }
-      await proceedTask(selectedTask.id, selectedTask.resultRevision, overrides);
+      const deleted = deletedRowIds.size > 0 ? Array.from(deletedRowIds) : undefined;
+      await proceedTask(selectedTask.id, selectedTask.resultRevision, overrides, deleted);
       refresh();
     } catch (err) {
       console.error("Proceed failed:", err);
     } finally {
       setIsProceedLoading(false);
     }
-  }, [selectedTask, orderTypeMap, refresh]);
+  }, [selectedTask, orderTypeMap, deletedRowIds, refresh]);
 
   const timeline: TimelineEntry[] = useMemo(() => {
     if (!selectedTask) return [];
@@ -416,6 +462,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                       >
                         Mapping{mappingSortOrder === "asc" ? " ▲" : mappingSortOrder === "desc" ? " ▼" : ""}
                       </th>
+                      <th>{locale === "zh" ? "冲突" : "Conflict"}</th>
                       <th
                         className="order-type-header"
                         title={locale === "zh" ? "点击切换全部" : "Click to toggle all"}
@@ -423,14 +470,21 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                       >
                         {locale === "zh" ? "订单类型" : "Order Type"}
                       </th>
+                      <th style={{ width: 36 }} />
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map((row, idx) => {
                       const rowId = rowIds[idx];
                       const ot = orderTypeMap.get(rowId) ?? "uncertain";
+                      const conflict = String(row.conflictFlag ?? "none");
+                      const pn = String(row.customerPartNumber ?? "");
+                      const conflictClass =
+                        (conflict === "granularity_mismatch" || conflict === "quantity_conflict")
+                          ? (conflictColorMap.get(`${conflict}::${pn}`) ?? "")
+                          : "";
                       return (
-                        <tr key={rowId}>
+                        <tr key={rowId} className={conflictClass}>
                           <td>{String(row.customerPartNumber ?? "")}</td>
                           <td>{String(row.internalPartNumber ?? "")}</td>
                           <td>{String(row.designation ?? "")}</td>
@@ -451,6 +505,21 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                             )}
                           </td>
                           <td>
+                            {conflict === "granularity_mismatch" ? (
+                              <Badge variant="amber" title={String(row.conflictDetails ?? "")}>
+                                {locale === "zh" ? "粒度不匹配" : "granularity"}
+                              </Badge>
+                            ) : conflict === "quantity_conflict" ? (
+                              <Badge variant="red" title={String(row.conflictDetails ?? "")}>
+                                {locale === "zh" ? "数量冲突" : "qty conflict"}
+                              </Badge>
+                            ) : conflict === "uncertain" ? (
+                              <Badge variant="slate" title={String(row.conflictDetails ?? "")}>
+                                {locale === "zh" ? "不确定" : "uncertain"}
+                              </Badge>
+                            ) : null}
+                          </td>
+                          <td>
                             <div className="order-type-switch" onClick={() => toggleOrderType(rowId)}>
                               <span className={`order-type-option${ot === "confirmed" ? " active-confirmed" : ""}`}>
                                 {locale === "zh" ? "确认" : "Firm"}
@@ -459,6 +528,16 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                                 {locale === "zh" ? "预测" : "Forecast"}
                               </span>
                             </div>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="row-delete-btn"
+                              title={locale === "zh" ? "删除此行" : "Remove this row"}
+                              onClick={() => deleteRow(rowId)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
                           </td>
                         </tr>
                       );
