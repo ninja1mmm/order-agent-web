@@ -132,8 +132,8 @@ export async function deleteCustomer(customerId: string): Promise<void> {
 }
 
 export async function getMailboxSettings(): Promise<MailboxSettings> {
-  const result = await apiRequest<{ mailbox: MailboxRaw }>("/api/settings/mailbox");
-  return normalizeMailbox(result.mailbox);
+  const result = await apiRequest<MailboxRaw>("/api/settings/mailbox");
+  return normalizeMailbox(result);
 }
 
 export async function testMailboxConnection(): Promise<{ ok: boolean; message: string }> {
