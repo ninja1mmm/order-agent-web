@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, ready }}>
-      {authenticated ? children : null}
+      {mounted ? (authenticated ? children : null) : null}
       {mounted && (
         <LoginDialog open={AUTH_REQUIRED && ready && !authenticated} onLogin={login} />
       )}
