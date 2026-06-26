@@ -34,26 +34,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_REQUIRED = process.env.NEXT_PUBLIC_AUTH_REQUIRED === "true";
-
-const localBackendUser: User = {
-  id: "local-backend",
-  username: "local-backend",
-  displayName: "Local Backend",
-  email: "local-backend@localhost",
-  role: "operator",
-};
-
 function initialAuthState(): {
   user: User | null;
   token: string | null;
   ready: boolean;
   showLogin: boolean;
 } {
-  if (!AUTH_REQUIRED) {
-    return { user: localBackendUser, token: null, ready: true, showLogin: false };
-  }
-
   if (typeof window === "undefined") {
     return { user: null, token: null, ready: false, showLogin: false };
   }
@@ -90,18 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    if (AUTH_REQUIRED) {
-      await logoutSession();
-    }
+    await logoutSession();
     clearTokens();
     setToken(null);
     setUser(null);
-    if (AUTH_REQUIRED) {
-      setShowLogin(true);
-    } else {
-      setUser(localBackendUser);
-      setShowLogin(false);
-    }
+    setShowLogin(true);
   }, []);
 
   useEffect(() => {
@@ -110,12 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (username: string, password: string) => {
-      if (!AUTH_REQUIRED) {
-        setUser(localBackendUser);
-        setShowLogin(false);
-        return;
-      }
-
       const params = new URLSearchParams();
       params.append("username", username);
       params.append("password", password);
@@ -164,13 +137,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const authenticated = ready && !!user && (!AUTH_REQUIRED || !!token);
+  const authenticated = ready && !!user && !!token;
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, ready }}>
       {mounted ? (authenticated ? children : null) : null}
       {mounted && (
-        <LoginDialog open={AUTH_REQUIRED && ready && !authenticated} onLogin={login} />
+        <LoginDialog open={ready && !authenticated} onLogin={login} />
       )}
     </AuthContext.Provider>
   );
