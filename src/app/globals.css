@@ -1592,7 +1592,7 @@ h1 {
   background: var(--success-soft);
 }
 
-.message-head span,
+.message-head > div > span,
 .message-rows span {
   display: block;
   color: var(--muted);
@@ -1607,6 +1607,21 @@ h1 {
   font-size: 18px;
   line-height: 1.25;
   letter-spacing: -0.02em;
+}
+
+.message-head-inline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.message-head-inline strong {
+  margin-top: 0;
+}
+
+.message-head-inline span {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .sc-agent-message p {
@@ -1822,6 +1837,10 @@ h1 {
 
 .accordion-timeline-wrap .timeline {
   padding-left: 24px;
+}
+
+.accordion-timeline-wrap .timeline::before {
+  left: 8px;
 }
 
 .accordion-timeline-wrap .step {
@@ -3624,12 +3643,12 @@ button.heat-cell {
 }
 
 .sc-agent-orb-button {
-  top: 56%;
+  top: 44%;
   z-index: 20;
 }
 
 .sc-agent-experience.notifying .sc-agent-orb-button {
-  top: 56%;
+  top: 44%;
 }
 
 .sc-agent-orb {
@@ -3638,7 +3657,7 @@ button.heat-cell {
 
 .sc-agent-nameplate {
   z-index: 21;
-  top: clamp(26px, 5vh, 56px);
+  top: clamp(18px, 3vh, 40px);
   min-height: 92px;
   border-radius: 32px;
 }
@@ -3648,7 +3667,7 @@ button.heat-cell {
 }
 
 .sc-agent-experience.notifying .sc-agent-nameplate {
-  top: calc(56% - 306px);
+  top: calc(44% - 306px);
 }
 
 .sc-agent-message {

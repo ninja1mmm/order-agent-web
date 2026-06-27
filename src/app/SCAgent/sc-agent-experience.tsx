@@ -457,9 +457,9 @@ export function SCAgentExperience() {
               <span className="message-icon">
                 <MessageIcon size={18} aria-hidden="true" />
               </span>
-              <div>
-                <span>收到邮件</span>
-                <strong>最新 {latestMails.length} 封邮件</strong>
+              <div className="message-head-inline">
+                <strong>收到邮件</strong>
+                <span>最新 {latestMails.length} 封</span>
               </div>
             </div>
             {latestMails.length === 0 ? (

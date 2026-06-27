@@ -124,7 +124,7 @@ export function LiveSystemSettings() {
     pendingInternalPNFocus.current = false;
     const raf = requestAnimationFrame(() => {
       const inputs = document.querySelectorAll<HTMLInputElement>(
-        '.settings-material-table input[placeholder="Internal P/N"]',
+        '.settings-material-table input[placeholder="Faurecia P/N"]',
       );
       const lastInput = inputs[inputs.length - 1];
       lastInput?.focus();
@@ -456,7 +456,7 @@ export function LiveSystemSettings() {
                             <thead>
                               <tr>
                                 <th>Customer P/N</th>
-                                <th>Internal P/N</th>
+                                <th>Faurecia P/N</th>
                                 <th style={{ width: 48 }}></th>
                               </tr>
                             </thead>
@@ -480,7 +480,7 @@ export function LiveSystemSettings() {
                                   <td>
                                     <Input
                                       value={mapping.internalPartNumber}
-                                      placeholder="Internal P/N"
+                                      placeholder="Faurecia P/N"
                                       onChange={(event) => {
                                         const materialMappings = [...(draft.materialMappings ?? [])];
                                         materialMappings[index] = {

@@ -540,7 +540,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                   <thead>
                     <tr>
                       <th>Customer P/N</th>
-                      <th>Internal P/N</th>
+                      <th>Faurecia P/N</th>
                       <th>Quantity</th>
                       <th>Date</th>
                       <th>Week</th>

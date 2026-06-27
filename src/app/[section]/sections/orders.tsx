@@ -152,21 +152,21 @@ const forecastCopy: Record<Locale, Record<string, string>> = {
   "zh-CN": {
     customer: "Customer",
     customerPN: "Customer P/N",
-    internalPN: "Internal P/N",
+    internalPN: "Faurecia P/N",
     total: "合计",
     updatedAt: "更新时间",
   },
   "zh-TW": {
     customer: "Customer",
     customerPN: "Customer P/N",
-    internalPN: "Internal P/N",
+    internalPN: "Faurecia P/N",
     total: "合計",
     updatedAt: "更新時間",
   },
   en: {
     customer: "Customer",
     customerPN: "Customer P/N",
-    internalPN: "Internal P/N",
+    internalPN: "Faurecia P/N",
     total: "Total",
     updatedAt: "Updated",
   },
@@ -342,7 +342,7 @@ export function LiveOrders({ locale }: { locale: Locale }) {
                 <thead>
                   <tr>
                     <th>Customer</th>
-                    <th>Internal P/N</th>
+                    <th>Faurecia P/N</th>
                     <th>Quantity</th>
                     <th>Shipping Date</th>
                     <th>Delivery Note</th>
