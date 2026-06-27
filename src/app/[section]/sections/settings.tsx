@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Save, RefreshCw, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   createCustomer,
@@ -22,6 +23,15 @@ import { formatDateTime } from "./shared";
 type SettingsSection = "customers" | "mailbox";
 type CustomerTab = "basic" | "recognition" | "materials";
 
+function cloneCustomerConfig(customer: CustomerConfig): CustomerConfig {
+  return {
+    ...customer,
+    contacts: customer.contacts?.map((c) => ({ ...c })) ?? [],
+    materialMappings: (customer.materialMappings ?? []).map((m) => ({ ...m })),
+    submissionSchedules: (customer.submissionSchedules ?? []).map((s) => ({ ...s })),
+  };
+}
+
 export function LiveSystemSettings() {
   const params = useSearchParams();
   const [section, setSection] = useState<SettingsSection>("customers");
@@ -33,23 +43,20 @@ export function LiveSystemSettings() {
   const [mailbox, setMailbox] = useState<MailboxSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const urlParamsConsumed = useRef(false);
   const pendingInternalPNFocus = useRef(false);
   const selectedIdRef = useRef(selectedId);
-  selectedIdRef.current = selectedId;
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   const loadCustomers = useCallback(async () => {
     const items = await listCustomers();
     setCustomers(items);
     if (!selectedIdRef.current && items.length > 0) {
       setSelectedId(items[0].id);
-      setDraft({
-        ...items[0],
-        contacts: items[0].contacts?.map((c) => ({ ...c })) ?? [],
-        materialMappings: (items[0].materialMappings ?? []).map((m) => ({ ...m })),
-        submissionSchedules: (items[0].submissionSchedules ?? []).map((s) => ({ ...s })),
-      });
+      setDraft(cloneCustomerConfig(items[0]));
     }
   }, []);
 
@@ -59,8 +66,8 @@ export function LiveSystemSettings() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      loadCustomers().catch(() => setMessage("加载客户配置失败"));
-      loadMailbox().catch(() => setMessage("加载邮箱配置失败"));
+      loadCustomers().catch(() => toast.error("加载客户配置失败"));
+      loadMailbox().catch(() => toast.error("加载邮箱配置失败"));
     }, 0);
     return () => window.clearTimeout(timer);
   }, [loadCustomers, loadMailbox]);
@@ -83,13 +90,7 @@ export function LiveSystemSettings() {
     const customer = customers.find((c) => c.id === urlCustomerId);
     if (!customer) return;
 
-    setSelectedId(customer.id);
-    const newDraft: CustomerConfig = {
-      ...customer,
-      contacts: customer.contacts?.map((c) => ({ ...c })) ?? [],
-      materialMappings: (customer.materialMappings ?? []).map((m) => ({ ...m })),
-      submissionSchedules: (customer.submissionSchedules ?? []).map((s) => ({ ...s })),
-    };
+    const newDraft = cloneCustomerConfig(customer);
 
     if (urlAddPN) {
       const exists = (newDraft.materialMappings ?? []).some(
@@ -115,8 +116,12 @@ export function LiveSystemSettings() {
       pendingInternalPNFocus.current = true;
     }
 
-    setDraft(newDraft);
-    if (urlTab === "materials") setTab("materials");
+    const timer = window.setTimeout(() => {
+      setSelectedId(customer.id);
+      setDraft(newDraft);
+      if (urlTab === "materials") setTab("materials");
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [customers, params]);
 
   useEffect(() => {
@@ -144,18 +149,12 @@ export function LiveSystemSettings() {
 
   const selectCustomer = (customer: CustomerConfig) => {
     setSelectedId(customer.id);
-    setDraft({
-      ...customer,
-      contacts: customer.contacts?.map((c) => ({ ...c })) ?? [],
-      materialMappings: (customer.materialMappings ?? []).map((mapping) => ({ ...mapping })),
-      submissionSchedules: (customer.submissionSchedules ?? []).map((s) => ({ ...s })),
-    });
+    setDraft(cloneCustomerConfig(customer));
     setTab("basic");
   };
 
   const handleAddCustomer = async () => {
     setSaving(true);
-    setMessage(null);
     try {
       const ts = Date.now().toString(36).toUpperCase();
       const created = await createCustomer({
@@ -168,8 +167,9 @@ export function LiveSystemSettings() {
       });
       await loadCustomers();
       selectCustomer(created);
+      toast.success("客户已新增");
     } catch {
-      setMessage("新增客户失败");
+      toast.error("新增客户失败");
     } finally {
       setSaving(false);
     }
@@ -178,14 +178,19 @@ export function LiveSystemSettings() {
   const handleSaveCustomer = async () => {
     if (!draft) return;
     setSaving(true);
-    setMessage(null);
     try {
       const saved = await updateCustomer(draft.id, draft);
-      await loadCustomers();
-      selectCustomer(saved);
-      setMessage("保存成功");
+      selectedIdRef.current = saved.id;
+      setSelectedId(saved.id);
+      setDraft(cloneCustomerConfig(saved));
+      setCustomers((items) => {
+        const exists = items.some((item) => item.id === saved.id);
+        if (!exists) return [...items, saved];
+        return items.map((item) => (item.id === saved.id ? saved : item));
+      });
+      toast.success("保存成功");
     } catch {
-      setMessage("保存失败");
+      toast.error("保存失败");
     } finally {
       setSaving(false);
     }
@@ -215,7 +220,6 @@ export function LiveSystemSettings() {
     const confirmed = window.confirm(`确认删除客户「${customer.name}」？`);
     if (!confirmed) return;
     setSaving(true);
-    setMessage(null);
     try {
       await deleteCustomer(customer.id);
       const nextCustomers = await listCustomers();
@@ -227,9 +231,9 @@ export function LiveSystemSettings() {
         setSelectedId("");
         setDraft(null);
       }
-      setMessage("客户已删除");
+      toast.success("客户已删除");
     } catch {
-      setMessage("删除客户失败");
+      toast.error("删除客户失败");
     } finally {
       setSaving(false);
     }
@@ -266,13 +270,16 @@ export function LiveSystemSettings() {
 
   const handleTestConnection = async () => {
     setTesting(true);
-    setMessage(null);
     try {
       const result = await testMailboxConnection();
-      setMessage(result.ok ? `连接成功：${result.message}` : `连接失败：${result.message}`);
+      if (result.ok) {
+        toast.success(`连接成功：${result.message}`);
+      } else {
+        toast.error(`连接失败：${result.message}`);
+      }
       await loadMailbox();
     } catch {
-      setMessage("连接测试请求失败，请检查后端服务是否启动");
+      toast.error("连接测试请求失败，请检查后端服务是否启动");
     } finally {
       setTesting(false);
     }
@@ -288,7 +295,7 @@ export function LiveSystemSettings() {
           <button
             type="button"
             className={`settings-nav ${section === "customers" ? "selected" : ""}`}
-            onClick={() => { setSection("customers"); setMessage(null); }}
+            onClick={() => setSection("customers")}
           >
             <span>客户配置</span>
             <small>基础信息、联系人识别、物料映射</small>
@@ -296,7 +303,7 @@ export function LiveSystemSettings() {
           <button
             type="button"
             className={`settings-nav ${section === "mailbox" ? "selected" : ""}`}
-            onClick={() => { setSection("mailbox"); setMessage(null); }}
+            onClick={() => setSection("mailbox")}
           >
             <span>统一邮箱</span>
             <small>监听邮箱、同步、连接测试</small>
@@ -319,7 +326,6 @@ export function LiveSystemSettings() {
               </div>
             </div>
             <div className="panel-body" style={{ flex: 1, minHeight: 0, overflow: "hidden", padding: 16 }}>
-              {message ? <p className="item-meta" style={{ marginBottom: 12 }}>{message}</p> : null}
               <div className="settings-inner-split" style={{ height: "100%" }}>
                 <div className="customer-list-col">
                   <div className="row" style={{ marginBottom: 8 }}>
@@ -531,13 +537,6 @@ export function LiveSystemSettings() {
               </div>
             </div>
             <div className="panel-body stack">
-              {message ? (
-                <div style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid var(--line)", background: "white" }}>
-                  <p className="item-meta" style={{ margin: 0, color: message.includes("成功") ? "var(--success)" : "var(--danger)" }}>
-                    {message}
-                  </p>
-                </div>
-              ) : null}
               {mailbox ? (
                 <>
                   <div className="grid-2">

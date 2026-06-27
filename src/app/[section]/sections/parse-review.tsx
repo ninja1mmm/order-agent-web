@@ -17,6 +17,7 @@ import {
   customerLabelFromId,
   formatDateTime,
   taskStatusLabel,
+  translatePipelineSummary,
   useCustomerConfig,
   useWorkspacePolling,
 } from "./shared";
@@ -416,7 +417,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
         state = "completed";
       }
 
-      return { key, label, state, summary: traceEntry?.outputSummary ?? null, reviewReason };
+      return { key, label, state, summary: translatePipelineSummary(traceEntry?.outputSummary), reviewReason: translatePipelineSummary(reviewReason) };
     });
   }, [selectedTask, isTaskCompleted, isWaitingHuman, isTaskFailed]);
 

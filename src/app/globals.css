@@ -558,27 +558,32 @@ h1 {
 
 .result-block {
   border: 1px solid var(--forvia-blue-border);
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--surface-soft);
-  padding: 14px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  min-height: 148px;
+  gap: 6px;
 }
 
 .result-block + .result-block {
-  margin-top: 12px;
+  margin-top: 0px;
 }
 
 .result-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
   font-size: 12px;
-  font-weight: 950;
+  font-weight: 700;
   min-width: 0;
+}
+
+.result-type-icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: #64748b;
 }
 
 .result-name {
@@ -587,9 +592,14 @@ h1 {
   gap: 6px;
   min-width: 0;
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.result-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .icon-link {
@@ -612,9 +622,8 @@ h1 {
 }
 
 .result-actions {
-  margin-top: auto;
-  padding-top: 12px;
   display: flex;
+  gap: 6px;
   justify-content: flex-end;
 }
 
@@ -1617,6 +1626,7 @@ h1 {
 
 .message-head-inline strong {
   margin-top: 0;
+  font-size: 15px;
 }
 
 .message-head-inline span {
@@ -1697,6 +1707,7 @@ h1 {
 .message-accordion {
   display: grid;
   gap: 6px;
+  margin-top: 14px;
 }
 
 .accordion-item {
@@ -2682,36 +2693,58 @@ button.heat-cell {
   background: #f8fafc;
 }
 
-.order-panel-body {
+.forecast-pivot th:nth-child(4),
+.forecast-pivot td:nth-child(4) {
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
+}
+
+.orders-body {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  padding: 16px;
   overflow: hidden;
 }
 
-.panel.scroll-panel > .order-panel-body {
-  overflow: hidden;
-}
-
-.order-filter-bar,
-.order-tabs {
+.orders-tabs-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
   flex: 0 0 auto;
 }
 
-.order-filter-bar {
-  margin-bottom: 12px;
-}
-
-.order-table-region {
+.orders-tabs-strip {
+  margin-bottom: 0 !important;
   flex: 1;
-  min-height: 180px;
-  max-height: none;
 }
 
-.order-table-region .table th {
-  position: sticky;
-  top: 0;
-  z-index: 3;
+.orders-year-filter {
+  flex: 0 0 auto;
+  min-width: 140px;
+  margin-bottom: 3px;
+}
+
+.orders-year-filter > button {
+  border-color: transparent !important;
+  box-shadow: none;
+}
+
+.orders-year-filter > button:hover {
+  border-color: transparent !important;
+}
+
+.orders-table-fill {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.orders-table-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: none !important;
 }
 
 .pdf-page {

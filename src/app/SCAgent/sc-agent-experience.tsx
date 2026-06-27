@@ -17,6 +17,7 @@ import type { WorkspaceMail, WorkspaceTask } from "../../services/inbox";
 import {
   backendDateMs,
   customerLabelFromId,
+  translatePipelineSummary,
   useCustomerConfig,
   useWorkspacePolling,
 } from "../[section]/sections/shared";
@@ -138,8 +139,8 @@ function buildTimeline(task: WorkspaceTask): TimelineEntry[] {
       key,
       label,
       state,
-      summary: traceEntry?.outputSummary ?? null,
-      reviewReason,
+      summary: translatePipelineSummary(traceEntry?.outputSummary),
+      reviewReason: translatePipelineSummary(reviewReason),
     };
   });
 }
@@ -409,9 +410,9 @@ export function SCAgentExperience() {
               <span className="message-icon">
                 <MessageIcon size={18} aria-hidden="true" />
               </span>
-              <div>
-                <span>小时汇总</span>
-                <strong>过去一小时工作摘要</strong>
+              <div className="message-head-inline">
+                <strong>小时汇总</strong>
+                <span>过去一小时工作摘要</span>
               </div>
             </div>
             <p>
@@ -541,13 +542,13 @@ export function SCAgentExperience() {
               <span className="message-icon">
                 <MessageIcon size={18} aria-hidden="true" />
               </span>
-              <div>
-                <span>人工干预</span>
-                <strong>
+              <div className="message-head-inline">
+                <strong>人工干预</strong>
+                <span>
                   {pendingHumanTasks.length
-                    ? `${pendingHumanTasks.length} 项待处理事项`
-                    : "当前暂无人工干预事项"}
-                </strong>
+                    ? `${pendingHumanTasks.length} 项待处理`
+                    : "暂无事项"}
+                </span>
               </div>
             </div>
             {pendingHumanTasks.length === 0 ? (

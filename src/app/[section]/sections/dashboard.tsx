@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { PendingTaskSummary } from "../../../services/inbox";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
-import { type Locale, copy, customerLabel, customerLabelFromId, taskStatusLabel, useCustomerConfig, useWorkspacePolling } from "./shared";
+import { type Locale, copy, customerLabel, customerLabelFromId, taskStatusLabel, translatePipelineSummary, useCustomerConfig, useWorkspacePolling } from "./shared";
 import { CustomerHeatmap } from "./components";
 
 function statusBadgeVariant(status: string): "amber" | "red" | "blue" | "default" {
@@ -75,7 +75,7 @@ export function LiveDashboard({ locale }: { locale: Locale }) {
                     <CardTitle title={customerLabelFromId(customers, null, item.customerName ?? item.fileName)}>
                       {customerLabelFromId(customers, null, item.customerName ?? item.fileName)}
                     </CardTitle>
-                    <CardDescription>{item.reason}</CardDescription>
+                    <CardDescription>{translatePipelineSummary(item.reason) ?? item.reason}</CardDescription>
                   </div>
                 ))}
               </div>
@@ -93,15 +93,17 @@ export function LiveDashboard({ locale }: { locale: Locale }) {
         </div>
         <div className="panel-body stack">
           {pendingTasks.map((item, idx) => (
-            <Link className="list-item" href={`/parse-review?taskId=${item.taskId}`} key={item.taskId || `task-${idx}`}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <p className="item-title" style={{ flex: 1, margin: 0 }} title={item.fileName}>{item.fileName}</p>
+            <Link className="result-block" href={`/parse-review?taskId=${item.taskId}`} key={item.taskId || `task-${idx}`} style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="result-title">
+                <span className="result-name" title={item.fileName}>{item.fileName}</span>
                 <Badge variant={statusBadgeVariant(item.status)}>{taskStatusLabel(item.status, locale)}</Badge>
               </div>
-              <p className="item-meta">
-                {customerLabelFromId(customers, null, item.customerName)}
-                {item.reason ? ` · ${item.reason}` : ""}
-              </p>
+              <div className="result-footer">
+                <span className="item-meta" style={{ margin: 0 }}>
+                  {customerLabelFromId(customers, null, item.customerName)}
+                  {item.reason ? ` · ${translatePipelineSummary(item.reason) ?? item.reason}` : ""}
+                </span>
+              </div>
             </Link>
           ))}
           {pendingTasks.length === 0 ? <p className="item-meta">暂无待处理任务</p> : null}

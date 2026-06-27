@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useMemo, useState } from "react";
-import { RefreshCw, Plus, Download } from "lucide-react";
+import { RefreshCw, Plus, Download, Paperclip, FileText } from "lucide-react";
 
 import { BACKEND_URL } from "../../../api/client";
 import { createManualMail, processMail } from "../../../services/mail";
@@ -18,6 +18,7 @@ import {
   backendDateMs,
   formatDateTime,
   taskStatusLabel,
+  translatePipelineSummary,
   useCustomerConfig,
   useWorkspacePolling,
 } from "./shared";
@@ -41,6 +42,18 @@ const docTypeBadge: Record<string, "blue" | "green" | "amber" | "slate"> = {
 
 function parseReviewStatus(status: string) {
   return status === "processing" ? "running" : status;
+}
+
+function truncateMiddle(name: string, maxLen = 36): string {
+  if (name.length <= maxLen) return name;
+  const extIdx = name.lastIndexOf(".");
+  const ext = extIdx > 0 ? name.slice(extIdx) : "";
+  const base = extIdx > 0 ? name.slice(0, extIdx) : name;
+  const keep = maxLen - ext.length - 3;
+  if (keep < 6) return name.slice(0, maxLen - 3) + "…" + ext;
+  const head = Math.ceil(keep * 0.6);
+  const tail = keep - head;
+  return base.slice(0, head) + "…" + base.slice(-tail) + ext;
 }
 
 export function LiveWorkbench({ locale }: { locale: Locale }) {
@@ -266,8 +279,9 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
               return (
                 <div className="result-block" key={attachment.attachmentId}>
                   <div className="result-title">
+                    <Paperclip className="result-type-icon" aria-hidden="true" />
                     <span className="result-name" title={attachment.fileName}>
-                      {attachment.fileName}
+                      {truncateMiddle(attachment.fileName)}
                       <a
                         className="icon-link"
                         href={attachment.fileArtifactId ? `${BACKEND_URL}/api/files/${attachment.fileArtifactId}/content` : "#"}
@@ -277,32 +291,32 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                         <Download className="h-3 w-3" />
                       </a>
                     </span>
-                    <Badge variant="slate">{task ? taskStatusLabel(task.status, locale) : attachment.status}</Badge>
+                    {targetLabel && !isSkipped && (
+                      <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>
+                    )}
                   </div>
                   {task?.status === "waiting_human_decision" && task.reviewSummary?.reason ? (
-                    <div className="review-reason-hint">{task.reviewSummary.reason}</div>
+                    <div className="review-reason-hint">{translatePipelineSummary(task.reviewSummary.reason)}</div>
                   ) : null}
-                  {targetLabel && !isSkipped && (
-                    <div style={{ marginTop: 6 }}>
-                      <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>
+                  <div className="result-footer">
+                    <Badge variant="slate">{task ? taskStatusLabel(task.status, locale) : attachment.status}</Badge>
+                    <div className="result-actions">
+                      {showParseButton ? (
+                        <Button
+                          variant={isParsing ? "primary" : "default"}
+                          size="sm"
+                          className={isParsing ? "btn-parsing" : ""}
+                          onClick={() => handleParse(selectedMail.id, [attachment.attachmentId])}
+                        >
+                          {isParsing ? "解析中..." : canReparse ? t.reparse : t.trigger}
+                        </Button>
+                      ) : null}
+                      {reviewHref ? (
+                        <Link href={reviewHref}>
+                          <Button variant="default" size="sm">{reviewLabel}</Button>
+                        </Link>
+                      ) : null}
                     </div>
-                  )}
-                  <div className="result-actions">
-                    {showParseButton ? (
-                      <Button
-                        variant={isParsing ? "primary" : "default"}
-                        size="sm"
-                        className={isParsing ? "btn-parsing" : ""}
-                        onClick={() => handleParse(selectedMail.id, [attachment.attachmentId])}
-                      >
-                        {isParsing ? "解析中..." : canReparse ? t.reparse : t.trigger}
-                      </Button>
-                    ) : null}
-                    {reviewHref ? (
-                      <Link href={reviewHref}>
-                        <Button variant="default" size="sm">{reviewLabel}</Button>
-                      </Link>
-                    ) : null}
                   </div>
                 </div>
               );
@@ -323,32 +337,33 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                 return (
                   <div className="result-block" key={task.id}>
                     <div className="result-title">
+                      <FileText className="result-type-icon" aria-hidden="true" />
                       <span className="result-name">Email Body</span>
-                      <Badge variant="slate">{taskStatusLabel(task.status, locale)}</Badge>
+                      {targetLabel && (
+                        <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>
+                      )}
                     </div>
                     {task.status === "waiting_human_decision" && task.reviewSummary?.reason ? (
-                      <div className="review-reason-hint">{task.reviewSummary.reason}</div>
+                      <div className="review-reason-hint">{translatePipelineSummary(task.reviewSummary.reason)}</div>
                     ) : null}
-                    {targetLabel && (
-                      <div style={{ marginTop: 6 }}>
-                        <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>
+                    <div className="result-footer">
+                      <Badge variant="slate">{taskStatusLabel(task.status, locale)}</Badge>
+                      <div className="result-actions">
+                        {showParseButton && selectedMail ? (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleParse(selectedMail.id, [])}
+                          >
+                            {canReparse ? t.reparse : t.trigger}
+                          </Button>
+                        ) : null}
+                        {reviewHref ? (
+                          <Link href={reviewHref}>
+                            <Button variant="default" size="sm">{reviewLabel}</Button>
+                          </Link>
+                        ) : null}
                       </div>
-                    )}
-                    <div className="result-actions">
-                      {showParseButton && selectedMail ? (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleParse(selectedMail.id, [])}
-                        >
-                          {canReparse ? t.reparse : t.trigger}
-                        </Button>
-                      ) : null}
-                      {reviewHref ? (
-                        <Link href={reviewHref}>
-                          <Button variant="default" size="sm">{reviewLabel}</Button>
-                        </Link>
-                      ) : null}
                     </div>
                   </div>
                 );

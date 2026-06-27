@@ -422,3 +422,43 @@ export function taskStatusLabel(status: string, locale: Locale) {
   };
   return map[locale][status] ?? status;
 }
+
+const STEP_NAME_ZH: Record<string, string> = {
+  extraction: "AI 提取",
+  date_expansion: "日期扩展",
+  conflict_resolution: "冲突检测",
+  material_mapping: "料号匹配",
+  published: "已发布",
+};
+
+export function translatePipelineSummary(text: string | null | undefined): string | null {
+  if (!text) return null;
+
+  let m: RegExpMatchArray | null;
+
+  m = text.match(/^(\d+)\s+rows?\s+extracted$/i);
+  if (m) return `${m[1]} 行已提取`;
+
+  m = text.match(/^(\d+)\s+rows?\s+after\s+(\w+)$/i);
+  if (m) return `${m[1]} 行经过${STEP_NAME_ZH[m[2]] ?? m[2]}处理`;
+
+  m = text.match(/^(\d+)\s+rows?\s+have\s+conflicts?\s+requiring\s+review\.?$/i);
+  if (m) return `${m[1]} 行存在冲突，需要人工审核`;
+
+  m = text.match(/^(\d+)\s+part\s+numbers?\s+could\s+not\s+be\s+mapped\.?$/i);
+  if (m) return `${m[1]} 个料号无法匹配`;
+
+  m = text.match(/^(\d+)\s+part\s+numbers?\s+unmapped\.?$/i);
+  if (m) return `${m[1]} 个料号未匹配`;
+
+  m = text.match(/^no\s+rows\s+extracted\.?$/i);
+  if (m) return "未提取到任何行";
+
+  m = text.match(/^(\d+)\s+rows?\s+published\.?$/i);
+  if (m) return `${m[1]} 行已发布`;
+
+  m = text.match(/^(\d+)\s+rows?\s+skipped\.?$/i);
+  if (m) return `${m[1]} 行已跳过`;
+
+  return text;
+}
