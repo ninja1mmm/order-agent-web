@@ -315,6 +315,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
         state = "completed";
       } else if (traceEntry) {
         state = traceEntry.status === "completed" ? "completed"
+          : traceEntry.status === "completed_with_errors" ? "completed"
           : traceEntry.status === "failed" ? "failed"
           : traceEntry.status === "skipped" ? "completed"
           : "current";
