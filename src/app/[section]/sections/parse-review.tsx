@@ -21,7 +21,7 @@ import {
   useWorkspacePolling,
 } from "./shared";
 import { PdfViewer, ExcelViewer } from "./components";
-import { proceedTask } from "../../../services/tasks";
+import { proceedTask, patchRow, type TaskStaleState } from "../../../services/tasks";
 
 const DEFAULT_STATUS_FILTER = "__all__";
 const ACTIVE_ONLY_FILTER = "__active__";
@@ -88,6 +88,11 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const [isProceedLoading, setIsProceedLoading] = useState(false);
   const [mappingSortOrder, setMappingSortOrder] = useState<"asc" | "desc" | null>(null);
   const [deletedRowIds, setDeletedRowIds] = useState<Set<string>>(new Set());
+  const [taskStaleState, setTaskStaleState] = useState<TaskStaleState | null>(null);
+  const [localResultRevision, setLocalResultRevision] = useState<number | null>(null);
+  const [editingCell, setEditingCell] = useState<{ rowId: string; field: string } | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
+  const [localRowOverrides, setLocalRowOverrides] = useState<Map<string, Record<string, unknown>>>(new Map());
   const effectiveTaskId = hasUserSelected ? selectedTaskId : (targetTaskId ?? selectedTaskId);
 
   const taskCustomers = useMemo(
@@ -236,6 +241,9 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
     }
     setOrderTypeMap(next);
     setDeletedRowIds(new Set());
+    setTaskStaleState(null);
+    setLocalResultRevision(null);
+    setLocalRowOverrides(new Map());
   }, [rowEntries]);
 
   const toggleOrderType = useCallback((rowId: string) => {
@@ -271,6 +279,71 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
     });
   }, []);
 
+  const startEditing = useCallback((rowId: string, field: string, currentValue: unknown) => {
+    if (!isWaitingHuman) return;
+    setEditingCell({ rowId, field });
+    setEditValue(currentValue != null ? String(currentValue) : "");
+  }, [isWaitingHuman]);
+
+  const cancelEditing = useCallback(() => {
+    setEditingCell(null);
+    setEditValue("");
+  }, []);
+
+  const commitEdit = useCallback(async () => {
+    if (!editingCell || !selectedTask) return;
+    const { rowId, field } = editingCell;
+
+    const row = selectedTask.resultRows?.[rowId];
+    const originalValue = row ? row[field] : null;
+    const camelToSnake = (s: string) => s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+    const snakeField = camelToSnake(field);
+
+    let newValue: string | number | null = editValue.trim() || null;
+    if (snakeField === "quantity" && newValue !== null) {
+      const parsed = parseInt(newValue, 10);
+      if (isNaN(parsed) || parsed < 0) {
+        cancelEditing();
+        return;
+      }
+      newValue = parsed;
+    }
+
+    if (String(newValue ?? "") === String(originalValue ?? "")) {
+      cancelEditing();
+      return;
+    }
+
+    const revision = localResultRevision ?? selectedTask.resultRevision;
+    try {
+      const res = await patchRow(selectedTask.id, rowId, revision, { [snakeField]: newValue });
+      setLocalResultRevision(res.resultRevision);
+      setTaskStaleState(res.taskStaleState);
+      setLocalRowOverrides((prev) => {
+        const next = new Map(prev);
+        next.set(rowId, { ...next.get(rowId), ...res.row });
+        return next;
+      });
+    } catch (err) {
+      console.error("Patch row failed:", err);
+      refresh();
+    } finally {
+      cancelEditing();
+    }
+  }, [editingCell, editValue, selectedTask, localResultRevision, cancelEditing, refresh]);
+
+  const getRowValue = useCallback((rowId: string, field: string, originalValue: unknown): unknown => {
+    const override = localRowOverrides.get(rowId);
+    if (override && field in override) return override[field];
+    return originalValue;
+  }, [localRowOverrides]);
+
+  const isFieldStale = useCallback((fieldName: string): boolean => {
+    if (!taskStaleState) return false;
+    const camelToSnake = (s: string) => s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+    return taskStaleState.staleFieldNames.includes(camelToSnake(fieldName));
+  }, [taskStaleState]);
+
   const handleProceed = useCallback(async () => {
     if (!selectedTask) return;
     setIsProceedLoading(true);
@@ -282,14 +355,18 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
         }
       }
       const deleted = deletedRowIds.size > 0 ? Array.from(deletedRowIds) : undefined;
-      await proceedTask(selectedTask.id, selectedTask.resultRevision, overrides, deleted);
+      const revision = localResultRevision ?? selectedTask.resultRevision;
+      await proceedTask(selectedTask.id, revision, overrides, deleted);
+      setTaskStaleState(null);
+      setLocalResultRevision(null);
+      setLocalRowOverrides(new Map());
       refresh();
     } catch (err) {
       console.error("Proceed failed:", err);
     } finally {
       setIsProceedLoading(false);
     }
-  }, [selectedTask, orderTypeMap, deletedRowIds, refresh]);
+  }, [selectedTask, orderTypeMap, deletedRowIds, localResultRevision, refresh]);
 
   const timeline: TimelineEntry[] = useMemo(() => {
     if (!selectedTask) return [];
@@ -484,41 +561,101 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                         (conflict === "granularity_mismatch" || conflict === "quantity_conflict")
                           ? (conflictColorMap.get(`${conflict}::${pn}`) ?? "")
                           : "";
+
+                      const cellValue = (field: string) => getRowValue(rowId, field, row[field]);
+                      const isEditing = (field: string) =>
+                        editingCell?.rowId === rowId && editingCell?.field === field;
+
+                      const editableCell = (field: string, displayValue?: string) => {
+                        const val = cellValue(field);
+                        const display = displayValue ?? String(val ?? "");
+                        const stale = isFieldStale(field);
+
+                        if (isEditing(field)) {
+                          return (
+                            <input
+                              className="inline-edit-input"
+                              type={field === "quantity" ? "number" : "text"}
+                              value={editValue}
+                              autoFocus
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={commitEdit}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") commitEdit();
+                                else if (e.key === "Escape") cancelEditing();
+                              }}
+                            />
+                          );
+                        }
+                        return (
+                          <span
+                            className={`editable-cell${isWaitingHuman ? " editable" : ""}${stale ? " stale" : ""}`}
+                            onClick={() => startEditing(rowId, field, val)}
+                            title={stale ? (locale === "zh" ? "此字段将在继续流程后重新计算" : "Will be recalculated on Proceed") : undefined}
+                          >
+                            {display || <span className="cell-placeholder">—</span>}
+                          </span>
+                        );
+                      };
+
+                      const derivedCell = (field: string, content: React.ReactNode) => {
+                        const stale = isFieldStale(field);
+                        return (
+                          <span className={stale ? "stale" : ""} title={stale ? (locale === "zh" ? "待重新计算" : "Pending re-eval") : undefined}>
+                            {content}
+                          </span>
+                        );
+                      };
+
                       return (
                         <tr key={rowId} className={conflictClass}>
-                          <td>{String(row.customerPartNumber ?? "")}</td>
-                          <td>{String(row.internalPartNumber ?? "")}</td>
-                          <td>{String(row.designation ?? "")}</td>
-                          <td>{String(row.quantity ?? "")}</td>
-                          <td>{String(row.expandedDay ?? row.dateInfo ?? "")}</td>
-                          <td>{String(row.expandedWeek ?? "")}</td>
+                          <td>{editableCell("customerPartNumber")}</td>
+                          <td>{derivedCell("internalPartNumber", String(cellValue("internalPartNumber") ?? ""))}</td>
+                          <td>{editableCell("designation")}</td>
+                          <td>{editableCell("quantity")}</td>
+                          <td>{editableCell("dateInfo", String(cellValue("expandedDay") ?? cellValue("dateInfo") ?? ""))}</td>
+                          <td>{derivedCell("expandedWeek", String(cellValue("expandedWeek") ?? ""))}</td>
                           <td>
-                            {row.mappingStatus === "unmapped" ? (
-                              <Link
-                                href={`/system-settings?tab=materials&customerId=${encodeURIComponent(selectedTask?.customerId ?? "")}&addPN=${encodeURIComponent(String(row.customerPartNumber ?? ""))}${params.get("lang") ? `&lang=${params.get("lang")}` : ""}`}
-                              >
-                                <Badge variant="amber" style={{ cursor: "pointer" }}>unmapped</Badge>
-                              </Link>
-                            ) : row.mappingStatus === "mapped" ? (
-                              <Badge variant="green">mapped</Badge>
-                            ) : (
-                              String(row.mappingStatus ?? "")
-                            )}
+                            {derivedCell("mappingStatus", (() => {
+                              const ms = cellValue("mappingStatus");
+                              if (ms === "unmapped") {
+                                return (
+                                  <Link
+                                    href={`/system-settings?tab=materials&customerId=${encodeURIComponent(selectedTask?.customerId ?? "")}&addPN=${encodeURIComponent(String(cellValue("customerPartNumber") ?? ""))}${params.get("lang") ? `&lang=${params.get("lang")}` : ""}`}
+                                  >
+                                    <Badge variant="amber" style={{ cursor: "pointer" }}>unmapped</Badge>
+                                  </Link>
+                                );
+                              }
+                              if (ms === "mapped") return <Badge variant="green">mapped</Badge>;
+                              return String(ms ?? "");
+                            })())}
                           </td>
                           <td>
-                            {conflict === "granularity_mismatch" ? (
-                              <Badge variant="amber" title={String(row.conflictDetails ?? "")}>
-                                {locale === "zh" ? "粒度不匹配" : "granularity"}
-                              </Badge>
-                            ) : conflict === "quantity_conflict" ? (
-                              <Badge variant="red" title={String(row.conflictDetails ?? "")}>
-                                {locale === "zh" ? "数量冲突" : "qty conflict"}
-                              </Badge>
-                            ) : conflict === "uncertain" ? (
-                              <Badge variant="slate" title={String(row.conflictDetails ?? "")}>
-                                {locale === "zh" ? "不确定" : "uncertain"}
-                              </Badge>
-                            ) : null}
+                            {derivedCell("conflictFlag", (() => {
+                              if (conflict === "granularity_mismatch") {
+                                return (
+                                  <Badge variant="amber" title={String(row.conflictDetails ?? "")}>
+                                    {locale === "zh" ? "粒度不匹配" : "granularity"}
+                                  </Badge>
+                                );
+                              }
+                              if (conflict === "quantity_conflict") {
+                                return (
+                                  <Badge variant="red" title={String(row.conflictDetails ?? "")}>
+                                    {locale === "zh" ? "数量冲突" : "qty conflict"}
+                                  </Badge>
+                                );
+                              }
+                              if (conflict === "uncertain") {
+                                return (
+                                  <Badge variant="slate" title={String(row.conflictDetails ?? "")}>
+                                    {locale === "zh" ? "不确定" : "uncertain"}
+                                  </Badge>
+                                );
+                              }
+                              return null;
+                            })())}
                           </td>
                           <td>
                             <div className="order-type-switch" onClick={() => toggleOrderType(rowId)}>
@@ -589,19 +726,28 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                       <div className="step-meta step-review-reason">{entry.reviewReason}</div>
                     ) : null}
                     {entry.state === "review" && isWaitingHuman ? (
-                      <button
-                        type="button"
-                        className="proceed-btn"
-                        disabled={isProceedLoading}
-                        onClick={handleProceed}
-                      >
-                        {isProceedLoading ? (
-                          <LoaderCircle className="animate-spin" />
-                        ) : (
-                          <Play className="h-3 w-3" />
-                        )}
-                        {locale === "zh" ? "继续流程" : "Proceed"}
-                      </button>
+                      <>
+                        {taskStaleState && taskStaleState.pendingReevalSteps.length > 0 ? (
+                          <div className="step-meta" style={{ color: "#d97706", fontStyle: "italic", marginBottom: 4 }}>
+                            {locale === "zh"
+                              ? `已修改字段，继续后将重新执行: ${taskStaleState.pendingReevalSteps.map((s) => STEP_LABELS[s]?.[locale] ?? s).join(", ")}`
+                              : `Edited fields require re-evaluation: ${taskStaleState.pendingReevalSteps.map((s) => STEP_LABELS[s]?.[locale] ?? s).join(", ")}`}
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="proceed-btn"
+                          disabled={isProceedLoading}
+                          onClick={handleProceed}
+                        >
+                          {isProceedLoading ? (
+                            <LoaderCircle className="animate-spin" />
+                          ) : (
+                            <Play className="h-3 w-3" />
+                          )}
+                          {locale === "zh" ? "继续流程" : "Proceed"}
+                        </button>
+                      </>
                     ) : null}
                     {idx === timeline.length - 1 && resultHref ? (
                       <div className="result-actions">
