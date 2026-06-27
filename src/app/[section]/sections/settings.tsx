@@ -586,24 +586,6 @@ export function LiveSystemSettings() {
                       </span>
                     </label>
                   </div>
-                  <div className="card">
-                    <div className="row">
-                      <div>
-                        <p className="item-title">密钥不在页面明文展示</p>
-                        <p className="item-meta">
-                          邮箱密码通过环境变量 IMAP_PASSWORD 配置，页面仅显示连接状态和同步结果。
-                        </p>
-                        {mailbox.lastError ? (
-                          <p className="item-meta" style={{ color: "var(--danger)", marginTop: 6 }}>
-                            最近错误：{mailbox.lastError}
-                          </p>
-                        ) : null}
-                      </div>
-                      <Badge variant={mailbox.enabled ? "blue" : "slate"}>
-                        {mailbox.enabled ? "enabled" : "disabled"}
-                      </Badge>
-                    </div>
-                  </div>
                 </>
               ) : (
                 <p className="item-meta">加载中...</p>

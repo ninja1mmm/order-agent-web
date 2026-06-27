@@ -1,7 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState, type PointerEvent } from "react";
-import { AlertTriangle, CheckCircle2, FileSearch, Mail, Sparkles, UserCheck } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState, type PointerEvent } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ExternalLink,
+  FileSearch,
+  Mail,
+  Sparkles,
+  UserCheck,
+} from "lucide-react";
 import { CartoonAgent, type CartoonAgentMood } from "./cartoon-agent";
 import type { WorkspaceMail, WorkspaceTask } from "../../services/inbox";
 import {
@@ -11,217 +21,263 @@ import {
   useWorkspacePolling,
 } from "../[section]/sections/shared";
 
-type AgentMessage = {
-  key: string;
-  tone: "mail" | "summary" | "todo";
-  title: string;
-  eyebrow: string;
-  body: string;
-  rows: Array<{ label: string; value: string }>;
-  workflow: Array<{ label: string; status: string }>;
-};
-
-type MessageHistoryItem = {
-  id: string;
-  pushedAt: string;
-  eyebrow: string;
-  title: string;
-};
-
 type AgentViewMode = "orb" | "employee";
 type AgentMood = CartoonAgentMood;
+type CardTone = "summary" | "mail" | "todo";
 
 const TILE_COLUMNS = 18;
 const TILE_ROWS = 10;
 const TILE_COUNT = TILE_COLUMNS * TILE_ROWS;
 
-const fallbackMail: WorkspaceMail = {
-  id: "demo-mail",
-  messageId: "demo-mail",
-  fromEmail: "buyer@example.com",
-  subject: "SLP Mexico weekly shipping plan update",
-  bodyText: "Please review the updated shipping plan and attached forecast file. Several material quantities changed for next week.",
-  receivedAt: new Date().toISOString(),
-  createdAt: new Date().toISOString(),
-  customerId: null,
-  customerName: "SLP Mexico",
-  attachments: [
-    {
-      attachmentId: "demo-attachment",
-      fileArtifactId: "demo-attachment",
-      fileName: "shipping-plan-weekly.xlsx",
-      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      status: "parsing",
-      taskId: null,
-      documentType: "Shipping Plan",
-    },
-  ],
+const TONE_ORDER: CardTone[] = ["summary", "mail", "todo"];
+const TONE_TO_MOOD: Record<CardTone, AgentMood> = {
+  summary: "received",
+  mail: "processing",
+  todo: "complete",
 };
 
-function latestMail(mails: WorkspaceMail[]): WorkspaceMail {
-  return [...mails].sort((a, b) => backendDateMs(b.receivedAt || b.createdAt) - backendDateMs(a.receivedAt || a.createdAt))[0] ?? fallbackMail;
-}
+const PIPELINE_STEPS = [
+  "extraction",
+  "date_expansion",
+  "conflict_resolution",
+  "material_mapping",
+  "published",
+] as const;
 
-function compactText(value: string, limit = 136) {
+const STEP_LABELS: Record<string, string> = {
+  extraction: "AI 提取",
+  date_expansion: "日期扩展",
+  conflict_resolution: "冲突检测",
+  material_mapping: "料号匹配",
+  published: "已发布",
+};
+
+type TimelineEntry = {
+  key: string;
+  label: string;
+  state: "completed" | "current" | "pending" | "failed" | "review";
+  summary: string | null;
+  reviewReason: string | null;
+};
+
+function compactText(value: string, limit = 200) {
   const normalized = value.replace(/\s+/g, " ").trim();
-  return normalized.length > limit ? `${normalized.slice(0, limit)}...` : normalized;
-}
-
-function relatedCustomerNames(mails: WorkspaceMail[], tasks: WorkspaceTask[], fallback: string[], now: number) {
-  const oneHourAgo = now - 60 * 60 * 1000;
-  const names = new Set<string>();
-  mails
-    .filter((mail) => backendDateMs(mail.receivedAt || mail.createdAt) >= oneHourAgo)
-    .forEach((mail) => {
-      if (mail.customerName) names.add(mail.customerName);
-    });
-  tasks
-    .filter((task) => backendDateMs(task.completedAt || task.requestedAt || task.receivedAt) >= oneHourAgo)
-    .forEach((task) => {
-      if (task.customerName) names.add(task.customerName);
-    });
-  return [...names].slice(0, 4).join("、") || fallback.slice(0, 4).join("、") || "暂无客户";
+  return normalized.length > limit
+    ? `${normalized.slice(0, limit)}...`
+    : normalized;
 }
 
 function taskNeedsHuman(task: WorkspaceTask) {
-  const status = task.status.toLowerCase();
-  return status.includes("pending") || status.includes("review") || status.includes("manual") || task.warnings.length > 0;
+  const s = task.status.toLowerCase();
+  return (
+    s.includes("pending") ||
+    s.includes("review") ||
+    s.includes("manual") ||
+    s.includes("waiting") ||
+    task.warnings.length > 0
+  );
+}
+
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  const ms = backendDateMs(dateStr);
+  if (!ms) return "-";
+  const diff = Date.now() - ms;
+  if (diff < 60_000) return "刚刚";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+  return `${Math.floor(diff / 86_400_000)} 天前`;
+}
+
+function buildTimeline(task: WorkspaceTask): TimelineEntry[] {
+  const traceMap = new Map<string, (typeof task.traceSteps)[number]>();
+  for (const step of task.traceSteps) {
+    traceMap.set(step.stepName, step);
+  }
+  const currentStep = task.pipelineStep;
+  const currentIdx = currentStep
+    ? PIPELINE_STEPS.indexOf(currentStep as (typeof PIPELINE_STEPS)[number])
+    : -1;
+  const isCompleted =
+    task.status === "completed" || task.status === "published";
+  const isWaiting = task.status === "waiting_human_decision";
+  const isFailed = task.status === "failed";
+
+  return PIPELINE_STEPS.map((key, idx) => {
+    const traceEntry = traceMap.get(key);
+    const label = STEP_LABELS[key] ?? key;
+    let state: TimelineEntry["state"] = "pending";
+    let reviewReason: string | null = null;
+
+    const isBlockedHere =
+      isWaiting && task.reviewSummary?.blockedAtStep === key;
+
+    if (isBlockedHere) {
+      state = "review";
+      reviewReason = task.reviewSummary?.reason ?? null;
+    } else if (isCompleted) {
+      state = "completed";
+    } else if (traceEntry) {
+      state =
+        traceEntry.status === "completed" ||
+        traceEntry.status === "completed_with_errors" ||
+        traceEntry.status === "skipped"
+          ? "completed"
+          : traceEntry.status === "failed"
+            ? "failed"
+            : "current";
+    } else if (currentStep === key) {
+      if (isWaiting) state = "review";
+      else if (isFailed) state = "failed";
+      else state = "current";
+    } else if (currentIdx >= 0 && idx < currentIdx) {
+      state = "completed";
+    }
+
+    return {
+      key,
+      label,
+      state,
+      summary: traceEntry?.outputSummary ?? null,
+      reviewReason,
+    };
+  });
+}
+
+function relatedCustomerNames(
+  mails: WorkspaceMail[],
+  tasks: WorkspaceTask[],
+  fallback: string[],
+  now: number,
+) {
+  const oneHourAgo = now - 60 * 60 * 1000;
+  const names = new Set<string>();
+  for (const m of mails) {
+    if (
+      backendDateMs(m.receivedAt || m.createdAt) >= oneHourAgo &&
+      m.customerName
+    )
+      names.add(m.customerName);
+  }
+  for (const t of tasks) {
+    if (
+      backendDateMs(t.completedAt || t.requestedAt || t.receivedAt) >=
+        oneHourAgo &&
+      t.customerName
+    )
+      names.add(t.customerName);
+  }
+  return (
+    [...names].slice(0, 4).join("、") ||
+    fallback.slice(0, 4).join("、") ||
+    "暂无客户"
+  );
 }
 
 export function SCAgentExperience() {
   const { mails, tasks, stats } = useWorkspacePolling();
   const { customers } = useCustomerConfig();
-  const [now, setNow] = useState(() => Date.now());
   const [eventIndex, setEventIndex] = useState(0);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [showMessage, setShowMessage] = useState(false);
-  const [history, setHistory] = useState<MessageHistoryItem[]>([]);
   const [activeTile, setActiveTile] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<AgentViewMode>("orb");
+  const [expandedMails, setExpandedMails] = useState<Set<string>>(new Set());
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
-  const messages = useMemo<AgentMessage[]>(() => {
-    const mail = latestMail(mails);
-    const customer = customerLabelFromId(customers, mail.customerId, mail.customerName || "未知客户");
-    const attachmentStatus = mail.attachments.length
-      ? mail.attachments.map((item) => `${item.fileName}：${item.status || "解析中"}`).join("；")
-      : "暂无附件";
-    const pendingTasks = stats?.pendingTasks ?? tasks.filter(taskNeedsHuman).slice(0, 3).map((task) => {
-      const raw = task as WorkspaceTask & {
-        task_id?: string;
-        attachment_file_name?: string;
-        attachment_id?: string;
-        customer_name?: string | null;
-      };
-      return {
-        taskId: task.id ?? raw.task_id ?? "",
-        fileName: task.attachmentFileName ?? raw.attachment_file_name ?? task.attachmentId ?? raw.attachment_id ?? task.id ?? raw.task_id ?? "",
-        customerName: task.customerName ?? raw.customer_name ?? null,
-        status: task.status,
-        reason: task.warnings?.[0] || "需要人工确认解析结果",
-      };
-    });
-    const customerNames = stats?.customerNames ?? mails.map((item) => item.customerName).filter((item): item is string => Boolean(item));
-    const completedLastHour = tasks.filter((task) => backendDateMs(task.completedAt) >= now - 60 * 60 * 1000).length;
+  const now = Date.now();
+  const activeTone = TONE_ORDER[eventIndex % TONE_ORDER.length];
 
-    return [
-      {
-        key: "mail",
-        tone: "mail",
-        eyebrow: "新邮件",
-        title: `收到 ${customer} 的未读邮件`,
-        body: compactText(mail.bodyText || "邮件正文等待同步。"),
-        rows: [
-          { label: "主题", value: mail.subject || "未命名邮件" },
-          { label: "附件", value: attachmentStatus },
-          { label: "状态", value: mail.attachments.length ? "附件解析 Agent 正在处理" : "等待附件进入解析队列" },
-        ],
-        workflow: [
-          { label: "Intake", status: "已接收" },
-          { label: "Attachment Parse", status: mail.attachments.length ? "运行中" : "等待中" },
-          { label: "Structure Extract", status: "排队" },
-          { label: "Review Routing", status: "待触发" },
-        ],
-      },
-      {
-        key: "summary",
-        tone: "summary",
-        eyebrow: "小时汇总",
-        title: "过去一小时工作摘要",
-        body: `已完成 ${completedLastHour || stats?.completedCount || 0} 项解析/归一化动作，当前待处理 ${stats?.pendingCount ?? pendingTasks.length} 项，涉及客户：${relatedCustomerNames(mails, tasks, customerNames, now)}。`,
-        rows: [
-          { label: "完成解析", value: String(completedLastHour || stats?.completedCount || 0) },
-          { label: "进入待办", value: String(stats?.pendingCount ?? pendingTasks.length) },
-          { label: "需要跟催", value: String(stats?.followUpCount ?? 0) },
-        ],
-        workflow: [
-          { label: "Mail Sync", status: "完成" },
-          { label: "Document Parse", status: "完成" },
-          { label: "Order Normalize", status: "完成" },
-          { label: "Dashboard Update", status: "已同步" },
-        ],
-      },
-      {
-        key: "todo",
-        tone: "todo",
-        eyebrow: "人工干预",
-        title: pendingTasks.length ? "有待处理事项需要确认" : "当前暂无人工干预事项",
-        body: pendingTasks.length
-          ? pendingTasks.slice(0, 2).map((task) => `${task.customerName || "未知客户"}：${task.reason}`).join("；")
-          : "SCAgent 会继续监控解析异常、客户变更和附件缺失状态。",
-        rows: pendingTasks.length
-          ? pendingTasks.slice(0, 3).map((task) => ({ label: task.customerName || "待办", value: `${task.fileName} · ${task.status}` }))
-          : [{ label: "待办", value: "0" }],
-        workflow: [
-          { label: "Risk Detect", status: pendingTasks.length ? "发现异常" : "监控中" },
-          { label: "Human Review", status: pendingTasks.length ? "等待确认" : "空闲" },
-          { label: "Apply Fix", status: "待后续动作" },
-        ],
-      },
-    ];
-  }, [customers, mails, now, stats, tasks]);
+  const latestMails = useMemo(
+    () =>
+      [...mails]
+        .sort(
+          (a, b) =>
+            backendDateMs(b.receivedAt || b.createdAt) -
+            backendDateMs(a.receivedAt || a.createdAt),
+        )
+        .slice(0, 5),
+    [mails],
+  );
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 60 * 1000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const pendingHumanTasks = useMemo(
+    () =>
+      tasks
+        .filter(taskNeedsHuman)
+        .sort(
+          (a, b) =>
+            backendDateMs(b.requestedAt || b.receivedAt) -
+            backendDateMs(a.requestedAt || a.receivedAt),
+        )
+        .slice(0, 5),
+    [tasks],
+  );
 
-  const pushMessage = () => {
-    const nextIndex = eventIndex % messages.length;
-    const nextMessage = messages[nextIndex];
-    setActiveIndex(nextIndex);
-    setShowMessage(true);
-    setEventIndex((current) => (current + 1) % messages.length);
-    setHistory((items) => [
-      {
-        id: `${nextMessage.key}-${Date.now()}`,
-        pushedAt: new Intl.DateTimeFormat("zh-CN", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        }).format(new Date()),
-        eyebrow: nextMessage.eyebrow,
-        title: nextMessage.title,
-      },
-      ...items,
-    ].slice(0, 6));
-  };
+  const summaryStats = useMemo(() => {
+    const completedLastHour = tasks.filter(
+      (t) => backendDateMs(t.completedAt) >= now - 60 * 60 * 1000,
+    ).length;
+    const completedCount = stats?.completedCount ?? completedLastHour;
+    const pendingCount = stats?.pendingCount ?? pendingHumanTasks.length;
+    const followUpCount = stats?.followUpCount ?? 0;
+    const mailCount = stats?.mailCount ?? mails.length;
+    const customerNames =
+      stats?.customerNames ??
+      mails
+        .map((m) => m.customerName)
+        .filter((n): n is string => Boolean(n));
+    return {
+      completedCount,
+      completedLastHour,
+      pendingCount,
+      followUpCount,
+      mailCount,
+      customerNames,
+    };
+  }, [mails, tasks, stats, pendingHumanTasks, now]);
 
-  const message = messages[activeIndex % messages.length];
-  const MessageIcon = message.tone === "todo" ? AlertTriangle : message.tone === "summary" ? CheckCircle2 : Mail;
   const agentMood: AgentMood = !showMessage
     ? "idle"
-    : message.tone === "mail"
-      ? "received"
-      : message.tone === "todo"
-        ? "processing"
-        : "complete";
+    : TONE_TO_MOOD[activeTone];
+
+  const pushMessage = () => {
+    setShowMessage(true);
+    setEventIndex((i) => (i + 1) % TONE_ORDER.length);
+  };
+
+  const toggleMail = (id: string) =>
+    setExpandedMails((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const toggleTask = (id: string) =>
+    setExpandedTasks((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const handlePointerMove = (event: PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    const column = Math.min(TILE_COLUMNS - 1, Math.max(0, Math.floor(((event.clientX - rect.left) / rect.width) * TILE_COLUMNS)));
-    const row = Math.min(TILE_ROWS - 1, Math.max(0, Math.floor(((event.clientY - rect.top) / rect.height) * TILE_ROWS)));
+    const column = Math.min(
+      TILE_COLUMNS - 1,
+      Math.max(
+        0,
+        Math.floor(((event.clientX - rect.left) / rect.width) * TILE_COLUMNS),
+      ),
+    );
+    const row = Math.min(
+      TILE_ROWS - 1,
+      Math.max(
+        0,
+        Math.floor(((event.clientY - rect.top) / rect.height) * TILE_ROWS),
+      ),
+    );
     const nextTile = row * TILE_COLUMNS + column;
-    setActiveTile((current) => current === nextTile ? current : nextTile);
+    setActiveTile((current) => (current === nextTile ? current : nextTile));
   };
 
   const tileClassName = (index: number) => {
@@ -230,12 +286,20 @@ export function SCAgentExperience() {
     const activeRow = Math.floor(activeTile / TILE_COLUMNS);
     const column = index % TILE_COLUMNS;
     const row = Math.floor(index / TILE_COLUMNS);
-    const distance = Math.abs(activeColumn - column) + Math.abs(activeRow - row);
+    const distance =
+      Math.abs(activeColumn - column) + Math.abs(activeRow - row);
     if (distance === 0) return "agent-tile active";
     if (distance === 1) return "agent-tile near";
     if (distance === 2) return "agent-tile soft";
     return "agent-tile";
   };
+
+  const MessageIcon =
+    activeTone === "todo"
+      ? AlertTriangle
+      : activeTone === "summary"
+        ? CheckCircle2
+        : Mail;
 
   return (
     <section
@@ -254,9 +318,15 @@ export function SCAgentExperience() {
       </div>
 
       <div className="sc-agent-field" aria-hidden="true">
-        <span className="field-node node-mail"><Mail size={18} /></span>
-        <span className="field-node node-parse"><FileSearch size={18} /></span>
-        <span className="field-node node-review"><UserCheck size={18} /></span>
+        <span className="field-node node-mail">
+          <Mail size={18} />
+        </span>
+        <span className="field-node node-parse">
+          <FileSearch size={18} />
+        </span>
+        <span className="field-node node-review">
+          <UserCheck size={18} />
+        </span>
         {Array.from({ length: 18 }, (_, index) => (
           <span className={`field-particle particle-${index + 1}`} key={index} />
         ))}
@@ -269,7 +339,7 @@ export function SCAgentExperience() {
         aria-pressed={viewMode === "employee"}
         onClick={(event) => {
           event.stopPropagation();
-          setViewMode((current) => current === "orb" ? "employee" : "orb");
+          setViewMode((current) => (current === "orb" ? "employee" : "orb"));
         }}
       >
         <span className="agent-title-line top" aria-hidden="true" />
@@ -299,9 +369,24 @@ export function SCAgentExperience() {
           <span className="sc-agent-orb">
             <span className="sc-agent-orb-grid" />
             <span className="sc-agent-neuron-layer">
-              {Array.from({ length: 7 }, (_, index) => <span className={`neuron-line line-${index + 1}`} key={`line-${index}`} />)}
-              {Array.from({ length: 3 }, (_, index) => <span className={`neuron-trail trail-${index + 1}`} key={`trail-${index}`} />)}
-              {Array.from({ length: 3 }, (_, index) => <span className={`neuron-dot dot-${index + 1}`} key={`dot-${index}`} />)}
+              {Array.from({ length: 7 }, (_, index) => (
+                <span
+                  className={`neuron-line line-${index + 1}`}
+                  key={`line-${index}`}
+                />
+              ))}
+              {Array.from({ length: 3 }, (_, index) => (
+                <span
+                  className={`neuron-trail trail-${index + 1}`}
+                  key={`trail-${index}`}
+                />
+              ))}
+              {Array.from({ length: 3 }, (_, index) => (
+                <span
+                  className={`neuron-dot dot-${index + 1}`}
+                  key={`dot-${index}`}
+                />
+              ))}
             </span>
             <span className="sc-agent-orb-aura" />
             <Sparkles aria-hidden="true" size={32} />
@@ -311,51 +396,272 @@ export function SCAgentExperience() {
         )}
       </button>
 
+      {/* ---- right-side card (3 tones cycling) ---- */}
       <aside
-        className={`sc-agent-message ${message.tone}${showMessage ? " visible" : ""}`}
+        className={`sc-agent-message ${activeTone}${showMessage ? " visible" : ""}`}
         aria-live="polite"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="message-head">
-          <span className="message-icon"><MessageIcon size={18} aria-hidden="true" /></span>
-          <div>
-            <span>{message.eyebrow}</span>
-            <strong>{message.title}</strong>
-          </div>
-        </div>
-        <p>{message.body}</p>
-        <div className="message-rows">
-          {message.rows.map((row) => (
-            <div key={`${row.label}-${row.value}`}>
-              <span>{row.label}</span>
-              <strong>{row.value}</strong>
-            </div>
-          ))}
-        </div>
-        <div className="message-workflow" aria-label="Agent 工作流">
-          {message.workflow.map((step) => (
-            <div key={`${message.key}-${step.label}`}>
-              <span />
-              <strong>{step.label}</strong>
-              <em>{step.status}</em>
-            </div>
-          ))}
-        </div>
-        <div className="message-history" aria-label="历史推送消息">
-          <div className="message-history-head">
-            <strong>历史推送</strong>
-            <span>{history.length} 条</span>
-          </div>
-          <div className="message-history-list">
-            {history.map((item) => (
-              <div key={item.id}>
-                <time>{item.pushedAt}</time>
-                <span>{item.eyebrow}</span>
-                <strong>{item.title}</strong>
+        {/* ========== Card 1: summary (received) ========== */}
+        {activeTone === "summary" && (
+          <>
+            <div className="message-head">
+              <span className="message-icon">
+                <MessageIcon size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <span>小时汇总</span>
+                <strong>过去一小时工作摘要</strong>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+            <p>
+              已完成{" "}
+              {summaryStats.completedLastHour || summaryStats.completedCount}{" "}
+              项解析/归一化动作，当前待处理 {summaryStats.pendingCount}{" "}
+              项，涉及客户：
+              {relatedCustomerNames(
+                mails,
+                tasks,
+                summaryStats.customerNames,
+                now,
+              )}
+              。
+            </p>
+            <div className="message-rows">
+              <div>
+                <span>完成解析</span>
+                <strong>
+                  {summaryStats.completedLastHour || summaryStats.completedCount}
+                </strong>
+              </div>
+              <div>
+                <span>进入待办</span>
+                <strong>{summaryStats.pendingCount}</strong>
+              </div>
+              <div>
+                <span>需要跟催</span>
+                <strong>{summaryStats.followUpCount}</strong>
+              </div>
+              <div>
+                <span>收件箱</span>
+                <strong>{summaryStats.mailCount} 封</strong>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ========== Card 2: mail (processing) ========== */}
+        {activeTone === "mail" && (
+          <>
+            <div className="message-head">
+              <span className="message-icon">
+                <MessageIcon size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <span>收到邮件</span>
+                <strong>最新 {latestMails.length} 封邮件</strong>
+              </div>
+            </div>
+            {latestMails.length === 0 ? (
+              <p className="message-empty">暂无邮件</p>
+            ) : (
+              <div className="message-accordion">
+                {latestMails.map((mail) => {
+                  const isOpen = expandedMails.has(mail.id);
+                  const customer = customerLabelFromId(
+                    customers,
+                    mail.customerId,
+                    mail.customerName || mail.fromEmail,
+                  );
+                  return (
+                    <div
+                      key={mail.id}
+                      className={`accordion-item${isOpen ? " open" : ""}`}
+                    >
+                      <button
+                        type="button"
+                        className="accordion-trigger"
+                        onClick={() => toggleMail(mail.id)}
+                        aria-expanded={isOpen}
+                      >
+                        <div className="accordion-trigger-content">
+                          <strong>{mail.subject || "未命名邮件"}</strong>
+                          <span>
+                            {customer} ·{" "}
+                            {formatRelativeTime(
+                              mail.receivedAt || mail.createdAt,
+                            )}
+                          </span>
+                        </div>
+                        <ChevronDown
+                          size={14}
+                          className={`accordion-chevron${isOpen ? " rotated" : ""}`}
+                        />
+                      </button>
+                      {isOpen && (
+                        <div className="accordion-body">
+                          <div className="accordion-detail-row">
+                            <span>发件人</span>
+                            <strong>{mail.fromEmail}</strong>
+                          </div>
+                          <div className="accordion-detail-row">
+                            <span>客户</span>
+                            <strong>{customer}</strong>
+                          </div>
+                          <div className="accordion-detail-row">
+                            <span>附件</span>
+                            <strong>
+                              {mail.attachments.length
+                                ? mail.attachments
+                                    .map(
+                                      (a) =>
+                                        `${a.fileName} (${a.status || "待处理"})`,
+                                    )
+                                    .join("、")
+                                : "无附件"}
+                            </strong>
+                          </div>
+                          <p className="accordion-body-text">
+                            {compactText(mail.bodyText || "邮件正文暂无。")}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ========== Card 3: todo (complete) ========== */}
+        {activeTone === "todo" && (
+          <>
+            <div className="message-head">
+              <span className="message-icon">
+                <MessageIcon size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <span>人工干预</span>
+                <strong>
+                  {pendingHumanTasks.length
+                    ? `${pendingHumanTasks.length} 项待处理事项`
+                    : "当前暂无人工干预事项"}
+                </strong>
+              </div>
+            </div>
+            {pendingHumanTasks.length === 0 ? (
+              <p className="message-empty">
+                当前暂无需要人工干预的任务，SCAgent
+                会继续监控解析异常、客户变更和附件缺失状态。
+              </p>
+            ) : (
+              <div className="message-accordion">
+                {pendingHumanTasks.map((task) => {
+                  const isOpen = expandedTasks.has(task.id);
+                  const customer = customerLabelFromId(
+                    customers,
+                    task.customerId,
+                    task.customerName || "未知客户",
+                  );
+                  const timeline = buildTimeline(task);
+                  return (
+                    <div
+                      key={task.id}
+                      className={`accordion-item${isOpen ? " open" : ""}`}
+                    >
+                      <button
+                        type="button"
+                        className="accordion-trigger"
+                        onClick={() => toggleTask(task.id)}
+                        aria-expanded={isOpen}
+                      >
+                        <div className="accordion-trigger-content">
+                          <strong>
+                            {task.attachmentFileName ||
+                              task.taskType ||
+                              task.id}
+                          </strong>
+                          <span>
+                            {customer} · {task.status}
+                          </span>
+                        </div>
+                        <ChevronDown
+                          size={14}
+                          className={`accordion-chevron${isOpen ? " rotated" : ""}`}
+                        />
+                      </button>
+                      {isOpen && (
+                        <div className="accordion-body">
+                          {task.reviewSummary && (
+                            <div className="accordion-alert">
+                              <AlertTriangle size={12} />
+                              <span>
+                                {task.reviewSummary.reason || "需要人工确认"}
+                              </span>
+                            </div>
+                          )}
+                          {task.warnings.length > 0 && !task.reviewSummary && (
+                            <div className="accordion-alert">
+                              <AlertTriangle size={12} />
+                              <span>{task.warnings[0]}</span>
+                            </div>
+                          )}
+
+                          {/* Agent 执行流 */}
+                          <div className="accordion-timeline-wrap">
+                            <div className="timeline">
+                              {timeline.map((entry) => (
+                                <div
+                                  className={`step step-${entry.state}`}
+                                  key={entry.key}
+                                >
+                                  <div className="step-title">
+                                    {entry.label}
+                                    {entry.state === "review" && (
+                                      <span className="agent-badge-review">
+                                        待审核
+                                      </span>
+                                    )}
+                                    {entry.state === "failed" && (
+                                      <span className="agent-badge-failed">
+                                        failed
+                                      </span>
+                                    )}
+                                  </div>
+                                  {entry.summary && (
+                                    <div className="step-meta">
+                                      {entry.summary}
+                                    </div>
+                                  )}
+                                  {entry.reviewReason && (
+                                    <div className="step-meta step-review-reason">
+                                      {entry.reviewReason}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* navigate to parse-review */}
+                          <Link
+                            href={`/parse-review?taskId=${encodeURIComponent(task.id)}`}
+                            className="accordion-nav-link"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink size={12} />
+                            前往解析审查
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
       </aside>
     </section>
   );

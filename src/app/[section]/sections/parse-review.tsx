@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, Circle, FileSearch, LoaderCircle, Play, RefreshCw, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, FileSearch, LoaderCircle, Play, RefreshCw, Trash2 } from "lucide-react";
 
 import { BACKEND_URL } from "../../../api/client";
 import { Button } from "@/components/ui/button";
@@ -56,12 +56,12 @@ function resultTabForTask(taskType: string | undefined): "forecast" | "shipping"
 }
 
 const PIPELINE_STEPS = ["extraction", "date_expansion", "conflict_resolution", "material_mapping", "published"] as const;
-const STEP_LABELS: Record<string, Record<Locale, string>> = {
-  extraction: { zh: "AI 提取", en: "AI Extraction" },
-  date_expansion: { zh: "日期扩展", en: "Date Expansion" },
-  conflict_resolution: { zh: "冲突检测", en: "Conflict Check" },
-  material_mapping: { zh: "料号匹配", en: "Material Mapping" },
-  published: { zh: "已发布", en: "Published" },
+const STEP_LABELS: Record<string, string> = {
+  extraction: "AI 提取",
+  date_expansion: "日期扩展",
+  conflict_resolution: "冲突检测",
+  material_mapping: "料号匹配",
+  published: "已发布",
 };
 
 type TimelineEntry = {
@@ -94,6 +94,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const [editValue, setEditValue] = useState<string>("");
   const [localRowOverrides, setLocalRowOverrides] = useState<Map<string, Record<string, unknown>>>(new Map());
   const effectiveTaskId = hasUserSelected ? selectedTaskId : (targetTaskId ?? selectedTaskId);
+  const prevRevisionRef = useRef<string | null>(null);
 
   const taskCustomers = useMemo(
     () => [
@@ -105,13 +106,13 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const statusOptions = useMemo(
     () => [
       { value: DEFAULT_STATUS_FILTER, label: t.all },
-      { value: ACTIVE_ONLY_FILTER, label: locale === "en" ? "Active" : "进行中" },
+      { value: ACTIVE_ONLY_FILTER, label: "进行中" },
       { value: "queued", label: taskStatusLabel("queued", locale) },
       { value: "waiting_human_decision", label: taskStatusLabel("waiting_human_decision", locale) },
       { value: "completed", label: taskStatusLabel("completed", locale) },
       { value: "failed", label: taskStatusLabel("failed", locale) },
     ],
-    [locale, t.all],
+    [t.all],
   );
 
   const filteredTasks = useMemo(() => {
@@ -233,7 +234,11 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
 
   type OrderType = "confirmed" | "forecast" | "uncertain";
 
+  const selectedRevision = selectedTask ? `${selectedTask.id}::${selectedTask.resultRevision ?? ""}` : null;
+
   useEffect(() => {
+    if (selectedRevision === prevRevisionRef.current) return;
+    prevRevisionRef.current = selectedRevision;
     const next = new Map<string, OrderType>();
     for (const [rowId, row] of rowEntries) {
       const ot = String(row.classification ?? "uncertain");
@@ -244,7 +249,14 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
     setTaskStaleState(null);
     setLocalResultRevision(null);
     setLocalRowOverrides(new Map());
-  }, [rowEntries]);
+  }, [rowEntries, selectedRevision]);
+
+  const bulkOrderState = useMemo(() => {
+    const vals = Array.from(orderTypeMap.values());
+    if (vals.length > 0 && vals.every((v) => v === "confirmed")) return "firm";
+    if (vals.length > 0 && vals.every((v) => v === "forecast")) return "forecast";
+    return "mixed";
+  }, [orderTypeMap]);
 
   const toggleOrderType = useCallback((rowId: string) => {
     setOrderTypeMap((prev) => {
@@ -379,7 +391,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
 
     return PIPELINE_STEPS.map((key, idx) => {
       const traceEntry = traceMap.get(key);
-      const label = STEP_LABELS[key]?.[locale] ?? key;
+      const label = STEP_LABELS[key] ?? key;
       let state: TimelineEntry["state"] = "pending";
       let reviewReason: string | null = null;
 
@@ -406,7 +418,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
 
       return { key, label, state, summary: traceEntry?.outputSummary ?? null, reviewReason };
     });
-  }, [selectedTask, locale, isTaskCompleted, isWaitingHuman, isTaskFailed]);
+  }, [selectedTask, isTaskCompleted, isWaitingHuman, isTaskFailed]);
 
   const resultHref = (() => {
     if (!selectedTask || !isTaskCompleted) return "";
@@ -483,8 +495,8 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
           <div className="panel-body stack">
             {isBodyTextTask && selectedMail ? (
               <div className="mail-body-viewer">
-                <div style={{ whiteSpace: "pre-wrap", padding: 16, fontSize: 13, lineHeight: 1.7, color: "#334155" }}>
-                  {selectedMail.bodyText}
+                <div style={{ whiteSpace: "pre-line", padding: 16, fontSize: 13, lineHeight: 1.7, color: "#334155" }}>
+                  {(selectedMail.bodyText ?? "").replace(/\r\n/g, "\n").replace(/^[^\S\n]+$/gm, "").replace(/\n{2,}/g, "\n\n").trim()}
                   {(() => {
                     const seenIds = new Set<string>();
                     const allImages: { key: string; artifactId: string; alt: string }[] = [];
@@ -529,25 +541,27 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                     <tr>
                       <th>Customer P/N</th>
                       <th>Internal P/N</th>
-                      <th>Designation</th>
                       <th>Quantity</th>
                       <th>Date</th>
                       <th>Week</th>
                       <th
                         style={{ cursor: "pointer", userSelect: "none" }}
-                        title={locale === "zh" ? "点击按映射状态排序" : "Click to sort by mapping status"}
+                        title="点击按映射状态排序"
                         onClick={toggleMappingSort}
                       >
                         Mapping{mappingSortOrder === "asc" ? " ▲" : mappingSortOrder === "desc" ? " ▼" : ""}
                       </th>
-                      <th>{locale === "zh" ? "冲突" : "Conflict"}</th>
                       <th
                         className="order-type-header"
-                        title={locale === "zh" ? "点击切换全部" : "Click to toggle all"}
+                        title="Click to toggle all"
                         onClick={bulkToggleOrderType}
                       >
-                        {locale === "zh" ? "订单类型" : "Order Type"}
+                        <div className="order-type-switch order-type-header-control">
+                          <span className={`order-type-option${bulkOrderState === "firm" ? " active-confirmed" : ""}`}>Firm</span>
+                          <span className={`order-type-option${bulkOrderState === "forecast" ? " active-forecast" : ""}`}>Forecast</span>
+                        </div>
                       </th>
+                      <th>Conflict</th>
                       <th style={{ width: 36 }} />
                     </tr>
                   </thead>
@@ -591,7 +605,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                           <span
                             className={`editable-cell${isWaitingHuman ? " editable" : ""}${stale ? " stale" : ""}`}
                             onClick={() => startEditing(rowId, field, val)}
-                            title={stale ? (locale === "zh" ? "此字段将在继续流程后重新计算" : "Will be recalculated on Proceed") : undefined}
+                            title={stale ? "此字段将在继续流程后重新计算" : undefined}
                           >
                             {display || <span className="cell-placeholder">—</span>}
                           </span>
@@ -601,7 +615,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                       const derivedCell = (field: string, content: React.ReactNode) => {
                         const stale = isFieldStale(field);
                         return (
-                          <span className={stale ? "stale" : ""} title={stale ? (locale === "zh" ? "待重新计算" : "Pending re-eval") : undefined}>
+                          <span className={stale ? "stale" : ""} title={stale ? "待重新计算" : undefined}>
                             {content}
                           </span>
                         );
@@ -611,7 +625,6 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                         <tr key={rowId} className={conflictClass}>
                           <td>{editableCell("customerPartNumber")}</td>
                           <td>{derivedCell("internalPartNumber", String(cellValue("internalPartNumber") ?? ""))}</td>
-                          <td>{editableCell("designation")}</td>
                           <td>{editableCell("quantity")}</td>
                           <td>{editableCell("dateInfo", String(cellValue("expandedDay") ?? cellValue("dateInfo") ?? ""))}</td>
                           <td>{derivedCell("expandedWeek", String(cellValue("expandedWeek") ?? ""))}</td>
@@ -632,25 +645,28 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                             })())}
                           </td>
                           <td>
+                            <div className="order-type-switch" onClick={() => toggleOrderType(rowId)}>
+                              <span className={`order-type-option${ot === "confirmed" ? " active-confirmed" : ""}`}>
+                                Firm
+                              </span>
+                              <span className={`order-type-option${ot === "forecast" ? " active-forecast" : ""}`}>
+                                Forecast
+                              </span>
+                            </div>
+                          </td>
+                          <td>
                             {derivedCell("conflictFlag", (() => {
                               if (conflict === "granularity_mismatch") {
                                 return (
                                   <Badge variant="amber" title={String(row.conflictDetails ?? "")}>
-                                    {locale === "zh" ? "粒度不匹配" : "granularity"}
+                                    粒度不匹配
                                   </Badge>
                                 );
                               }
                               if (conflict === "quantity_conflict") {
                                 return (
                                   <Badge variant="red" title={String(row.conflictDetails ?? "")}>
-                                    {locale === "zh" ? "数量冲突" : "qty conflict"}
-                                  </Badge>
-                                );
-                              }
-                              if (conflict === "uncertain") {
-                                return (
-                                  <Badge variant="slate" title={String(row.conflictDetails ?? "")}>
-                                    {locale === "zh" ? "不确定" : "uncertain"}
+                                    数量冲突
                                   </Badge>
                                 );
                               }
@@ -658,20 +674,10 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                             })())}
                           </td>
                           <td>
-                            <div className="order-type-switch" onClick={() => toggleOrderType(rowId)}>
-                              <span className={`order-type-option${ot === "confirmed" ? " active-confirmed" : ""}`}>
-                                {locale === "zh" ? "确认" : "Firm"}
-                              </span>
-                              <span className={`order-type-option${ot === "forecast" ? " active-forecast" : ""}`}>
-                                {locale === "zh" ? "预测" : "Forecast"}
-                              </span>
-                            </div>
-                          </td>
-                          <td>
                             <button
                               type="button"
                               className="row-delete-btn"
-                              title={locale === "zh" ? "删除此行" : "Remove this row"}
+                              title="删除此行"
                               onClick={() => deleteRow(rowId)}
                             >
                               <Trash2 className="h-3 w-3" />
@@ -701,24 +707,11 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                 {timeline.map((entry, idx) => (
                   <div className={`step step-${entry.state}`} key={entry.key}>
                     <div className="step-title">
-                      {entry.state === "completed" ? (
-                        <Check className="h-3.5 w-3.5 step-icon-done" aria-hidden="true" />
-                      ) : entry.state === "current" ? (
-                        <LoaderCircle className="step-spinner" aria-hidden="true" />
-                      ) : entry.state === "review" ? (
-                        <AlertTriangle className="h-3.5 w-3.5 step-icon-review" aria-hidden="true" />
-                      ) : entry.state === "failed" ? (
-                        <AlertTriangle className="h-3.5 w-3.5 step-icon-failed" aria-hidden="true" />
-                      ) : (
-                        <Circle className="h-3.5 w-3.5 step-icon-pending" aria-hidden="true" />
-                      )}
                       {entry.label}
-                      {entry.state === "completed" ? (
-                        <Badge variant="slate" style={{ marginLeft: 6 }}>done</Badge>
-                      ) : entry.state === "failed" ? (
+                      {entry.state === "failed" ? (
                         <Badge variant="red" style={{ marginLeft: 6 }}>failed</Badge>
                       ) : entry.state === "review" ? (
-                        <Badge variant="amber" style={{ marginLeft: 6 }}>{locale === "zh" ? "待审核" : "review"}</Badge>
+                        <Badge variant="amber" style={{ marginLeft: 6 }}>待审核</Badge>
                       ) : null}
                     </div>
                     {entry.summary ? <div className="step-meta">{entry.summary}</div> : null}
@@ -729,9 +722,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                       <>
                         {taskStaleState && taskStaleState.pendingReevalSteps.length > 0 ? (
                           <div className="step-meta" style={{ color: "#d97706", fontStyle: "italic", marginBottom: 4 }}>
-                            {locale === "zh"
-                              ? `已修改字段，继续后将重新执行: ${taskStaleState.pendingReevalSteps.map((s) => STEP_LABELS[s]?.[locale] ?? s).join(", ")}`
-                              : `Edited fields require re-evaluation: ${taskStaleState.pendingReevalSteps.map((s) => STEP_LABELS[s]?.[locale] ?? s).join(", ")}`}
+                            已修改字段，继续后将重新执行: {taskStaleState.pendingReevalSteps.map((s) => STEP_LABELS[s] ?? s).join(", ")}
                           </div>
                         ) : null}
                         <button
@@ -745,7 +736,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                           ) : (
                             <Play className="h-3 w-3" />
                           )}
-                          {locale === "zh" ? "继续流程" : "Proceed"}
+                          继续流程
                         </button>
                       </>
                     ) : null}
@@ -763,7 +754,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                   <div className="step step-warnings">
                     <div className="step-title">
                       <AlertTriangle className="h-3.5 w-3.5 step-icon-review" aria-hidden="true" />
-                      {locale === "zh" ? "警告" : "Warnings"}
+                      警告
                       <Badge variant="amber" style={{ marginLeft: 6 }}>{selectedTask.warnings.length}</Badge>
                     </div>
                     <ul className="step-meta" style={{ paddingLeft: 16, margin: 0 }}>
@@ -776,11 +767,11 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
               <div className="step">
                 <div className="step-title">
                   <LoaderCircle className="step-spinner" aria-hidden="true" />
-                  {locale === "zh" ? "流程启动中..." : "Pipeline starting..."}
+                  流程启动中...
                 </div>
               </div>
             ) : selectedTask ? (
-              <p className="item-meta">{locale === "zh" ? "暂无执行流数据" : "No pipeline data yet"}</p>
+              <p className="item-meta">暂无执行流数据</p>
             ) : null}
           </div>
         </aside>

@@ -207,8 +207,8 @@ export function LiveWorkbench({ locale }: { locale: Locale }) {
                     From: {selectedMail.fromEmail} · {t.receivedAt}: {formatDateTime(selectedMail.receivedAt, locale)}
                   </CardDescription>
                 </Card>
-                <div className="mail-body" style={{ whiteSpace: "pre-wrap" }}>
-                  {selectedMail.bodyText}
+                <div className="mail-body" style={{ whiteSpace: "pre-line" }}>
+                  {(selectedMail.bodyText ?? "").replace(/\r\n/g, "\n").replace(/^[^\S\n]+$/gm, "").replace(/\n{2,}/g, "\n\n").trim()}
                   {(() => {
                     const seenIds = new Set<string>();
                     const allImages: { key: string; artifactId: string; alt: string }[] = [];

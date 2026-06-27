@@ -516,19 +516,34 @@ h1 {
   border-radius: 18px;
   background: white;
   padding: 16px;
-  min-height: 220px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden auto;
   line-height: 1.7;
   color: #334155;
   font-size: 13px;
+}
+
+.panel-body.stack:has(.mail-body-viewer),
+.panel-body.stack:has(.mail-body) {
+  overflow: hidden;
 }
 
 .mail-body-viewer {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: white;
-  overflow-y: auto;
-  max-height: 40vh;
-  flex-shrink: 0;
+  overflow: hidden auto;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.mail-body img,
+.mail-body-viewer img {
+  max-width: 100%;
+  height: auto;
 }
 
 .mail-body.compact {
@@ -1624,112 +1639,254 @@ h1 {
   overflow-wrap: anywhere;
 }
 
-.message-workflow {
-  position: relative;
-  display: grid;
-  gap: 12px;
-  margin-top: 18px;
-}
+/* ---- SCAgent message panel: sections & accordion ---- */
 
-.message-workflow::before {
-  content: "";
-  position: absolute;
-  top: 9px;
-  bottom: 9px;
-  left: 6px;
-  width: 1px;
-  background: var(--forvia-blue-border);
-}
-
-.message-workflow div {
-  position: relative;
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.message-workflow span {
-  position: relative;
-  z-index: 1;
-  width: 13px;
-  height: 13px;
-  border-radius: 999px;
-  border: 3px solid #fff;
-  background: var(--forvia-blue);
-  box-shadow: 0 0 0 1px var(--forvia-blue-border);
-}
-
-.message-workflow strong {
-  font-size: 12px;
-  color: var(--forvia-blue-ink);
-}
-
-.message-workflow em {
-  color: var(--muted);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 900;
-}
-
-.message-history {
+.message-section {
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
 
-.message-history-head {
+.message-section-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 10px;
-}
-
-.message-history-head strong {
   color: var(--ink);
-  font-size: 12px;
 }
 
-.message-history-head span {
+.message-section-head svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.message-section-head strong {
+  font-size: 13px;
+}
+
+.message-section-head span {
+  margin-left: auto;
   color: var(--muted);
   font-size: 11px;
   font-weight: 900;
 }
 
-.message-history-list {
-  display: grid;
-  gap: 8px;
+.message-empty {
+  margin: 0;
+  padding: 12px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
 }
 
-.message-history-list div {
+.message-accordion {
   display: grid;
-  grid-template-columns: 64px 58px minmax(0, 1fr);
+  gap: 6px;
+}
+
+.accordion-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.72);
+  overflow: hidden;
+  transition: border-color 180ms ease;
+}
+
+.accordion-item.open {
+  border-color: var(--forvia-blue-border);
+}
+
+.accordion-trigger {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
   gap: 8px;
-  align-items: baseline;
+  width: 100%;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.accordion-trigger:hover {
+  background: rgba(91, 108, 255, 0.04);
+}
+
+.accordion-trigger-content {
+  flex: 1;
   min-width: 0;
 }
 
-.message-history-list time {
-  color: #94a3b8;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 11px;
-}
-
-.message-history-list span {
-  color: var(--forvia-blue);
-  font-size: 11px;
-  font-weight: 950;
-}
-
-.message-history-list strong {
-  min-width: 0;
-  color: #475569;
-  font-size: 11px;
-  line-height: 1.45;
+.accordion-trigger-content strong {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.accordion-trigger-content span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accordion-chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform 200ms ease;
+}
+
+.accordion-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  padding: 0 12px 12px;
+}
+
+.accordion-detail-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.accordion-detail-row span {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  min-width: 48px;
+}
+
+.accordion-detail-row strong {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.accordion-detail-row.blocked strong {
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.accordion-body-text {
+  margin: 6px 0 0;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.accordion-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.accordion-alert svg {
+  flex-shrink: 0;
+  color: var(--warning);
+  margin-top: 1px;
+}
+
+.accordion-alert span {
+  color: #92400e;
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* timeline inside accordion (reuses global .timeline / .step-* classes) */
+
+.accordion-timeline-wrap {
+  margin-top: 8px;
+  padding: 10px 12px 6px;
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid var(--line);
+}
+
+.accordion-timeline-wrap .timeline {
+  padding-left: 24px;
+}
+
+.accordion-timeline-wrap .step {
+  padding-bottom: 12px;
+}
+
+.accordion-timeline-wrap .step::before {
+  left: -20px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+}
+
+.accordion-timeline-wrap .step-title {
+  font-size: 11px;
+}
+
+.accordion-timeline-wrap .step-meta {
+  font-size: 10px;
+}
+
+.agent-badge-review {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 6px;
+}
+
+.agent-badge-failed {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #991b1b;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+}
+
+.accordion-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--forvia-blue);
+  background: var(--forvia-blue-soft);
+  border: 1px solid var(--forvia-blue-border);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 160ms ease;
+}
+
+.accordion-nav-link:hover {
+  background: rgba(91, 108, 255, 0.14);
 }
 
 @keyframes sc-agent-breathe {
@@ -2499,6 +2656,13 @@ button.heat-cell {
   max-height: 280px;
 }
 
+.scroll-x .table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f8fafc;
+}
+
 .order-panel-body {
   display: flex;
   flex-direction: column;
@@ -3113,13 +3277,6 @@ button.heat-cell {
     font-size: 16px;
   }
 
-  .message-workflow div {
-    grid-template-columns: 18px minmax(0, 1fr);
-  }
-
-  .message-workflow em {
-    grid-column: 2;
-  }
 }
 
 .truncate {
@@ -3422,66 +3579,6 @@ button.heat-cell {
   letter-spacing: 0;
 }
 
-.message-history {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-
-.message-history-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.message-history-head strong {
-  color: var(--ink);
-  font-size: 12px;
-}
-
-.message-history-head span {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.message-history-list {
-  display: grid;
-  gap: 8px;
-}
-
-.message-history-list div {
-  display: grid;
-  grid-template-columns: 64px 58px minmax(0, 1fr);
-  gap: 8px;
-  align-items: baseline;
-  min-width: 0;
-}
-
-.message-history-list time {
-  color: #94a3b8;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 11px;
-}
-
-.message-history-list span {
-  color: var(--forvia-blue);
-  font-size: 11px;
-  font-weight: 950;
-}
-
-.message-history-list strong {
-  min-width: 0;
-  color: #475569;
-  font-size: 11px;
-  line-height: 1.45;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 @media (max-width: 680px) {
   .sc-agent-nameplate {
     top: 16px;
@@ -3492,14 +3589,6 @@ button.heat-cell {
 
   .sc-agent-nameplate strong {
     font-size: 20px;
-  }
-
-  .message-history-list div {
-    grid-template-columns: 58px minmax(0, 1fr);
-  }
-
-  .message-history-list strong {
-    grid-column: 2;
   }
 }
 
@@ -3587,6 +3676,40 @@ button.heat-cell {
     linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(248, 250, 252, 0.36));
   border-color: rgba(255, 255, 255, 0.58);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.accordion-item {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(248, 250, 252, 0.36));
+  border-color: rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.accordion-item.open {
+  border-color: rgba(91, 108, 255, 0.32);
+}
+
+.accordion-trigger:hover {
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.accordion-timeline-wrap {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.52);
+}
+
+.accordion-alert {
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.16);
+}
+
+.accordion-nav-link {
+  background: rgba(91, 108, 255, 0.08);
+  border-color: rgba(91, 108, 255, 0.2);
+}
+
+.accordion-nav-link:hover {
+  background: rgba(91, 108, 255, 0.16);
 }
 
 .neuron-dot {
@@ -3778,6 +3901,38 @@ button.heat-cell {
 .message-rows div {
   background: rgba(255, 255, 255, 0.22);
   border-color: rgba(255, 255, 255, 0.52);
+}
+
+.accordion-item {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.48);
+}
+
+.accordion-item.open {
+  border-color: rgba(91, 108, 255, 0.28);
+}
+
+.accordion-trigger:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.accordion-timeline-wrap {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.accordion-alert {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.14);
+}
+
+.accordion-nav-link {
+  background: rgba(91, 108, 255, 0.06);
+  border-color: rgba(91, 108, 255, 0.18);
+}
+
+.accordion-nav-link:hover {
+  background: rgba(91, 108, 255, 0.14);
 }
 
 .sc-agent-nameplate {
@@ -4868,8 +5023,14 @@ button.heat-cell {
   user-select: none;
 }
 
-.order-type-header:hover {
-  color: var(--forvia-blue);
+.order-type-header:hover .order-type-option {
+  opacity: 0.8;
+}
+
+.order-type-header-control {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .proceed-btn {
