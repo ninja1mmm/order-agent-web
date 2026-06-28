@@ -2686,6 +2686,12 @@ button.heat-cell {
   max-height: 280px;
 }
 
+.panel-body.stack > .scroll-x {
+  flex: 1 1 0%;
+  min-height: 0;
+  max-height: none;
+}
+
 .scroll-x .table thead th {
   position: sticky;
   top: 0;

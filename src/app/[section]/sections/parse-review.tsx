@@ -56,6 +56,20 @@ function resultTabForTask(taskType: string | undefined): "forecast" | "shipping"
   return taskType === "extract_forecast" ? "forecast" : "shipping";
 }
 
+function detectDateFormat(input: string): { dateInfo: string; dateFormat: "day" | "week" | "month" } | null {
+  const s = input.trim();
+  if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(s)) {
+    return { dateInfo: s.replace(/\//g, "-"), dateFormat: "day" };
+  }
+  if (/^\d{4}[-\s]?[CKW]?W\d{1,2}$/i.test(s) || /^[CKW]?W\s*\d{1,2}(\/\d{4})?$/i.test(s)) {
+    return { dateInfo: s, dateFormat: "week" };
+  }
+  if (/^\d{4}[-/]\d{2}$/.test(s)) {
+    return { dateInfo: s.replace(/\//g, "-"), dateFormat: "month" };
+  }
+  return null;
+}
+
 const PIPELINE_STEPS = ["extraction", "date_expansion", "conflict_resolution", "material_mapping", "published"] as const;
 const STEP_LABELS: Record<string, string> = {
   extraction: "AI 提取",
@@ -97,7 +111,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const [isAddingRow, setIsAddingRow] = useState(false);
   const [newRowData, setNewRowData] = useState({ customerPartNumber: "", quantity: "", dateInfo: "" });
   const [newRowErrors, setNewRowErrors] = useState<Record<string, string>>({});
-  const [localNewRows, setLocalNewRows] = useState<{ id: string; customerPartNumber: string; quantity: number; dateInfo: string }[]>([]);
+  const [localNewRows, setLocalNewRows] = useState<{ id: string; customerPartNumber: string; quantity: number; dateInfo: string; dateFormat: "day" | "week" | "month" }[]>([]);
   const effectiveTaskId = hasUserSelected ? selectedTaskId : (targetTaskId ?? selectedTaskId);
   const prevRevisionRef = useRef<string | null>(null);
   const localRevRef = useRef<number | null>(null);
@@ -403,7 +417,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
       }
       const deleted = deletedRowIds.size > 0 ? Array.from(deletedRowIds) : undefined;
       const added = localNewRows.length > 0
-        ? localNewRows.map((r) => ({ customer_part_number: r.customerPartNumber, quantity: r.quantity, date_info: r.dateInfo }))
+        ? localNewRows.map((r) => ({ customer_part_number: r.customerPartNumber, quantity: r.quantity, date_info: r.dateInfo, date_format: r.dateFormat }))
         : undefined;
       const revision = localResultRevision ?? selectedTask.resultRevision;
       await proceedTask(selectedTask.id, revision, overrides, deleted, added);
@@ -425,7 +439,13 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
     if (!newRowData.customerPartNumber.trim()) errors.customerPartNumber = "必填";
     const qty = parseInt(newRowData.quantity, 10);
     if (!newRowData.quantity.trim() || isNaN(qty) || qty < 0) errors.quantity = "请输入有效数量";
-    if (!newRowData.dateInfo.trim()) errors.dateInfo = "必填";
+    if (!newRowData.dateInfo.trim()) {
+      errors.dateInfo = "必填";
+    }
+    const dateResult = newRowData.dateInfo.trim() ? detectDateFormat(newRowData.dateInfo) : null;
+    if (newRowData.dateInfo.trim() && !dateResult) {
+      errors.dateInfo = "格式: 2026-06-23, 2026-W26, 或 2026-06";
+    }
 
     if (Object.keys(errors).length > 0) {
       setNewRowErrors(errors);
@@ -438,7 +458,8 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
         id: `new_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         customerPartNumber: newRowData.customerPartNumber.trim(),
         quantity: qty,
-        dateInfo: newRowData.dateInfo.trim(),
+        dateInfo: dateResult!.dateInfo,
+        dateFormat: dateResult!.dateFormat,
       },
     ]);
     setIsAddingRow(false);
