@@ -29,6 +29,7 @@ export async function proceedTask(
   resultRevision = 1,
   orderTypeOverrides?: Record<string, string>,
   deletedRowIds?: string[],
+  addedRows?: { customer_part_number: string; quantity: number; date_info: string }[],
 ): Promise<void> {
   const body: Record<string, unknown> = { result_revision: resultRevision };
   if (orderTypeOverrides && Object.keys(orderTypeOverrides).length > 0) {
@@ -36,6 +37,9 @@ export async function proceedTask(
   }
   if (deletedRowIds && deletedRowIds.length > 0) {
     body.deleted_row_ids = deletedRowIds;
+  }
+  if (addedRows && addedRows.length > 0) {
+    body.added_rows = addedRows;
   }
   await apiRequest(`/api/tasks/${taskId}/proceed`, {
     method: "POST",

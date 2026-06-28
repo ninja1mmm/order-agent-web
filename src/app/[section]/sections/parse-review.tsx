@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, FileSearch, LoaderCircle, Play, RefreshCw, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, FileSearch, LoaderCircle, Play, Plus, RefreshCw, Trash2, X } from "lucide-react";
 
 import { BACKEND_URL } from "../../../api/client";
 import { Button } from "@/components/ui/button";
@@ -94,8 +94,13 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [localRowOverrides, setLocalRowOverrides] = useState<Map<string, Record<string, unknown>>>(new Map());
+  const [isAddingRow, setIsAddingRow] = useState(false);
+  const [newRowData, setNewRowData] = useState({ customerPartNumber: "", quantity: "", dateInfo: "" });
+  const [newRowErrors, setNewRowErrors] = useState<Record<string, string>>({});
+  const [localNewRows, setLocalNewRows] = useState<{ id: string; customerPartNumber: string; quantity: number; dateInfo: string }[]>([]);
   const effectiveTaskId = hasUserSelected ? selectedTaskId : (targetTaskId ?? selectedTaskId);
   const prevRevisionRef = useRef<string | null>(null);
+  const localRevRef = useRef<number | null>(null);
 
   const taskCustomers = useMemo(
     () => [
@@ -239,7 +244,14 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     if (selectedRevision === prevRevisionRef.current) return;
+    const prevTaskId = prevRevisionRef.current?.split("::")[0] ?? null;
+    const currTaskId = selectedRevision?.split("::")[0] ?? null;
     prevRevisionRef.current = selectedRevision;
+
+    if (prevTaskId === currTaskId && localRevRef.current !== null) {
+      return;
+    }
+
     const next = new Map<string, OrderType>();
     for (const [rowId, row] of rowEntries) {
       const ot = String(row.classification ?? "uncertain");
@@ -249,7 +261,12 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
     setDeletedRowIds(new Set());
     setTaskStaleState(null);
     setLocalResultRevision(null);
+    localRevRef.current = null;
     setLocalRowOverrides(new Map());
+    setLocalNewRows([]);
+    setIsAddingRow(false);
+    setNewRowData({ customerPartNumber: "", quantity: "", dateInfo: "" });
+    setNewRowErrors({});
   }, [rowEntries, selectedRevision]);
 
   const bulkOrderState = useMemo(() => {
@@ -307,6 +324,22 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
     if (!editingCell || !selectedTask) return;
     const { rowId, field } = editingCell;
 
+    if (rowId.startsWith("new_")) {
+      const val = editValue.trim();
+      setLocalNewRows((prev) => prev.map((r) => {
+        if (r.id !== rowId) return r;
+        if (field === "customerPartNumber") return { ...r, customerPartNumber: val };
+        if (field === "quantity") {
+          const parsed = parseInt(val, 10);
+          return { ...r, quantity: isNaN(parsed) || parsed < 0 ? r.quantity : parsed };
+        }
+        if (field === "dateInfo") return { ...r, dateInfo: val };
+        return r;
+      }));
+      cancelEditing();
+      return;
+    }
+
     const row = selectedTask.resultRows?.[rowId];
     const originalValue = row ? row[field] : null;
     const camelToSnake = (s: string) => s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
@@ -331,6 +364,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
     try {
       const res = await patchRow(selectedTask.id, rowId, revision, { [snakeField]: newValue });
       setLocalResultRevision(res.resultRevision);
+      localRevRef.current = res.resultRevision;
       setTaskStaleState(res.taskStaleState);
       setLocalRowOverrides((prev) => {
         const next = new Map(prev);
@@ -368,18 +402,55 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
         }
       }
       const deleted = deletedRowIds.size > 0 ? Array.from(deletedRowIds) : undefined;
+      const added = localNewRows.length > 0
+        ? localNewRows.map((r) => ({ customer_part_number: r.customerPartNumber, quantity: r.quantity, date_info: r.dateInfo }))
+        : undefined;
       const revision = localResultRevision ?? selectedTask.resultRevision;
-      await proceedTask(selectedTask.id, revision, overrides, deleted);
+      await proceedTask(selectedTask.id, revision, overrides, deleted, added);
       setTaskStaleState(null);
       setLocalResultRevision(null);
+      localRevRef.current = null;
       setLocalRowOverrides(new Map());
+      setLocalNewRows([]);
       refresh();
     } catch (err) {
       console.error("Proceed failed:", err);
     } finally {
       setIsProceedLoading(false);
     }
-  }, [selectedTask, orderTypeMap, deletedRowIds, localResultRevision, refresh]);
+  }, [selectedTask, orderTypeMap, deletedRowIds, localNewRows, localResultRevision, refresh]);
+
+  const handleSaveNewRow = useCallback(() => {
+    const errors: Record<string, string> = {};
+    if (!newRowData.customerPartNumber.trim()) errors.customerPartNumber = "必填";
+    const qty = parseInt(newRowData.quantity, 10);
+    if (!newRowData.quantity.trim() || isNaN(qty) || qty < 0) errors.quantity = "请输入有效数量";
+    if (!newRowData.dateInfo.trim()) errors.dateInfo = "必填";
+
+    if (Object.keys(errors).length > 0) {
+      setNewRowErrors(errors);
+      return;
+    }
+
+    setLocalNewRows((prev) => [
+      ...prev,
+      {
+        id: `new_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        customerPartNumber: newRowData.customerPartNumber.trim(),
+        quantity: qty,
+        dateInfo: newRowData.dateInfo.trim(),
+      },
+    ]);
+    setIsAddingRow(false);
+    setNewRowData({ customerPartNumber: "", quantity: "", dateInfo: "" });
+    setNewRowErrors({});
+  }, [newRowData]);
+
+  const handleCancelNewRow = useCallback(() => {
+    setIsAddingRow(false);
+    setNewRowData({ customerPartNumber: "", quantity: "", dateInfo: "" });
+    setNewRowErrors({});
+  }, []);
 
   const timeline: TimelineEntry[] = useMemo(() => {
     if (!selectedTask) return [];
@@ -540,10 +611,10 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Customer P/N</th>
+                      <th>Customer P/N{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
                       <th>Faurecia P/N</th>
-                      <th>Quantity</th>
-                      <th>Date</th>
+                      <th>Quantity{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
+                      <th>Date{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
                       <th>Week</th>
                       <th
                         style={{ cursor: "pointer", userSelect: "none" }}
@@ -563,7 +634,18 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                         </div>
                       </th>
                       <th>Conflict</th>
-                      <th style={{ width: 36 }} />
+                      <th style={{ width: 36 }}>
+                        {isWaitingHuman && !isAddingRow && (
+                          <button
+                            type="button"
+                            className="row-add-btn"
+                            title="新增行"
+                            onClick={() => setIsAddingRow(true)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        )}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -606,7 +688,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                           <span
                             className={`editable-cell${isWaitingHuman ? " editable" : ""}${stale ? " stale" : ""}`}
                             onClick={() => startEditing(rowId, field, val)}
-                            title={stale ? "此字段将在继续流程后重新计算" : undefined}
+                            title={stale ? "此字段将在继续流程后重新计算" : isWaitingHuman ? "点击编辑" : undefined}
                           >
                             {display || <span className="cell-placeholder">—</span>}
                           </span>
@@ -616,7 +698,7 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                       const derivedCell = (field: string, content: React.ReactNode) => {
                         const stale = isFieldStale(field);
                         return (
-                          <span className={stale ? "stale" : ""} title={stale ? "待重新计算" : undefined}>
+                          <span className={`readonly-cell${stale ? " stale" : ""}`} title={stale ? "待重新计算" : undefined}>
                             {content}
                           </span>
                         );
@@ -675,11 +757,69 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                             })())}
                           </td>
                           <td>
+                            {isWaitingHuman && (
+                              <button
+                                type="button"
+                                className="row-delete-btn"
+                                title="删除此行"
+                                onClick={() => deleteRow(rowId)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {localNewRows.map((nr) => {
+                      const nrEditing = (field: string) =>
+                        editingCell?.rowId === nr.id && editingCell?.field === field;
+
+                      const nrCell = (field: "customerPartNumber" | "quantity" | "dateInfo") => {
+                        const val = nr[field];
+                        if (nrEditing(field)) {
+                          return (
+                            <input
+                              className="inline-edit-input"
+                              type={field === "quantity" ? "number" : "text"}
+                              value={editValue}
+                              autoFocus
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={commitEdit}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") commitEdit();
+                                else if (e.key === "Escape") cancelEditing();
+                              }}
+                            />
+                          );
+                        }
+                        return (
+                          <span
+                            className="editable-cell editable"
+                            onClick={() => startEditing(nr.id, field, val)}
+                            title="点击编辑"
+                          >
+                            {String(val) || <span className="cell-placeholder">—</span>}
+                          </span>
+                        );
+                      };
+
+                      return (
+                        <tr key={nr.id} className="new-row-tr">
+                          <td>{nrCell("customerPartNumber")}</td>
+                          <td><span className="readonly-cell">—</span></td>
+                          <td>{nrCell("quantity")}</td>
+                          <td>{nrCell("dateInfo")}</td>
+                          <td><span className="readonly-cell">—</span></td>
+                          <td><span className="readonly-cell">—</span></td>
+                          <td>—</td>
+                          <td>—</td>
+                          <td>
                             <button
                               type="button"
                               className="row-delete-btn"
-                              title="删除此行"
-                              onClick={() => deleteRow(rowId)}
+                              title="移除新增行"
+                              onClick={() => setLocalNewRows((prev) => prev.filter((r) => r.id !== nr.id))}
                             >
                               <Trash2 className="h-3 w-3" />
                             </button>
@@ -687,6 +827,51 @@ export function LiveParseReview({ locale }: { locale: Locale }) {
                         </tr>
                       );
                     })}
+                    {isWaitingHuman && isAddingRow && (
+                      <tr className="add-row-tr">
+                        <td>
+                          <input
+                            className={`inline-edit-input${newRowErrors.customerPartNumber ? " input-error" : ""}`}
+                            value={newRowData.customerPartNumber}
+                            onChange={(e) => { setNewRowData((p) => ({ ...p, customerPartNumber: e.target.value })); setNewRowErrors((p) => { const n = { ...p }; delete n.customerPartNumber; return n; }); }}
+                            placeholder="Customer P/N *"
+                            autoFocus
+                          />
+                        </td>
+                        <td><span className="readonly-cell">—</span></td>
+                        <td>
+                          <input
+                            className={`inline-edit-input${newRowErrors.quantity ? " input-error" : ""}`}
+                            type="number"
+                            value={newRowData.quantity}
+                            onChange={(e) => { setNewRowData((p) => ({ ...p, quantity: e.target.value })); setNewRowErrors((p) => { const n = { ...p }; delete n.quantity; return n; }); }}
+                            placeholder="Quantity *"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className={`inline-edit-input${newRowErrors.dateInfo ? " input-error" : ""}`}
+                            value={newRowData.dateInfo}
+                            onChange={(e) => { setNewRowData((p) => ({ ...p, dateInfo: e.target.value })); setNewRowErrors((p) => { const n = { ...p }; delete n.dateInfo; return n; }); }}
+                            placeholder="Date *"
+                          />
+                        </td>
+                        <td><span className="readonly-cell">—</span></td>
+                        <td><span className="readonly-cell">—</span></td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>
+                          <div className="add-row-actions">
+                            <button type="button" className="row-action-btn save" title="保存" onClick={handleSaveNewRow}>
+                              <Check className="h-3 w-3" />
+                            </button>
+                            <button type="button" className="row-action-btn cancel" title="取消" onClick={handleCancelNewRow}>
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
