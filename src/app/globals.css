@@ -2686,8 +2686,14 @@ button.heat-cell {
   max-height: 280px;
 }
 
+.panel-body.stack:has(> .scroll-x) > *:first-child {
+  flex: 6 1 0%;
+  min-height: 0;
+  overflow: auto;
+}
+
 .panel-body.stack > .scroll-x {
-  flex: 1 1 0%;
+  flex: 4 1 0%;
   min-height: 0;
   max-height: none;
 }
