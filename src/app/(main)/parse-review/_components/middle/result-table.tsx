@@ -1,0 +1,179 @@
+"use client";
+
+import { Plus } from "lucide-react";
+import type { WorkspaceTask } from "@/services/inbox";
+import type { EditingCell, LocalNewRow, NewRowData, OrderType } from "../parse-review-types";
+import { AddResultRow } from "./add-result-row";
+import { ExistingResultRow } from "./existing-result-row";
+import { LocalNewResultRow } from "./local-new-result-row";
+
+type ResultTableProps = {
+  selectedTask: WorkspaceTask | undefined;
+  rows: Record<string, unknown>[];
+  rowIds: string[];
+  orderTypeMap: Map<string, OrderType>;
+  bulkOrderState: "firm" | "forecast" | "mixed";
+  mappingSortOrder: "asc" | "desc" | null;
+  conflictColorMap: Map<string, string>;
+  isWaitingHuman: boolean;
+  isAddingRow: boolean;
+  editingCell: EditingCell;
+  editValue: string;
+  localNewRows: LocalNewRow[];
+  newRowData: NewRowData;
+  newRowErrors: Record<string, string>;
+  langParam: string | null;
+  getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown;
+  isFieldStale: (fieldName: string) => boolean;
+  onToggleMappingSort: () => void;
+  onBulkToggleOrderType: () => void;
+  onStartAddingRow: () => void;
+  onToggleOrderType: (rowId: string) => void;
+  onDeleteRow: (rowId: string) => void;
+  onStartEditing: (rowId: string, field: string, currentValue: unknown) => void;
+  onEditValueChange: (value: string) => void;
+  onCommitEdit: () => void;
+  onCancelEditing: () => void;
+  onRemoveLocalNewRow: (rowId: string) => void;
+  onNewRowFieldChange: (field: keyof NewRowData, value: string) => void;
+  onSaveNewRow: () => void;
+  onCancelNewRow: () => void;
+};
+
+export function ResultTable({
+  selectedTask,
+  rows,
+  rowIds,
+  orderTypeMap,
+  bulkOrderState,
+  mappingSortOrder,
+  conflictColorMap,
+  isWaitingHuman,
+  isAddingRow,
+  editingCell,
+  editValue,
+  localNewRows,
+  newRowData,
+  newRowErrors,
+  langParam,
+  getRowValue,
+  isFieldStale,
+  onToggleMappingSort,
+  onBulkToggleOrderType,
+  onStartAddingRow,
+  onToggleOrderType,
+  onDeleteRow,
+  onStartEditing,
+  onEditValueChange,
+  onCommitEdit,
+  onCancelEditing,
+  onRemoveLocalNewRow,
+  onNewRowFieldChange,
+  onSaveNewRow,
+  onCancelNewRow,
+}: ResultTableProps) {
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="scroll-x">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Customer P/N{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
+            <th>Faurecia P/N</th>
+            <th>Quantity{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
+            <th>Date{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
+            <th>Week</th>
+            <th
+              style={{ cursor: "pointer", userSelect: "none" }}
+              title="点击按映射状态排序"
+              onClick={onToggleMappingSort}
+            >
+              Mapping{mappingSortOrder === "asc" ? " ▲" : mappingSortOrder === "desc" ? " ▼" : ""}
+            </th>
+            <th
+              className="order-type-header"
+              title="Click to toggle all"
+              onClick={onBulkToggleOrderType}
+            >
+              <div className="order-type-switch order-type-header-control">
+                <span className={`order-type-option${bulkOrderState === "firm" ? " active-confirmed" : ""}`}>Firm</span>
+                <span className={`order-type-option${bulkOrderState === "forecast" ? " active-forecast" : ""}`}>Forecast</span>
+              </div>
+            </th>
+            <th>Conflict</th>
+            <th style={{ width: 36 }}>
+              {isWaitingHuman && !isAddingRow && (
+                <button
+                  type="button"
+                  className="row-add-btn"
+                  title="新增行"
+                  onClick={onStartAddingRow}
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              )}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => {
+            const rowId = rowIds[index];
+            return (
+              <ExistingResultRow
+                key={rowId}
+                row={row}
+                rowId={rowId}
+                selectedTask={selectedTask}
+                orderType={orderTypeMap.get(rowId) ?? "uncertain"}
+                conflictClass={conflictClassForRow(row, conflictColorMap)}
+                isWaitingHuman={isWaitingHuman}
+                editingCell={editingCell}
+                editValue={editValue}
+                langParam={langParam}
+                getRowValue={getRowValue}
+                isFieldStale={isFieldStale}
+                onToggleOrderType={onToggleOrderType}
+                onDeleteRow={onDeleteRow}
+                onStartEditing={onStartEditing}
+                onEditValueChange={onEditValueChange}
+                onCommitEdit={onCommitEdit}
+                onCancelEditing={onCancelEditing}
+              />
+            );
+          })}
+          {localNewRows.map((row) => (
+            <LocalNewResultRow
+              key={row.id}
+              row={row}
+              editingCell={editingCell}
+              editValue={editValue}
+              onStartEditing={onStartEditing}
+              onEditValueChange={onEditValueChange}
+              onCommitEdit={onCommitEdit}
+              onCancelEditing={onCancelEditing}
+              onRemove={onRemoveLocalNewRow}
+            />
+          ))}
+          {isWaitingHuman && isAddingRow && (
+            <AddResultRow
+              newRowData={newRowData}
+              newRowErrors={newRowErrors}
+              onFieldChange={onNewRowFieldChange}
+              onSave={onSaveNewRow}
+              onCancel={onCancelNewRow}
+            />
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function conflictClassForRow(row: Record<string, unknown>, conflictColorMap: Map<string, string>) {
+  const conflict = String(row.conflictFlag ?? "none");
+  const pn = String(row.customerPartNumber ?? "");
+  return (conflict === "granularity_mismatch" || conflict === "quantity_conflict")
+    ? (conflictColorMap.get(`${conflict}::${pn}`) ?? "")
+    : "";
+}

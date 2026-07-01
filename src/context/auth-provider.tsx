@@ -72,7 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showLogin, setShowLogin] = useState(initialState.showLogin);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const logout = useCallback(async () => {
