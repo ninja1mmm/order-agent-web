@@ -8,7 +8,7 @@ type CartoonAgentProps = {
 };
 
 const characterByMood: Record<CartoonAgentMood, { src: string; className: string }> = {
-  idle: { src: "/sc-agent/digital-employee-idle.png", className: "image-idle" },
+  idle: { src: "/sc-agent/digital-employee-idle-ver2.0.png", className: "image-idle" },
   received: { src: "/sc-agent/digital-employee-idle-ver2.0.png", className: "image-received" },
   processing: { src: "/sc-agent/digital-employee-processing-ver2.0.png", className: "image-processing" },
   complete: { src: "/sc-agent/digital-employee-complete-ver2.0.png", className: "image-complete" },
