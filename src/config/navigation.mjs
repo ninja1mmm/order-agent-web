@@ -28,6 +28,13 @@ export const phaseOnePages = [
     prototypePath: "/prototype-3.0/03-orders.html",
   },
   {
+    key: "customer-profile",
+    title: "客户画像",
+    description: "对比客户历史 Sales Forecast 与最终 Firm Shipping Plan。",
+    productionPath: "/customer-profile",
+    prototypePath: "/prototype-3.0/05-customer-profile.html",
+  },
+  {
     key: "system-settings",
     title: "系统配置",
     description: "配置客户、物料映射、用户和统一邮箱。",
