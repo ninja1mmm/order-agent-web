@@ -1,0 +1,1224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>订单 Plus - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --order-firm-bg: #c7e8f3;
+      --order-firm-ink: #0f5368;
+      --order-forecast-bg: #fff;
+      --order-forecast-ink: #475569;
+      --order-forecast-line: #cbd5e1;
+      --order-conflict: #b91c1c;
+    }
+
+    .order-plus-summary {
+      display: grid;
+      grid-template-columns: minmax(280px, 1.2fr) minmax(360px, 2fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .order-plus-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px 14px;
+    }
+
+    .order-plus-card h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .order-plus-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .order-plus-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      align-items: center;
+    }
+
+    .legend-swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .legend-swatch::before {
+      content: "";
+      width: 28px;
+      height: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      border-radius: 3px;
+      background: #fff;
+    }
+
+    .legend-swatch.firm::before {
+      background: var(--order-firm-bg);
+    }
+
+    .legend-swatch.forecast::before {
+      background: var(--order-forecast-bg);
+      border-top: 2px solid var(--order-forecast-line);
+    }
+
+    .legend-swatch.overlap::before {
+      background: linear-gradient(180deg, var(--order-forecast-bg) 0 45%, var(--order-firm-bg) 45% 100%);
+    }
+
+    .legend-swatch.conflict::before {
+      background: var(--order-forecast-bg);
+      border: 2px dashed var(--order-conflict);
+    }
+
+    .order-plus-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    .order-plus-table th,
+    .order-plus-table td {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 0;
+      height: 42px;
+      vertical-align: middle;
+    }
+
+    .order-plus-table th {
+      padding: 8px 10px;
+      text-align: center;
+      font-size: 12px;
+      color: #334155;
+      background: #f8fafc;
+      font-weight: 850;
+    }
+
+    .order-plus-table .sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      background: #fff;
+      text-align: left;
+      padding: 8px 10px;
+    }
+
+    .order-plus-table th.sticky-col {
+      background: #f8fafc;
+      z-index: 5;
+    }
+
+    .order-plus-table .case-col {
+      width: 190px;
+      min-width: 190px;
+      left: 0;
+    }
+
+    .order-plus-table .material-col {
+      width: 130px;
+      min-width: 130px;
+      left: 190px;
+    }
+
+    .order-plus-table .customer-pn-col {
+      width: 140px;
+      min-width: 140px;
+      left: 320px;
+    }
+
+    .order-plus-table .internal-pn-col {
+      width: 130px;
+      min-width: 130px;
+      left: 460px;
+      border-right: 2px solid #cbd5e1;
+    }
+
+    .order-plus-table .time-col {
+      width: 102px;
+      min-width: 102px;
+    }
+
+    .order-plus-table .day-col {
+      width: 86px;
+      min-width: 86px;
+    }
+
+    .order-plus-table tbody tr:hover td {
+      background: #f8fafc;
+    }
+
+    .order-plus-table tbody tr:hover .order-cell.firm,
+    .order-plus-table tbody tr:hover .order-cell.forecast,
+    .order-plus-table tbody tr:hover .order-cell.overlap,
+    .order-plus-table tbody tr:hover .order-cell.split,
+    .order-plus-table tbody tr:hover .order-cell.conflict {
+      filter: brightness(0.985);
+    }
+
+    .row-title {
+      display: block;
+      color: var(--ink);
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    .row-meta {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .order-cell {
+      position: relative;
+      height: 42px;
+      padding: 7px 8px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 900;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .order-cell.empty {
+      background: #fff;
+      cursor: default;
+    }
+
+    .order-cell.firm {
+      background: var(--order-firm-bg);
+      color: var(--order-firm-ink);
+    }
+
+    .order-cell.forecast {
+      background: var(--order-forecast-bg);
+      color: var(--order-forecast-ink);
+      font-weight: 780;
+    }
+
+    .order-cell.span {
+      text-align: right;
+      letter-spacing: 0;
+    }
+
+    .order-cell.compact {
+      height: 28px;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+
+    .order-cell.forecast-strip {
+      background: var(--order-forecast-bg);
+      color: var(--order-forecast-ink);
+      text-align: right;
+      font-size: 12px;
+      font-weight: 780;
+      box-shadow: inset 0 1px 0 var(--order-forecast-line);
+    }
+
+    .order-plus-table tr.forecast-lane td {
+      height: 28px;
+      border-bottom-color: #eef2f7;
+    }
+
+    .order-plus-table tr.firm-lane td {
+      height: 38px;
+      border-bottom-color: #cbd5e1;
+    }
+
+    .order-plus-table tr.forecast-lane .sticky-col {
+      border-bottom-color: #cbd5e1;
+    }
+
+    .order-cell.overlap {
+      background: linear-gradient(180deg, var(--order-forecast-bg) 0 32%, var(--order-firm-bg) 32% 100%);
+      color: var(--order-firm-ink);
+    }
+
+    .order-cell.overlap .band-value {
+      position: absolute;
+      top: 2px;
+      left: 7px;
+      right: 7px;
+      color: var(--order-forecast-ink);
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .order-cell.overlap .main-value {
+      display: block;
+      padding-top: 12px;
+    }
+
+    .order-cell.split {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      padding: 0;
+      text-align: right;
+      color: var(--ink);
+    }
+
+    .order-cell.split span {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 8px;
+      line-height: 1;
+    }
+
+    .order-cell.split .forecast-part {
+      background: var(--order-forecast-bg);
+      color: var(--order-forecast-ink);
+      border-top: 1px solid var(--order-forecast-line);
+    }
+
+    .order-cell.split .firm-part {
+      background: var(--order-firm-bg);
+      color: var(--order-firm-ink);
+    }
+
+    .order-cell.conflict {
+      background: #fff;
+      color: var(--order-forecast-ink);
+      outline: 1px solid rgba(185, 28, 28, 0.55);
+      outline-offset: -2px;
+    }
+
+    .cell-note {
+      position: absolute;
+      left: 6px;
+      bottom: 3px;
+      color: rgba(100, 116, 139, 0.9);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .support-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 12px;
+    }
+
+    .mini-table th,
+    .mini-table td {
+      border-bottom: 1px solid var(--surface-muted);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .mini-table th {
+      color: var(--muted);
+      background: #f8fafc;
+      font-size: 11px;
+    }
+
+    .order-plus-viewbar {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .order-plus-viewbar .btn.small {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      min-width: 64px;
+      justify-content: center;
+    }
+
+    .order-plus-viewbar .btn.small.primary {
+      background: var(--forvia-blue);
+      color: #fff;
+    }
+
+    .order-view-panel {
+      display: none;
+    }
+
+    .order-view-panel.is-active {
+      display: block;
+    }
+
+    .order-view-note {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .order-view-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    .order-view-table th,
+    .order-view-table td {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      height: 44px;
+      padding: 8px 10px;
+      vertical-align: middle;
+      background: #fff;
+    }
+
+    .order-view-table th {
+      color: #334155;
+      background: #f8fafc;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .order-view-table .sticky-col {
+      position: sticky;
+      z-index: 4;
+      background: #fff;
+      text-align: left;
+    }
+
+    .order-view-table th.sticky-col {
+      background: #f8fafc;
+      z-index: 5;
+    }
+
+    .order-view-table .case-col {
+      width: 190px;
+      min-width: 190px;
+      left: 0;
+    }
+
+    .order-view-table .material-col {
+      width: 128px;
+      min-width: 128px;
+      left: 190px;
+    }
+
+    .order-view-table .source-col {
+      width: 150px;
+      min-width: 150px;
+      left: 318px;
+      border-right: 2px solid #cbd5e1;
+    }
+
+    .order-view-table .time-col {
+      width: 118px;
+      min-width: 118px;
+    }
+
+    .order-view-table .day-col {
+      width: 92px;
+      min-width: 92px;
+    }
+
+    .week-band {
+      background: #eef4fb !important;
+      color: #24364d;
+    }
+
+    .week-band.alt {
+      background: #f5f8fc !important;
+    }
+
+    .demand-cell {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .demand-cell:not(.empty) {
+      cursor: pointer;
+    }
+
+    .demand-cell:not(.empty):hover {
+      box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.35);
+    }
+
+    .demand-cell.empty {
+      color: transparent;
+      font-weight: 400;
+    }
+
+    .demand-cell.forecast {
+      background: #fff1a8;
+      color: #8a4a00;
+    }
+
+    .demand-cell.firm {
+      background: var(--order-firm-bg);
+      color: var(--order-firm-ink);
+    }
+
+    .demand-cell.mixed {
+      background: linear-gradient(135deg, #fff1a8 0 50%, var(--order-firm-bg) 50% 100%);
+      color: #0f5368;
+    }
+
+    .demand-cell.dual {
+      padding: 0;
+      background: #fff;
+    }
+
+    .demand-pair {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      height: 100%;
+      min-height: 44px;
+    }
+
+    .demand-pair span {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 8px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .demand-pair .forecast-value {
+      background: #fff1a8;
+      color: #8a4a00;
+      font-size: 11px;
+      border-bottom: 1px solid rgba(203, 213, 225, 0.9);
+    }
+
+    .demand-pair .firm-value {
+      background: var(--order-firm-bg);
+      color: var(--order-firm-ink);
+      font-size: 13px;
+    }
+
+    .demand-cell.review {
+      background: #fff;
+      color: #8a4a00;
+      box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.55);
+    }
+
+    .cell-hint {
+      display: block;
+      margin-top: 2px;
+      color: rgba(71, 85, 105, 0.88);
+      font-size: 10px;
+      font-weight: 750;
+      line-height: 1;
+    }
+
+    .edit-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .edit-summary-grid .card {
+      border-radius: 8px;
+    }
+
+    .source-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--surface-muted);
+    }
+
+    .source-row:last-child {
+      border-bottom: 0;
+    }
+
+    .source-row strong {
+      display: block;
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .source-row span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .edit-impact {
+      border-left: 3px solid var(--forvia-blue);
+      padding-left: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 900px) {
+      .order-plus-summary,
+      .support-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group"><a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i>智能客服</a><a class="nav-link active" href="01-task-workbench.html"><i data-lucide="workflow"></i>智能供应链</a><a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a><a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a></nav>
+      <div class="user-chip"><span>计划员 · 简中</span><span class="avatar">PL</span></div>
+    </header>
+    <main class="page fit-screen">
+      <div class="subnav"><a href="01-task-workbench.html">客户收件箱</a><a href="02-parse-review.html">解析审查</a><a class="active" href="03-orders.html">订单</a><a href="04-skill-studio.html">技能工坊</a></div>
+      <section class="panel scroll-panel screen-fill">
+        <div class="panel-head">
+          <h2 class="panel-title"><i data-lucide="table-2"></i>Sales Forecast Plus</h2>
+          <div class="list-actions">
+            <div class="order-plus-viewbar" aria-label="视图切换">
+              <button class="btn small primary" type="button" data-plus-view="week">周视图</button>
+              <button class="btn small" type="button" data-plus-view="day">日视图</button>
+            </div>
+            <button class="btn small primary"><i data-lucide="download"></i>导出</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="filter-bar" style="margin-bottom:14px; grid-template-columns: repeat(5, minmax(0, 1fr));">
+            <details class="filter-select"><summary>客户：全部</summary><div class="filter-options"><span>全部客户</span><span>长春</span><span>天津旭阳</span><span>WLB1343</span></div></details>
+            <details class="filter-select"><summary>窗口：日 3 周 / 周 24 周 / 月</summary><div class="filter-options"><span>默认窗口</span><span>未来 12 周</span><span>未来 24 周</span><span>自定义</span></div></details>
+            <details class="filter-select"><summary>料号：全部</summary><div class="filter-options"><span>全部料号</span><span>MAT-A-WEEK</span><span>MAT-B-FIRM</span><span>MAT-C-MIX</span></div></details>
+            <details class="filter-select"><summary>状态：全部</summary><div class="filter-options"><span>全部</span><span>只有 Forecast</span><span>只有 Firm</span><span>重叠</span><span>待复核</span></div></details>
+            <details class="filter-select"><summary>Program：全部</summary><div class="filter-options"><span>全部</span><span>Audi_Q5L</span><span>E-pump 1.0</span><span>E-pump 2.0</span></div></details>
+          </div>
+
+          <div class="tabs"><span class="active" data-order-tab="forecast">Sales Forecast Plus</span><span data-order-tab="shipping">Shipping Plan</span></div>
+
+          <div data-order-section="forecast">
+            <div class="order-plus-summary">
+              <div class="order-plus-card">
+                <h3>时间轴</h3>
+                <p>默认用周视图读计划；切到日视图时只展开近期日期，不再混用两套粒度。</p>
+              </div>
+              <div class="order-plus-card">
+                <h3>颜色</h3>
+                <div class="order-plus-legend">
+                  <span class="legend-swatch firm">Firm</span>
+                  <span class="legend-swatch forecast">Forecast</span>
+                  <span class="legend-swatch overlap">Firm + Forecast</span>
+                  <span class="legend-swatch conflict">同类跨粒度复核</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="order-view-panel is-active" data-plus-panel="week">
+              <p class="order-view-note">周视图只显示周/月桶。周内日 firm 会汇总成蓝色；日 forecast 会汇总成黄色；同周同时存在 firm 与日 forecast 时显示总和并使用黄蓝渐变。</p>
+              <div class="scroll-x">
+                <table class="table order-view-table" style="min-width:1180px">
+                  <thead>
+                    <tr>
+                      <th class="sticky-col case-col">Case</th>
+                      <th class="sticky-col material-col">物料</th>
+                      <th class="sticky-col source-col">来源组合</th>
+                      <th class="time-col">W01</th>
+                      <th class="time-col">W02</th>
+                      <th class="time-col">W03</th>
+                      <th class="time-col">W04</th>
+                      <th class="time-col">M07</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">A · 周 Forecast</span><span class="row-meta">整周预测</span></td>
+                      <td class="sticky-col material-col">MAT-A</td>
+                      <td class="sticky-col source-col">forecast week</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell forecast" data-open="#orderPlusSheet">5200</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">B · 日 Firm</span><span class="row-meta">日 firm 求和</span></td>
+                      <td class="sticky-col material-col">MAT-B</td>
+                      <td class="sticky-col source-col">firm days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell firm" data-open="#orderPlusSheet">1550</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">C · 日 Firm + 日 Forecast</span><span class="row-meta">同周两类日数据</span></td>
+                      <td class="sticky-col material-col">MAT-C</td>
+                      <td class="sticky-col source-col">firm days + forecast days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell mixed">2650<span class="cell-hint">F 1550 · Fc 1100</span></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">D · 日 Forecast</span><span class="row-meta">日 forecast 求和</span></td>
+                      <td class="sticky-col material-col">MAT-D</td>
+                      <td class="sticky-col source-col">forecast days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell forecast">4440</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">E · 周 Forecast + 日 Firm</span><span class="row-meta">周预测旁路对照 firm</span></td>
+                      <td class="sticky-col material-col">MAT-E</td>
+                      <td class="sticky-col source-col">forecast week + firm days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell mixed">3800<span class="cell-hint">firm 1550</span></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">F · 后续周/月</span><span class="row-meta">中远期保持周/月</span></td>
+                      <td class="sticky-col material-col">MAT-F</td>
+                      <td class="sticky-col source-col">weekly / monthly forecast</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell forecast">6200</td>
+                      <td class="demand-cell forecast">6100</td>
+                      <td class="demand-cell forecast">23800</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">G · 同类跨粒度</span><span class="row-meta">需要复核</span></td>
+                      <td class="sticky-col material-col">MAT-G</td>
+                      <td class="sticky-col source-col">forecast week + forecast days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell review">4440<span class="cell-hint">check W02 5200</span></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="order-view-panel" data-plus-panel="day">
+              <p class="order-view-note">日视图只展开近期日期；表头用同一底色连续标出同一周。周 forecast 在 mock 中按 7 天平均分配，单元格直接显示当天 firm / forecast / mixed 数量。</p>
+              <div class="scroll-x">
+                <table class="table order-view-table" style="min-width:1320px">
+                  <thead>
+                    <tr>
+                      <th class="sticky-col case-col" rowspan="2">Case</th>
+                      <th class="sticky-col material-col" rowspan="2">物料</th>
+                      <th class="sticky-col source-col" rowspan="2">日视图来源</th>
+                      <th class="time-col week-band alt" rowspan="2">W01</th>
+                      <th class="week-band" colspan="7">W02</th>
+                      <th class="time-col week-band alt" rowspan="2">W03</th>
+                    </tr>
+                    <tr>
+                      <th class="day-col week-band">1.7</th>
+                      <th class="day-col week-band">1.8</th>
+                      <th class="day-col week-band">1.9</th>
+                      <th class="day-col week-band">1.10</th>
+                      <th class="day-col week-band">1.11</th>
+                      <th class="day-col week-band">1.12</th>
+                      <th class="day-col week-band">1.13</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">A · 周 Forecast</span><span class="row-meta">5200 / 7 日均分配</span></td>
+                      <td class="sticky-col material-col">MAT-A</td>
+                      <td class="sticky-col source-col">forecast week averaged</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell forecast">743</td>
+                      <td class="demand-cell forecast">743</td>
+                      <td class="demand-cell forecast">743</td>
+                      <td class="demand-cell forecast">743</td>
+                      <td class="demand-cell forecast">743</td>
+                      <td class="demand-cell forecast">743</td>
+                      <td class="demand-cell forecast">742</td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">B · 日 Firm</span><span class="row-meta">当天 firm</span></td>
+                      <td class="sticky-col material-col">MAT-B</td>
+                      <td class="sticky-col source-col">firm days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell firm">800</td>
+                      <td class="demand-cell firm">650</td>
+                      <td class="demand-cell firm">100</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">C · 日 Firm + 日 Forecast</span><span class="row-meta">同周不同日期</span></td>
+                      <td class="sticky-col material-col">MAT-C</td>
+                      <td class="sticky-col source-col">firm days + forecast days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell firm">800</td>
+                      <td class="demand-cell firm">650</td>
+                      <td class="demand-cell firm">100</td>
+                      <td class="demand-cell forecast">500</td>
+                      <td class="demand-cell forecast">200</td>
+                      <td class="demand-cell forecast">400</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">D · 日 Forecast</span><span class="row-meta">当天 forecast</span></td>
+                      <td class="sticky-col material-col">MAT-D</td>
+                      <td class="sticky-col source-col">forecast days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell forecast">720</td>
+                      <td class="demand-cell forecast">760</td>
+                      <td class="demand-cell forecast">780</td>
+                      <td class="demand-cell forecast">740</td>
+                      <td class="demand-cell forecast">730</td>
+                      <td class="demand-cell forecast">710</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col case-col"><span class="row-title">E · 周 Forecast + 日 Firm</span><span class="row-meta">同日显示两个来源</span></td>
+                      <td class="sticky-col material-col">MAT-E</td>
+                      <td class="sticky-col source-col">forecast avg + firm days</td>
+                      <td class="demand-cell empty"></td>
+                      <td class="demand-cell dual"><span class="demand-pair"><span class="forecast-value">543</span><span class="firm-value">800</span></span></td>
+                      <td class="demand-cell dual"><span class="demand-pair"><span class="forecast-value">543</span><span class="firm-value">650</span></span></td>
+                      <td class="demand-cell dual"><span class="demand-pair"><span class="forecast-value">543</span><span class="firm-value">100</span></span></td>
+                      <td class="demand-cell forecast">543</td>
+                      <td class="demand-cell forecast">543</td>
+                      <td class="demand-cell forecast">543</td>
+                      <td class="demand-cell forecast">542</td>
+                      <td class="demand-cell empty"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="scroll-x" style="display:none">
+              <table class="table order-plus-table" style="min-width:1580px">
+                <thead>
+                  <tr>
+                    <th class="sticky-col case-col" rowspan="2">Case</th>
+                    <th class="sticky-col material-col" rowspan="2">物料</th>
+                    <th class="sticky-col customer-pn-col" rowspan="2">Customer P/N</th>
+                    <th class="sticky-col internal-pn-col" rowspan="2">Faurecia P/N</th>
+                    <th class="time-col" rowspan="2">W01</th>
+                    <th colspan="6">W02</th>
+                    <th class="time-col" rowspan="2">W03</th>
+                    <th class="time-col" rowspan="2">W04</th>
+                    <th class="time-col" rowspan="2">M07</th>
+                  </tr>
+                  <tr>
+                    <th class="day-col">1.7</th>
+                    <th class="day-col">1.8</th>
+                    <th class="day-col">1.9</th>
+                    <th class="day-col">1.10</th>
+                    <th class="day-col">1.11</th>
+                    <th class="day-col">1.12</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">A · 周 Forecast</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-A</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-A</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XA</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell compact forecast-strip" colspan="6" data-open="#orderPlusSheet">5200</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">B · 日 Firm</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-B</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-B</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XB</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell firm" data-open="#orderPlusSheet">800</td>
+                    <td class="order-cell firm" data-open="#orderPlusSheet">650</td>
+                    <td class="order-cell firm" data-open="#orderPlusSheet">100</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">C · 日 Firm + 日 Forecast</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-C</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-C</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XC</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell forecast">500</td>
+                    <td class="order-cell forecast">200</td>
+                    <td class="order-cell forecast">400</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell firm">800</td>
+                    <td class="order-cell firm">650</td>
+                    <td class="order-cell firm">100</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">D · 日 Forecast</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-D</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-D</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XD</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell forecast">720</td>
+                    <td class="order-cell forecast">760</td>
+                    <td class="order-cell forecast">780</td>
+                    <td class="order-cell forecast">740</td>
+                    <td class="order-cell forecast">730</td>
+                    <td class="order-cell forecast">710</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">E · 周 Forecast + 日 Firm</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-E</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-E</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XE</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell compact forecast-strip" colspan="6" data-open="#orderPlusSheet">3800</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell firm">800</td>
+                    <td class="order-cell firm">650</td>
+                    <td class="order-cell firm">100</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">F · 同日 Firm + Forecast</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-F</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-F</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XF</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell forecast">900</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell forecast">700</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell firm">800</td>
+                    <td class="order-cell firm">650</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">G · 周 Forecast + 日 Forecast</span><span class="row-meta">同类跨粒度，进入复核</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-G</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-G</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XG</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell conflict"><span class="cell-note">W02 5200</span>780</td>
+                    <td class="order-cell conflict"><span class="cell-note">W02 5200</span>760</td>
+                    <td class="order-cell conflict"><span class="cell-note">W02 5200</span>740</td>
+                    <td class="order-cell conflict"><span class="cell-note">W02 5200</span>730</td>
+                    <td class="order-cell conflict"><span class="cell-note">W02 5200</span>720</td>
+                    <td class="order-cell conflict"><span class="cell-note">W02 5200</span>710</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">H · 中期周 Forecast</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-H</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-H</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XH</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell forecast">6200</td>
+                    <td class="order-cell forecast">6100</td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">I · 中期周 Firm 汇总</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-I</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-I</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XI</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell firm">1450</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">J · 中期周重叠</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-J</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-J</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XJ</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell forecast">6200</td>
+                    <td class="order-cell forecast">6100</td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell firm">1450</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">K · 远期月 Forecast</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-K</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-K</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XK</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell forecast">23800</td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">L · 月内周预测汇总</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-L</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-L</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XL</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell forecast">24100<span class="cell-note">4W</span></td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                  </tr>
+
+                  <tr class="forecast-lane">
+                    <td class="sticky-col case-col" rowspan="2"><span class="row-title">M · 远期月重叠</span><span class="row-meta">上: forecast / 下: firm</span></td>
+                    <td class="sticky-col material-col" rowspan="2">MAT-M</td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X-M</td>
+                    <td class="sticky-col internal-pn-col" rowspan="2">2777977XM</td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell forecast">23800</td>
+                  </tr>
+                  <tr class="firm-lane">
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty" colspan="6"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell empty"></td>
+                    <td class="order-cell firm">4200</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+          <div data-order-section="shipping" style="display:none">
+            <div class="scroll-x">
+              <table class="table" style="min-width:1180px">
+                <thead><tr><th>Source.Name</th><th>Customer code</th><th>Customer</th><th>Part Number</th><th>Actual Qty</th><th>Shipping Date</th><th>Delivery Note</th><th>备注</th><th>客服</th><th>一厂OR二厂</th><th>HU</th><th>托数</th><th>Product</th></tr></thead>
+                <tbody>
+                  <tr><td>FirmOrder.pdf</td><td>1032000000</td><td>长春</td><td>2777977XB</td><td>800</td><td>2026/1/7</td><td>45810466</td><td>-</td><td>Li Mei</td><td>一厂</td><td>192</td><td>4</td><td>Audi_Q5L</td></tr>
+                  <tr><td>FirmOrder.pdf</td><td>1032000000</td><td>长春</td><td>2777977XC</td><td>650</td><td>2026/1/8</td><td>45810467</td><td>-</td><td>Li Mei</td><td>一厂</td><td>192</td><td>3</td><td>Audi_Q5L</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="sheet-backdrop" id="orderPlusSheet">
+    <div class="sheet">
+      <div class="panel-head"><h2 class="panel-title">来源与编辑</h2><button class="btn" data-close>关闭</button></div>
+      <div class="panel-body stack">
+        <div class="edit-summary-grid">
+          <div class="card"><p class="item-meta">物料</p><p class="item-title">MAT-E / 2777977XE</p></div>
+          <div class="card"><p class="item-meta">时间桶</p><p class="item-title">2026-W02 · 1.7</p></div>
+          <div class="card"><p class="item-meta">当前显示</p><p class="item-title">Forecast 543 · Firm 800</p></div>
+        </div>
+
+        <div class="card">
+          <p class="item-title">来源文件</p>
+          <div class="source-row">
+            <div><strong>Forecast_W02.xlsx</strong><span>Sheet Demand · W02 forecast 3800 · 收件 2026/01/05 09:18</span></div>
+            <button class="btn small">打开附件</button>
+          </div>
+          <div class="source-row">
+            <div><strong>FirmOrder_0107.pdf</strong><span>Line 14 · 2026/01/07 firm 800 · 收件 2026/01/06 16:42</span></div>
+            <button class="btn small">打开附件</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="item-title">手动编辑</p>
+          <div class="filter-bar" style="grid-template-columns: 1fr 1fr; margin:10px 0;">
+            <label><span class="item-meta">Forecast</span><input class="input" value="543"></label>
+            <label><span class="item-meta">Firm</span><input class="input" value="800"></label>
+          </div>
+          <textarea class="input" style="min-height:76px">填写调整原因...</textarea>
+          <p class="edit-impact">保存后会生成一条手动修改记录。日视图修改日值后，周视图自动重算该周汇总；周视图修改周 forecast 后，日视图按当前分配规则重新展开。Firm 的周汇总来自日明细，保存时需要落到具体日期。</p>
+          <div class="list-actions" style="margin-top:12px;"><button class="btn">取消</button><button class="btn primary">保存修改</button></div>
+        </div>
+
+        <div class="timeline">
+          <div class="step"><div class="step-title">AI 解析入库</div><div class="step-meta">Forecast_W02.xlsx 写入 W02 forecast 3800；FirmOrder_0107.pdf 写入 2026/01/07 firm 800。</div></div>
+          <div class="step"><div class="step-title">视图同步</div><div class="step-meta">周视图显示 W02，日视图显示 1.7；两个视图共享同一组来源与手动修改历史。</div></div>
+          <div class="step"><div class="step-title">手动修改记录</div><div class="step-meta">暂无。保存后记录用户、时间、原值、新值、原因和影响范围。</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll("[data-plus-view]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const view = button.dataset.plusView;
+          document.querySelectorAll("[data-plus-view]").forEach((item) => {
+            item.classList.toggle("primary", item === button);
+          });
+          document.querySelectorAll("[data-plus-panel]").forEach((panel) => {
+            panel.classList.toggle("is-active", panel.dataset.plusPanel === view);
+          });
+        });
+      });
+      document.querySelectorAll(".demand-cell:not(.empty)").forEach((cell) => {
+        cell.addEventListener("click", () => {
+          document.querySelector("#orderPlusSheet")?.classList.add("open");
+        });
+      });
+    });
+  </script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

@@ -141,7 +141,23 @@ export type CustomerScoreMetricKey =
   | "convergenceScore"
   | "timelinessScore";
 
-export type CustomerScorecardCurrent = Record<CustomerScoreMetricKey, number | null>;
+export type CustomerScoreBiasDirection = "over" | "under" | "balanced";
+
+export type CustomerScoreMetricDetail = {
+  key: CustomerScoreMetricKey;
+  label: string;
+  numeratorLabel: string;
+  denominatorLabel: string;
+  numerator: number | null;
+  denominator: number | null;
+  score: number | null;
+  biasRate: number | null;
+  biasDirection: CustomerScoreBiasDirection | null;
+};
+
+export type CustomerScorecardCurrent = Record<CustomerScoreMetricKey, number | null> & {
+  details: CustomerScoreMetricDetail[];
+};
 
 export type CustomerScorecardTimelinePoint = CustomerScorecardCurrent & {
   receivedAt: string;

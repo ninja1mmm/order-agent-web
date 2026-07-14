@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import {
   getCustomerProfileScorecard,
   type CustomerScoreMetricKey,
+  type CustomerScoreMetricDetail,
   type CustomerScorecardResponse,
 } from "@/services/customer-profile";
 import {
@@ -53,6 +54,7 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
   const [data, setData] = useState<CustomerScorecardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeMetric, setActiveMetric] = useState<CustomerScoreMetricKey>("accuracyScore");
+  const [selectedSnapshotAt, setSelectedSnapshotAt] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
         const response = await getCustomerProfileScorecard(customerId, { days: 90 });
         if (cancelled) return;
         setData(response);
+        setSelectedSnapshotAt(null);
       } catch {
         if (cancelled) return;
         setData(null);
@@ -89,7 +92,13 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
     receivedAt: point.receivedAt,
     label: formatDisplayDateTime(point.receivedAt),
     score: point[activeMetric],
+    details: point.details,
   }));
+  const activeDetail = findMetricDetail(data?.current.details, activeMetric);
+  const selectedSnapshot = selectedSnapshotAt
+    ? data?.timeline.find((point) => point.receivedAt === selectedSnapshotAt) ?? null
+    : null;
+  const selectedSnapshotDetail = findMetricDetail(selectedSnapshot?.details, activeMetric);
   const explanationItems = data?.explanations.length
     ? data.explanations
     : METRICS.map((metric) => ({
@@ -143,7 +152,7 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
         ) : (
           <>
             <div className="card scorecard-radar-card">
-              <ResponsiveContainer width="100%" height={190}>
+              <ResponsiveContainer width="100%" height={155}>
                 <RadarChart data={radarData} outerRadius="68%">
                   <PolarGrid stroke="rgba(148, 163, 184, 0.35)" />
                   <PolarAngleAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -183,8 +192,8 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
               {timelineData.length === 0 ? (
                 <p className="item-meta">暂无邮件时间趋势</p>
               ) : (
-                <div className="chart customer-profile-chart">
-                  <ResponsiveContainer width="100%" height={190}>
+                <div className="chart customer-profile-chart scorecard-timeline-chart">
+                  <ResponsiveContainer width="100%" height={108}>
                     <LineChart data={timelineData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.25)" />
                       <XAxis dataKey="label" hide />
@@ -202,16 +211,134 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
                         stroke="#5b6cff"
                         strokeWidth={2}
                         connectNulls={false}
-                        dot={{ r: 3 }}
+                        dot={(props) => {
+                          const payload = props.payload as { receivedAt?: string } | undefined;
+                          return (
+                            <circle
+                              key={`${props.cx}-${props.cy}`}
+                              cx={props.cx}
+                              cy={props.cy}
+                              r={4}
+                              className="scorecard-chart-dot"
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => {
+                                if (payload?.receivedAt) setSelectedSnapshotAt(payload.receivedAt);
+                              }}
+                              onKeyDown={(event) => {
+                                if ((event.key === "Enter" || event.key === " ") && payload?.receivedAt) {
+                                  setSelectedSnapshotAt(payload.receivedAt);
+                                }
+                              }}
+                            />
+                          );
+                        }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               )}
+              <MetricDetailTable
+                detail={selectedSnapshotDetail ?? activeDetail}
+                title={selectedSnapshot ? `${formatDisplayDateTime(selectedSnapshot.receivedAt)} 快照` : "当前快照"}
+              />
             </div>
           </>
         )}
       </div>
     </aside>
   );
+}
+
+function findMetricDetail(
+  details: CustomerScoreMetricDetail[] | undefined,
+  metric: CustomerScoreMetricKey,
+): CustomerScoreMetricDetail | null {
+  return details?.find((item) => item.key === metric) ?? null;
+}
+
+function formatMetricNumber(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return "-";
+  return Number.isInteger(value) ? value.toLocaleString() : value.toFixed(1);
+}
+
+function biasDirectionLabel(direction: CustomerScoreMetricDetail["biasDirection"]): string {
+  if (direction === "over") return "偏高报";
+  if (direction === "under") return "偏低报";
+  if (direction === "balanced") return "基本平衡";
+  return "-";
+}
+
+function MetricDetailTable({
+  detail,
+  title,
+}: {
+  detail: CustomerScoreMetricDetail | null;
+  title: string;
+}) {
+  if (!detail) {
+    return <p className="item-meta">暂无计算明细</p>;
+  }
+
+  return (
+    <div className="scorecard-detail-table-card">
+      <div className="row" style={{ alignItems: "center", marginBottom: 6 }}>
+        <p className="mini-title" style={{ marginBottom: 0 }}>{title}</p>
+        <span className="badge slate">{detail.label} {formatPercent(detail.score)}</span>
+      </div>
+      <table className="scorecard-detail-table">
+        <thead>
+          <tr>
+            <th>变量</th>
+            <th>说明</th>
+            <th>值</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td>{detail.numeratorLabel}</td>
+            <td>{formatMetricNumber(detail.numerator)}</td>
+          </tr>
+          <tr>
+            <td>B</td>
+            <td>{detail.denominatorLabel}</td>
+            <td>{formatMetricNumber(detail.denominator)}</td>
+          </tr>
+          {detail.key === "biasHealthScore" ? (
+            <>
+              <tr>
+                <td>Bias</td>
+                <td>A / B，有方向偏差率</td>
+                <td>{detail.biasRate == null ? "-" : `${detail.biasRate > 0 ? "+" : ""}${formatPercent(detail.biasRate)}`}</td>
+              </tr>
+              <tr>
+                <td>方向</td>
+                <td>偏高 / 偏低判断</td>
+                <td>{biasDirectionLabel(detail.biasDirection)}</td>
+              </tr>
+            </>
+          ) : null}
+          <tr>
+            <td>公式</td>
+            <td>{metricFormula(detail)}</td>
+            <td>{formatPercent(detail.score)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function metricFormula(detail: CustomerScoreMetricDetail): string {
+  switch (detail.key) {
+    case "accuracyScore":
+      return "得分 = 100 * (1 - A / B)";
+    case "biasHealthScore":
+      return "得分 = 100 * (1 - |A / B|)";
+    case "timelinessScore":
+      return "得分 = A / B";
+    default:
+      return "得分 = 100 * A / B";
+  }
 }
