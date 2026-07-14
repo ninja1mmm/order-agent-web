@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>订单 Plus 2.0 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --firm-bg: #d9eef7;
+      --firm-ink: #03637e;
+      --forecast-bg: #fff5b8;
+      --forecast-ink: #9a5a00;
+      --recent-zone: #ffffff;
+      --mid-zone: #f8fafc;
+      --far-zone: #f3fbf6;
+      --grid-line: #dbe5f1;
+    }
+
+    .order2-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .order2-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .legend-chip::before {
+      content: "";
+      width: 28px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(15, 23, 42, 0.14);
+      background: #fff;
+    }
+
+    .legend-chip.forecast::before {
+      background: var(--forecast-bg);
+    }
+
+    .legend-chip.firm::before {
+      background: var(--firm-bg);
+    }
+
+    .legend-chip.dirty::before {
+      background:
+        linear-gradient(135deg, #2563eb 0 45%, transparent 45% 100%),
+        var(--forecast-bg);
+    }
+
+    .legend-chip.month::before {
+      background: repeating-linear-gradient(45deg, #fff8c8 0 12px, #fff2a1 12px 24px);
+    }
+
+    .order2-shell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .order2-table {
+      width: 100%;
+      min-width: 1280px;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    .order2-table th,
+    .order2-table td {
+      border-right: 1px solid var(--grid-line);
+      border-bottom: 1px solid var(--grid-line);
+      height: 48px;
+      padding: 8px 10px;
+      vertical-align: middle;
+    }
+
+    .order2-table th {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .sticky-col {
+      position: sticky;
+      z-index: 4;
+      background: #fff;
+      text-align: left;
+    }
+
+    th.sticky-col {
+      z-index: 5;
+      background: #f8fafc;
+    }
+
+    .customer-col {
+      left: 0;
+      width: 116px;
+      min-width: 116px;
+    }
+
+    .customer-pn-col {
+      left: 116px;
+      width: 126px;
+      min-width: 126px;
+    }
+
+    .faurecia-pn-col {
+      left: 242px;
+      width: 130px;
+      min-width: 130px;
+    }
+
+    .updated-col {
+      left: 372px;
+      width: 112px;
+      min-width: 112px;
+    }
+
+    .type-col {
+      left: 484px;
+      width: 92px;
+      min-width: 92px;
+      border-right: 2px solid #cbd5e1 !important;
+      text-align: center;
+    }
+
+    .material-title {
+      display: block;
+      color: var(--ink);
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    .material-meta {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .lane-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .lane-badge.forecast {
+      color: var(--forecast-ink);
+      background: #fff1a8;
+    }
+
+    .lane-badge.firm {
+      color: var(--firm-ink);
+      background: #e4f4fb;
+    }
+
+    .time-head {
+      position: relative;
+      white-space: nowrap;
+    }
+
+    .period-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      margin-right: 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      background: #fff;
+      color: #334155;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .period-toggle:hover {
+      border-color: var(--forvia-blue);
+      color: var(--forvia-blue);
+    }
+
+    .day-col {
+      width: 86px;
+      min-width: 86px;
+    }
+
+    .week-col {
+      width: 104px;
+      min-width: 104px;
+    }
+
+    .month-col {
+      width: 124px;
+      min-width: 124px;
+    }
+
+    .recent-zone {
+      background: var(--recent-zone) !important;
+    }
+
+    .mid-zone {
+      background: var(--mid-zone) !important;
+    }
+
+    .far-zone {
+      background: var(--far-zone) !important;
+    }
+
+    .order2-shell .period-w02-detail,
+    .order2-shell .period-w03-detail,
+    .order2-shell .period-m07-detail,
+    .order2-shell .period-w27-day {
+      display: none;
+    }
+
+    .order2-shell.expanded-w02 .period-w02-summary,
+    .order2-shell.expanded-w03 .period-w03-summary,
+    .order2-shell.expanded-m07 .period-m07-summary {
+      display: none;
+    }
+
+    .order2-shell.expanded-w02 .period-w02-detail,
+    .order2-shell.expanded-w03 .period-w03-detail,
+    .order2-shell.expanded-m07 .period-m07-detail {
+      display: table-cell;
+    }
+
+    .order2-shell.expanded-m07:not(.expanded-w27) .period-w27-day {
+      display: none;
+    }
+
+    .order2-shell.expanded-w27 .period-w27-summary {
+      display: none;
+    }
+
+    .order2-shell.expanded-w27 .period-w27-day {
+      display: table-cell;
+    }
+
+    .drill-note {
+      display: block;
+      margin-top: 2px;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .demand-cell {
+      position: relative;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .demand-cell.empty {
+      color: transparent;
+    }
+
+    .forecast-cell {
+      background: var(--forecast-bg);
+      color: var(--forecast-ink);
+      font-weight: 900;
+    }
+
+    .firm-cell-2 {
+      background: var(--firm-bg);
+      color: var(--firm-ink);
+      font-weight: 900;
+    }
+
+    .pill-cell {
+      padding: 6px 8px !important;
+    }
+
+    .span-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      border-radius: 6px;
+      border: 1px solid rgba(154, 90, 0, 0.22);
+      background: #fff8bf;
+      color: var(--forecast-ink);
+      font-weight: 950;
+      letter-spacing: 0;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+      cursor: pointer;
+    }
+
+    .span-pill:hover,
+    .demand-cell:not(.empty):hover {
+      box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.45);
+    }
+
+    .month-pill {
+      background: repeating-linear-gradient(45deg, #fff7b7 0 13px, #fff09a 13px 26px);
+      color: #5f3b00;
+    }
+
+    .sum-label {
+      display: block;
+      color: rgba(71, 85, 105, 0.92);
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1;
+    }
+
+    .dirty {
+      position: relative;
+    }
+
+    .dirty::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-top: 13px solid #2563eb;
+      border-left: 13px solid transparent;
+      z-index: 2;
+    }
+
+    .dirty:hover::before {
+      content: "人工修改：原值 260，现值 300";
+      position: absolute;
+      right: 4px;
+      top: -30px;
+      z-index: 10;
+      min-width: 150px;
+      border-radius: 6px;
+      background: #0f172a;
+      color: #fff;
+      padding: 6px 8px;
+      font-size: 11px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .sheet-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .source-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--surface-muted);
+    }
+
+    .source-row:last-child {
+      border-bottom: 0;
+    }
+
+    .source-row strong {
+      display: block;
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .source-row span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .breakdown-panel {
+      display: none;
+      margin-top: 12px;
+      border-top: 1px solid var(--surface-muted);
+      padding-top: 12px;
+    }
+
+    .breakdown-panel.open {
+      display: block;
+    }
+
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .breakdown-grid label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .impact-note {
+      border-left: 3px solid var(--forvia-blue);
+      padding-left: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group"><a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i>智能客服</a><a class="nav-link active" href="01-task-workbench.html"><i data-lucide="workflow"></i>智能供应链</a><a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a><a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a></nav>
+      <div class="user-chip"><span>计划员 · 简中</span><span class="avatar">PL</span></div>
+    </header>
+    <main class="page fit-screen">
+      <div class="subnav"><a href="01-task-workbench.html">客户收件箱</a><a href="02-parse-review.html">解析审查</a><a class="active" href="03-orders.html">订单</a><a href="04-skill-studio.html">技能工坊</a></div>
+      <section class="panel scroll-panel screen-fill">
+        <div class="panel-head">
+          <h2 class="panel-title"><i data-lucide="table-2"></i>Sales Forecast Plus 2.0</h2>
+          <div class="list-actions">
+            <button class="btn small">当前窗口：Jan - Sep 2026</button>
+            <button class="btn small primary"><i data-lucide="download"></i>导出</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="filter-bar" style="margin-bottom:14px; grid-template-columns: repeat(5, minmax(0, 1fr));">
+            <details class="filter-select"><summary>客户：全部</summary><div class="filter-options"><span>全部客户</span><span>长春</span><span>天津旭阳</span><span>WLB1343</span></div></details>
+            <details class="filter-select"><summary>窗口：近细远粗</summary><div class="filter-options"><span>未来 9 个月</span><span>未来 12 周</span><span>自定义</span></div></details>
+            <details class="filter-select"><summary>料号：全部</summary><div class="filter-options"><span>全部料号</span><span>2777977XN</span><span>21779866XT</span><span>1191923XB</span></div></details>
+            <details class="filter-select"><summary>修改：全部</summary><div class="filter-options"><span>全部</span><span>人工修改</span><span>来源冲突</span><span>未追溯</span></div></details>
+            <details class="filter-select"><summary>Program：全部</summary><div class="filter-options"><span>全部</span><span>Audi_Q5L</span><span>E-pump 1.0</span><span>E-pump 2.0</span></div></details>
+          </div>
+
+          <div class="order2-toolbar">
+            <div class="order2-legend">
+              <span class="legend-chip forecast">Forecast</span>
+              <span class="legend-chip firm">Firm</span>
+              <span class="legend-chip dirty">人工修改</span>
+              <span class="legend-chip month">原始月预测</span>
+            </div>
+            <p class="item-meta">默认显示压缩时间轴；月可展开为周，周可继续展开为天，展开一个区块时自动收起其它区块。</p>
+          </div>
+
+          <div class="scroll-x">
+            <div class="order2-shell" id="order2Shell">
+              <table class="order2-table">
+                <thead>
+                  <tr>
+                    <th class="sticky-col customer-col" rowspan="2">Customer</th>
+                    <th class="sticky-col customer-pn-col" rowspan="2">Customer P/N</th>
+                    <th class="sticky-col faurecia-pn-col" rowspan="2">Faurecia P/N</th>
+                    <th class="sticky-col updated-col" rowspan="2">Updated Time</th>
+                    <th class="sticky-col type-col" rowspan="2">Type</th>
+                    <th class="time-head period-w02-summary week-col recent-zone" rowspan="2"><button class="period-toggle" data-toggle-period="w02">+</button>2026 W02<span class="drill-note">展开到日</span></th>
+                    <th class="time-head period-w02-detail recent-zone" colspan="7"><button class="period-toggle" data-toggle-period="w02">-</button>2026 W02</th>
+                    <th class="time-head period-w03-summary week-col mid-zone" rowspan="2"><button class="period-toggle" data-toggle-period="w03">+</button>2026 W03<span class="drill-note">展开到日</span></th>
+                    <th class="time-head period-w03-detail mid-zone" colspan="7"><button class="period-toggle" data-toggle-period="w03">-</button>2026 W03</th>
+                    <th class="time-head period-m07-summary month-col far-zone" rowspan="2"><button class="period-toggle" data-toggle-period="m07">+</button>2026 M07<span class="drill-note">展开到周</span></th>
+                    <th class="time-head period-m07-detail far-zone" colspan="12"><button class="period-toggle" data-toggle-period="m07">-</button>2026 M07</th>
+                    <th class="month-col far-zone" rowspan="2">2026 M08</th>
+                    <th class="month-col far-zone" rowspan="2">2026 M09</th>
+                  </tr>
+                  <tr>
+                    <th class="day-col period-w02-detail recent-zone">1.5 周一</th>
+                    <th class="day-col period-w02-detail recent-zone">1.6 周二</th>
+                    <th class="day-col period-w02-detail recent-zone">1.7 周三</th>
+                    <th class="day-col period-w02-detail recent-zone">1.8 周四</th>
+                    <th class="day-col period-w02-detail recent-zone">1.9 周五</th>
+                    <th class="day-col period-w02-detail recent-zone">1.10 周六</th>
+                    <th class="day-col period-w02-detail recent-zone">1.11 周日</th>
+                    <th class="day-col period-w03-detail mid-zone">1.12 周一</th>
+                    <th class="day-col period-w03-detail mid-zone">1.13 周二</th>
+                    <th class="day-col period-w03-detail mid-zone">1.14 周三</th>
+                    <th class="day-col period-w03-detail mid-zone">1.15 周四</th>
+                    <th class="day-col period-w03-detail mid-zone">1.16 周五</th>
+                    <th class="day-col period-w03-detail mid-zone">1.17 周六</th>
+                    <th class="day-col period-w03-detail mid-zone">1.18 周日</th>
+                    <th class="week-col period-m07-detail period-w27-summary far-zone"><button class="period-toggle" data-toggle-period="w27">+</button>W27</th>
+                    <th class="day-col period-m07-detail period-w27-day far-zone"><button class="period-toggle" data-toggle-period="w27">-</button>6.29</th>
+                    <th class="day-col period-m07-detail period-w27-day far-zone">6.30</th>
+                    <th class="day-col period-m07-detail period-w27-day far-zone">7.1</th>
+                    <th class="day-col period-m07-detail period-w27-day far-zone">7.2</th>
+                    <th class="day-col period-m07-detail period-w27-day far-zone">7.3</th>
+                    <th class="day-col period-m07-detail period-w27-day far-zone">7.4</th>
+                    <th class="day-col period-m07-detail period-w27-day far-zone">7.5</th>
+                    <th class="week-col period-m07-detail far-zone">W28</th>
+                    <th class="week-col period-m07-detail far-zone">W29</th>
+                    <th class="week-col period-m07-detail far-zone">W30</th>
+                    <th class="week-col period-m07-detail far-zone">W31</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="sticky-col customer-col" rowspan="2"><span class="material-title">长春</span><span class="material-meta">VW · Audi_Q5L</span></td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">2777977X</td>
+                    <td class="sticky-col faurecia-pn-col" rowspan="2">2777977XN</td>
+                    <td class="sticky-col updated-col" rowspan="2">2026/01/06 16:42</td>
+                    <td class="sticky-col type-col"><span class="lane-badge forecast">Forecast</span></td>
+                    <td class="period-w02-summary demand-cell forecast-cell">5200</td>
+                    <td class="period-w02-detail pill-cell" colspan="7"><span class="span-pill" data-open="#order2Sheet">W02 预测: 5200</span></td>
+                    <td class="period-w03-summary demand-cell forecast-cell">6000</td>
+                    <td class="period-w03-detail pill-cell" colspan="7"><span class="span-pill" data-open="#order2Sheet">W03 预测: 6000</span></td>
+                    <td class="period-m07-summary demand-cell forecast-cell"><span class="sum-label">∑ weekly</span>18400</td>
+                    <td class="period-m07-detail period-w27-summary pill-cell"><span class="span-pill">W27 4200</span></td>
+                    <td class="period-m07-detail period-w27-day pill-cell" colspan="7"><span class="span-pill">W27 原始周预测: 4200</span></td>
+                    <td class="period-m07-detail pill-cell"><span class="span-pill">W28 4600</span></td>
+                    <td class="period-m07-detail pill-cell"><span class="span-pill">W29 4800</span></td>
+                    <td class="period-m07-detail pill-cell"><span class="span-pill">W30 4800</span></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="pill-cell"><span class="span-pill month-pill">M08 原始月预测: 21000</span></td>
+                    <td class="demand-cell forecast-cell">20500</td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col type-col"><span class="lane-badge firm">Firm</span></td>
+                    <td class="period-w02-summary demand-cell firm-cell-2">1550</td>
+                    <td class="period-w02-detail demand-cell firm-cell-2">800</td>
+                    <td class="period-w02-detail demand-cell firm-cell-2">650</td>
+                    <td class="period-w02-detail demand-cell firm-cell-2">100</td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w03-summary demand-cell firm-cell-2">400</td>
+                    <td class="period-w03-detail demand-cell firm-cell-2">400</td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-m07-summary demand-cell empty"></td>
+                    <td class="period-m07-detail period-w27-summary demand-cell empty"></td>
+                    <td class="period-m07-detail period-w27-day demand-cell empty" colspan="7"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="demand-cell empty"></td>
+                    <td class="demand-cell empty"></td>
+                  </tr>
+
+                  <tr>
+                    <td class="sticky-col customer-col" rowspan="2"><span class="material-title">天津旭阳</span><span class="material-meta">VW · Audi_Q5L</span></td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">21779866X</td>
+                    <td class="sticky-col faurecia-pn-col" rowspan="2">21779866XT</td>
+                    <td class="sticky-col updated-col" rowspan="2">2026/01/07 10:15</td>
+                    <td class="sticky-col type-col"><span class="lane-badge forecast">Forecast</span></td>
+                    <td class="period-w02-summary demand-cell forecast-cell">3720</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">740</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">740</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">740</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">750</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">750</td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w03-summary demand-cell forecast-cell">1600</td>
+                    <td class="period-w03-detail demand-cell forecast-cell">800</td>
+                    <td class="period-w03-detail demand-cell forecast-cell">800</td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-m07-summary demand-cell forecast-cell"><span class="sum-label">∑ weekly</span>19600</td>
+                    <td class="period-m07-detail period-w27-summary pill-cell"><span class="span-pill">W27 4800</span></td>
+                    <td class="period-m07-detail period-w27-day pill-cell" colspan="7"><span class="span-pill">W27 原始周预测: 4800</span></td>
+                    <td class="period-m07-detail pill-cell"><span class="span-pill">W28 4800</span></td>
+                    <td class="period-m07-detail pill-cell"><span class="span-pill">W29 5000</span></td>
+                    <td class="period-m07-detail pill-cell"><span class="span-pill">W30 5000</span></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="demand-cell forecast-cell">21500</td>
+                    <td class="demand-cell forecast-cell">21800</td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col type-col"><span class="lane-badge firm">Firm</span></td>
+                    <td class="period-w02-summary demand-cell firm-cell-2">1480</td>
+                    <td class="period-w02-detail demand-cell firm-cell-2 dirty" data-open="#order2Sheet">740</td>
+                    <td class="period-w02-detail demand-cell firm-cell-2">740</td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w03-summary demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-m07-summary demand-cell empty"></td>
+                    <td class="period-m07-detail period-w27-summary demand-cell empty"></td>
+                    <td class="period-m07-detail period-w27-day demand-cell empty" colspan="7"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="demand-cell empty"></td>
+                    <td class="demand-cell empty"></td>
+                  </tr>
+
+                  <tr>
+                    <td class="sticky-col customer-col" rowspan="2"><span class="material-title">WLB1343</span><span class="material-meta">VW · E-pump 1.0</span></td>
+                    <td class="sticky-col customer-pn-col" rowspan="2">1191923XB</td>
+                    <td class="sticky-col faurecia-pn-col" rowspan="2">1191923XB</td>
+                    <td class="sticky-col updated-col" rowspan="2">2026/01/08 08:30</td>
+                    <td class="sticky-col type-col"><span class="lane-badge forecast">Forecast</span></td>
+                    <td class="period-w02-summary demand-cell forecast-cell">2100</td>
+                    <td class="period-w02-detail demand-cell forecast-cell dirty">300</td>
+                    <td class="period-w02-detail demand-cell forecast-cell dirty">300</td>
+                    <td class="period-w02-detail demand-cell forecast-cell dirty">500</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">500</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">500</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">0</td>
+                    <td class="period-w02-detail demand-cell forecast-cell">0</td>
+                    <td class="period-w03-summary demand-cell forecast-cell">2400</td>
+                    <td class="period-w03-detail pill-cell" colspan="7"><span class="span-pill">W03 预测: 2400</span></td>
+                    <td class="period-m07-summary pill-cell"><span class="span-pill month-pill">Jan 月度预测总量: 45000</span></td>
+                    <td class="period-m07-detail pill-cell" colspan="12"><span class="span-pill month-pill" data-open="#order2Sheet">M07 原始月预测: 45000</span></td>
+                    <td class="pill-cell"><span class="span-pill month-pill">M08 原始月预测: 44000</span></td>
+                    <td class="pill-cell"><span class="span-pill month-pill">M09 原始月预测: 43000</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col type-col"><span class="lane-badge firm">Firm</span></td>
+                    <td class="period-w02-summary demand-cell firm-cell-2">300</td>
+                    <td class="period-w02-detail demand-cell firm-cell-2">300</td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w02-detail demand-cell empty"></td>
+                    <td class="period-w03-summary demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-w03-detail demand-cell empty"></td>
+                    <td class="period-m07-summary demand-cell empty"></td>
+                    <td class="period-m07-detail period-w27-summary demand-cell empty"></td>
+                    <td class="period-m07-detail period-w27-day demand-cell empty" colspan="7"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="period-m07-detail demand-cell empty"></td>
+                    <td class="demand-cell empty"></td>
+                    <td class="demand-cell empty"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="sheet-backdrop" id="order2Sheet">
+    <div class="sheet">
+      <div class="panel-head"><h2 class="panel-title">来源与拆分编辑</h2><button class="btn" data-close>关闭</button></div>
+      <div class="panel-body stack">
+        <div class="sheet-grid">
+          <div class="card"><p class="item-meta">Customer</p><p class="item-title">长春</p></div>
+          <div class="card"><p class="item-meta">Customer P/N</p><p class="item-title">2777977X</p></div>
+          <div class="card"><p class="item-meta">Faurecia P/N</p><p class="item-title">2777977XN</p></div>
+        </div>
+
+        <div class="card">
+          <p class="item-title">来源文件</p>
+          <div class="source-row">
+            <div><strong>Forecast_W02.xlsx</strong><span>Sheet Demand · 原始周预测 W02 = 5200 · 收件 2026/01/05 09:18</span></div>
+            <button class="btn small">打开附件</button>
+          </div>
+          <div class="source-row">
+            <div><strong>FirmOrder_0105.pdf</strong><span>Line 14 · 2026/01/05 firm = 800 · 收件 2026/01/04 16:42</span></div>
+            <button class="btn small">打开附件</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="item-title">编辑周预测胶囊</p>
+          <label><span class="item-meta">周总量</span><input class="input" value="5200"></label>
+          <p class="impact-note" style="margin-top:10px">默认只修改周总量，保留原始周颗粒度。只有显式拆分后，才生成 7 个日明细 forecast 值。</p>
+          <button class="btn small" style="margin-top:10px" data-breakdown-toggle>拆分至日明细</button>
+          <div class="breakdown-panel" id="breakdownPanel">
+            <div class="breakdown-grid">
+              <label>1.5<input class="input" value="743"></label>
+              <label>1.6<input class="input" value="743"></label>
+              <label>1.7<input class="input" value="743"></label>
+              <label>1.8<input class="input" value="743"></label>
+              <label>1.9<input class="input" value="743"></label>
+              <label>1.10<input class="input" value="743"></label>
+              <label>1.11<input class="input" value="742"></label>
+            </div>
+          </div>
+          <textarea class="input" style="margin-top:12px; min-height:76px">填写调整原因...</textarea>
+          <div class="list-actions" style="margin-top:12px"><button class="btn">取消</button><button class="btn primary">保存修改</button></div>
+        </div>
+
+        <div class="timeline">
+          <div class="step"><div class="step-title">AI 解析</div><div class="step-meta">Forecast_W02.xlsx 解析出 W02 forecast 5200，保持周颗粒度。</div></div>
+          <div class="step"><div class="step-title">Firm 消耗</div><div class="step-meta">FirmOrder_0105.pdf 写入 1.5 firm 800；Forecast lane 与 Firm lane 保持独立。</div></div>
+          <div class="step"><div class="step-title">人工修改</div><div class="step-meta">蓝色折角表示计划员修改。Hover 可查看原值，保存后进入审计历史。</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const initOrderPlus2 = () => {
+      if (window.lucide) window.lucide.createIcons();
+
+      document.querySelectorAll("[data-toggle-period]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const period = button.dataset.togglePeriod;
+          const shell = document.querySelector("#order2Shell");
+          if (!shell) return;
+
+          if (period === "w27") {
+            const shouldOpen = !shell.classList.contains("expanded-w27");
+            shell.classList.remove("expanded-w02", "expanded-w03");
+            shell.classList.add("expanded-m07");
+            shell.classList.toggle("expanded-w27", shouldOpen);
+            return;
+          }
+
+          const targetClass = `expanded-${period}`;
+          const shouldOpen = !shell.classList.contains(targetClass);
+          shell.classList.remove("expanded-w02", "expanded-w03", "expanded-m07", "expanded-w27");
+          if (shouldOpen) shell.classList.add(targetClass);
+        });
+      });
+
+      document.querySelectorAll("[data-open]").forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+          const target = document.querySelector(trigger.dataset.open);
+          if (target) target.classList.add("open");
+        });
+      });
+
+      document.querySelectorAll("[data-close]").forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+          const target = trigger.closest(".modal-backdrop, .sheet-backdrop");
+          if (target) target.classList.remove("open");
+        });
+      });
+
+      document.querySelector("[data-breakdown-toggle]")?.addEventListener("click", () => {
+        document.querySelector("#breakdownPanel")?.classList.toggle("open");
+      });
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initOrderPlus2);
+    } else {
+      initOrderPlus2();
+    }
+  </script>
+</body>
+</html>

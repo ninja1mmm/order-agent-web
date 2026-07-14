@@ -1,7 +1,8 @@
 "use client";
 
-import { FilterSelect, SearchableFilterSelect } from "@/components/ui/select";
-import { TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FilterSelect } from "@/components/ui/select";
+import type { DemandKind } from "@/services/orders";
+import type { StatusFilter } from "./order-utils";
 
 type FilterOption = string | { value: string; label: string };
 
@@ -10,17 +11,18 @@ type OrdersFiltersProps = {
   materialLabel: string;
   customerFilter: string;
   materialFilter: string;
-  activeTab: "forecast" | "shipping";
-  yearFilter: string;
+  statusFilter: StatusFilter;
+  timeFrom: string;
+  timeTo: string;
+  visibleDemandKinds: DemandKind[];
   customerOptions: FilterOption[];
-  materialOptions: string[];
-  availableYears: string[];
-  salesForecastLabel: string;
-  shippingPlanLabel: string;
+  statusOptions: { value: StatusFilter; label: string }[];
   onCustomerFilterChange: (value: string) => void;
   onMaterialFilterChange: (value: string) => void;
-  onActiveTabChange: (value: "forecast" | "shipping") => void;
-  onYearFilterChange: (value: string) => void;
+  onStatusFilterChange: (value: StatusFilter) => void;
+  onDemandKindToggle: (value: DemandKind) => void;
+  onTimeFromChange: (value: string) => void;
+  onTimeToChange: (value: string) => void;
 };
 
 export function OrdersFilters({
@@ -28,49 +30,71 @@ export function OrdersFilters({
   materialLabel,
   customerFilter,
   materialFilter,
-  activeTab,
-  yearFilter,
+  statusFilter,
+  timeFrom,
+  timeTo,
+  visibleDemandKinds,
   customerOptions,
-  materialOptions,
-  availableYears,
-  salesForecastLabel,
-  shippingPlanLabel,
+  statusOptions,
   onCustomerFilterChange,
   onMaterialFilterChange,
-  onActiveTabChange,
-  onYearFilterChange,
+  onStatusFilterChange,
+  onDemandKindToggle,
+  onTimeFromChange,
+  onTimeToChange,
 }: OrdersFiltersProps) {
   return (
-    <>
-      <div className="filter-bar" style={{ marginBottom: 14, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", maxWidth: 480 }}>
-        <FilterSelect label={customerLabel} value={customerFilter} options={customerOptions} onChange={onCustomerFilterChange} />
-        <SearchableFilterSelect
-          label={materialLabel}
-          value={materialFilter}
-          options={materialOptions}
-          onChange={onMaterialFilterChange}
-          placeholder="搜索料号..."
+    <div className="orders-filter-stack">
+      <div className="orders-filter-grid">
+        <FilterSelect
+          label={customerLabel}
+          value={customerFilter}
+          options={customerOptions}
+          onChange={onCustomerFilterChange}
         />
-      </div>
-      <div className="orders-tabs-row">
-        <TabsList className="orders-tabs-strip">
-          <TabsTrigger active={activeTab === "forecast"} onClick={() => onActiveTabChange("forecast")}>
-            {salesForecastLabel}
-          </TabsTrigger>
-          <TabsTrigger active={activeTab === "shipping"} onClick={() => onActiveTabChange("shipping")}>
-            {shippingPlanLabel}
-          </TabsTrigger>
-        </TabsList>
-        {activeTab === "forecast" && (
-          <FilterSelect
-            label="Year"
-            value={yearFilter}
-            options={[{ value: "__all__", label: "全部" }, ...availableYears.map((year) => ({ value: year, label: year }))]}
-            onChange={onYearFilterChange}
-            className="orders-year-filter"
+        <label className="orders-inline-text-filter">
+          <span>{materialLabel}</span>
+          <input
+            value={materialFilter}
+            onChange={(event) => onMaterialFilterChange(event.target.value)}
+            placeholder="Faurecia P/N"
           />
-        )}
+        </label>
+        <FilterSelect
+          label="状态"
+          value={statusFilter}
+          options={statusOptions}
+          onChange={(value) => onStatusFilterChange(value as StatusFilter)}
+        />
+        <label className="orders-inline-date-filter">
+          <span>开始</span>
+          <input type="date" value={timeFrom} onChange={(event) => onTimeFromChange(event.target.value)} />
+        </label>
+        <label className="orders-inline-date-filter">
+          <span>结束</span>
+          <input type="date" value={timeTo} onChange={(event) => onTimeToChange(event.target.value)} />
+        </label>
       </div>
-    </>
+      <div className="orders-filter-actions">
+        <div className="orders-lane-tabs" aria-label="需求类型行显示">
+          <button
+            type="button"
+            className={`orders-lane-toggle forecast ${visibleDemandKinds.includes("forecast") ? "active" : ""}`}
+            aria-pressed={visibleDemandKinds.includes("forecast")}
+            onClick={() => onDemandKindToggle("forecast")}
+          >
+            Forecast
+          </button>
+          <button
+            type="button"
+            className={`orders-lane-toggle firm ${visibleDemandKinds.includes("firm") ? "active" : ""}`}
+            aria-pressed={visibleDemandKinds.includes("firm")}
+            onClick={() => onDemandKindToggle("firm")}
+          >
+            Firm
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

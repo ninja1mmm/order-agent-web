@@ -62,11 +62,12 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
       return;
     }
 
+    const activeCustomerId = customerId;
     let cancelled = false;
     async function fetchScorecard() {
       setLoading(true);
       try {
-        const response = await getCustomerProfileScorecard(customerId, { days: 90 });
+        const response = await getCustomerProfileScorecard(activeCustomerId, { days: 90 });
         if (cancelled) return;
         setData(response);
         setSelectedSnapshotAt(null);
