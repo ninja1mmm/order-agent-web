@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { XCircle } from "lucide-react";
 import type { PendingTaskSummary } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
+import { cancelTask } from "@/services/tasks";
 import { Badge } from "@/components/ui/badge";
 import {
   type Locale,
@@ -16,10 +19,26 @@ type PendingTasksPanelProps = {
   locale: Locale;
   pendingTasks: PendingTaskSummary[];
   customers: CustomerConfig[];
+  onRefresh: () => void;
 };
 
-export function PendingTasksPanel({ locale, pendingTasks, customers }: PendingTasksPanelProps) {
+export function PendingTasksPanel({ locale, pendingTasks, customers, onRefresh }: PendingTasksPanelProps) {
   const t = copy[locale];
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancel = async (e: React.MouseEvent, taskId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCancellingId(taskId);
+    try {
+      await cancelTask(taskId);
+      onRefresh();
+    } catch (err) {
+      console.error("Cancel failed:", err);
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   return (
     <aside className="panel scroll-panel">
@@ -37,7 +56,24 @@ export function PendingTasksPanel({ locale, pendingTasks, customers }: PendingTa
           >
             <div className="result-title">
               <span className="result-name" title={item.fileName}>{item.fileName}</span>
-              <Badge variant={statusBadgeVariant(item.status)}>{taskStatusLabel(item.status, locale)}</Badge>
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <Badge variant={statusBadgeVariant(item.status)}>{taskStatusLabel(item.status, locale)}</Badge>
+                {(item.status === "processing" || item.status === "queued") ? (
+                  <button
+                    type="button"
+                    title="终止任务"
+                    disabled={cancellingId === item.taskId}
+                    onClick={(e) => handleCancel(e, item.taskId)}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer", padding: 2,
+                      color: "#dc2626", display: "inline-flex", alignItems: "center",
+                      opacity: cancellingId === item.taskId ? 0.5 : 1,
+                    }}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </span>
             </div>
             <div className="result-footer">
               <span className="item-meta" style={{ margin: 0 }}>

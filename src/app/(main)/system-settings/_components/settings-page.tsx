@@ -11,6 +11,7 @@ import {
   listCustomers,
   testMailboxConnection,
   updateCustomer,
+  updateMailboxSettings,
   type CustomerConfig,
   type MailboxSettings,
 } from "@/services/settings";
@@ -264,6 +265,19 @@ export function SettingsPage() {
     setDraft({ ...draft, materialMappings });
   };
 
+  const handleUpdateMailboxSettings = async (payload: {
+    syncWindowDays?: number;
+    syncIntervalSeconds?: number;
+  }) => {
+    try {
+      const updated = await updateMailboxSettings(payload);
+      setMailbox(updated);
+      toast.success("设置已更新");
+    } catch {
+      toast.error("更新设置失败");
+    }
+  };
+
   const handleTestConnection = async () => {
     setTesting(true);
     try {
@@ -310,6 +324,7 @@ export function SettingsPage() {
             mailbox={mailbox}
             testing={testing}
             onTestConnection={handleTestConnection}
+            onUpdateSettings={handleUpdateMailboxSettings}
           />
         )}
       </section>

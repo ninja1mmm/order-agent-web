@@ -107,6 +107,7 @@ export function ParseReviewPage() {
       { value: "waiting_human_decision", label: taskStatusLabel("waiting_human_decision", locale) },
       { value: "completed", label: taskStatusLabel("completed", locale) },
       { value: "failed", label: taskStatusLabel("failed", locale) },
+      { value: "cancelled", label: taskStatusLabel("cancelled", locale) },
     ],
     [locale, t.all],
   );
@@ -123,7 +124,7 @@ export function ParseReviewPage() {
             : 30 * dayMs;
     return tasks
       .filter((task) => {
-        if (task.status === "skipped" || task.status === "cancelled") return false;
+        if (task.status === "skipped") return false;
         if (customerFilter !== "__all__" && task.customerId !== customerFilter) return false;
         if (statusFilter === DEFAULT_STATUS_FILTER) {
           // show all (no status filter)
@@ -593,6 +594,7 @@ export function ParseReviewPage() {
           taskStaleState={taskStaleState}
           stepLabels={STEP_LABELS}
           onProceed={handleProceed}
+          onRefresh={refresh}
         />
       </div>
     </>

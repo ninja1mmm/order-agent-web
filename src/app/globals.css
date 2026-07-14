@@ -448,6 +448,40 @@ h1 {
   font-weight: 900;
 }
 
+.editable-value {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--muted);
+  padding-bottom: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editable-value .editable-icon {
+  opacity: 0.35;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.editable-value:hover {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+
+.editable-value:hover .editable-icon {
+  opacity: 0.8;
+}
+
+.inline-input {
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 4px;
+  background: var(--card);
+  color: var(--ink);
+}
+
 .enum-list {
   margin-top: 7px;
   color: var(--muted);

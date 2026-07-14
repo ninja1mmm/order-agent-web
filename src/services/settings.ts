@@ -44,6 +44,7 @@ export type MailboxSettings = {
   host: string;
   port: number;
   syncIntervalSeconds: number;
+  syncWindowDays: number;
   enabled: boolean;
   connected: boolean;
   lastSyncAt: string | null;
@@ -61,6 +62,8 @@ type MailboxRaw = {
   port?: number;
   sync_interval_seconds?: number;
   syncIntervalSeconds?: number;
+  sync_window_days?: number;
+  syncWindowDays?: number;
   enabled?: boolean;
   connected?: boolean;
   last_sync_at?: string | null;
@@ -99,6 +102,7 @@ function normalizeMailbox(raw: MailboxRaw): MailboxSettings {
     host: raw.host ?? "",
     port: raw.port ?? 0,
     syncIntervalSeconds: raw.syncIntervalSeconds ?? raw.sync_interval_seconds ?? 0,
+    syncWindowDays: raw.syncWindowDays ?? raw.sync_window_days ?? 30,
     enabled: raw.enabled ?? false,
     connected: raw.connected ?? false,
     lastSyncAt: raw.lastSyncAt ?? raw.last_sync_at ?? null,
@@ -133,6 +137,20 @@ export async function deleteCustomer(customerId: string): Promise<void> {
 
 export async function getMailboxSettings(): Promise<MailboxSettings> {
   const result = await apiRequest<MailboxRaw>("/api/settings/mailbox");
+  return normalizeMailbox(result);
+}
+
+export async function updateMailboxSettings(payload: {
+  syncWindowDays?: number;
+  syncIntervalSeconds?: number;
+}): Promise<MailboxSettings> {
+  const body: Record<string, unknown> = {};
+  if (payload.syncWindowDays !== undefined) body.sync_window_days = payload.syncWindowDays;
+  if (payload.syncIntervalSeconds !== undefined) body.sync_interval_seconds = payload.syncIntervalSeconds;
+  const result = await apiRequest<MailboxRaw>("/api/settings/mailbox", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
   return normalizeMailbox(result);
 }
 

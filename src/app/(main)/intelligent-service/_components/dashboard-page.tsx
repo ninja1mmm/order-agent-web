@@ -7,7 +7,7 @@ import { PendingTasksPanel } from "./right/pending-tasks-panel";
 
 export function DashboardPage() {
   const locale = useLocale();
-  const { loading, error, mails, stats } = useWorkspacePolling();
+  const { loading, error, mails, stats, refresh } = useWorkspacePolling();
   const { customers } = useCustomerConfig();
   const pendingTasks = stats?.pendingTasks ?? [];
   const customerNames = customers.map(customerLabel);
@@ -24,7 +24,7 @@ export function DashboardPage() {
         pendingTasks={pendingTasks}
       />
       <CustomerRhythmPanel locale={locale} mails={mails} customers={customers} />
-      <PendingTasksPanel locale={locale} pendingTasks={pendingTasks} customers={customers} />
+      <PendingTasksPanel locale={locale} pendingTasks={pendingTasks} customers={customers} onRefresh={refresh} />
     </div>
   );
 }

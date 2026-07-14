@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, FileSearch, LoaderCircle, Play } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, FileSearch, LoaderCircle, Play, RefreshCw, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { WorkspaceTask } from "@/services/inbox";
-import type { TaskStaleState } from "@/services/tasks";
+import { cancelTask, rerunTask, type TaskStaleState } from "@/services/tasks";
 import {
   type Locale,
   copy,
@@ -25,6 +27,7 @@ type AgentFlowPanelProps = {
   taskStaleState: TaskStaleState | null;
   stepLabels: Record<string, string>;
   onProceed: () => void;
+  onRefresh: () => void;
 };
 
 export function AgentFlowPanel({
@@ -38,17 +41,55 @@ export function AgentFlowPanel({
   taskStaleState,
   stepLabels,
   onProceed,
+  onRefresh,
 }: AgentFlowPanelProps) {
   const t = copy[locale];
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isRerunning, setIsRerunning] = useState(false);
+  const isCancellable = selectedTask != null && (selectedTask.status === "processing" || selectedTask.status === "queued");
+  const isRerunnable = selectedTask != null && (selectedTask.status === "failed" || selectedTask.status === "cancelled" || selectedTask.status === "completed");
+
+  const handleCancel = async () => {
+    if (!selectedTask) return;
+    setIsCancelling(true);
+    try {
+      await cancelTask(selectedTask.id);
+      onRefresh();
+    } catch (err) {
+      console.error("Cancel failed:", err);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleRerun = async () => {
+    if (!selectedTask) return;
+    setIsRerunning(true);
+    try {
+      await rerunTask(selectedTask.id);
+      onRefresh();
+    } catch (err) {
+      console.error("Rerun failed:", err);
+    } finally {
+      setIsRerunning(false);
+    }
+  };
 
   return (
     <aside className="panel scroll-panel">
       <div className="panel-head">
         <h2 className="panel-title">{t.agentFlow}</h2>
         {selectedTask ? (
-          <Badge variant={statusBadgeVariant(selectedTask.status)} className={isTaskRunning ? "agent-running-badge" : ""}>
-            {taskStatusLabel(selectedTask.status, locale)}
-          </Badge>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <Badge variant={statusBadgeVariant(selectedTask.status)} className={isTaskRunning ? "agent-running-badge" : ""}>
+              {taskStatusLabel(selectedTask.status, locale)}
+            </Badge>
+            {isRerunnable ? (
+              <Button variant="ghost" size="icon" aria-label="重新解析" disabled={isRerunning} onClick={handleRerun}>
+                <RefreshCw className={`h-3.5 w-3.5 ${isRerunning ? "animate-spin" : ""}`} />
+              </Button>
+            ) : null}
+          </span>
         ) : null}
       </div>
       <div className="panel-body stack timeline">
@@ -122,6 +163,22 @@ export function AgentFlowPanel({
           </div>
         ) : selectedTask ? (
           <p className="item-meta">暂无执行流数据</p>
+        ) : null}
+        {isCancellable ? (
+          <button
+            type="button"
+            className="proceed-btn"
+            style={{ background: "#dc2626", marginTop: 8 }}
+            disabled={isCancelling}
+            onClick={handleCancel}
+          >
+            {isCancelling ? (
+              <LoaderCircle className="animate-spin" />
+            ) : (
+              <XCircle className="h-3 w-3" />
+            )}
+            终止任务
+          </button>
         ) : null}
       </div>
     </aside>

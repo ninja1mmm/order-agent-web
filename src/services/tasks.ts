@@ -63,3 +63,11 @@ export async function patchRow(
 export async function getEffectiveRows(taskId: string): Promise<EffectiveRowsResponse> {
   return apiRequest<EffectiveRowsResponse>(`/api/tasks/${taskId}/rows`, { method: "GET" });
 }
+
+export async function cancelTask(taskId: string): Promise<void> {
+  await apiRequest(`/api/tasks/${taskId}/cancel`, { method: "POST" });
+}
+
+export async function rerunTask(taskId: string): Promise<void> {
+  await apiRequest(`/api/tasks/${taskId}/rerun`, { method: "POST" });
+}
