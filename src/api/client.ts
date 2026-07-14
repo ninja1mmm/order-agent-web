@@ -102,6 +102,8 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const token = await ensureValidToken();
   const isFormData = init?.body instanceof FormData;
+  const url = `${BACKEND_URL}${path}`;
+  const method = init?.method ?? "GET";
 
   const headers: Record<string, string> = {};
   if (!isFormData) {
@@ -111,21 +113,35 @@ export async function apiRequest<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BACKEND_URL}${path}`, {
-    ...init,
-    cache: "no-store",
-    headers: { ...headers, ...(init?.headers as Record<string, string>) },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      cache: "no-store",
+      headers: { ...headers, ...(init?.headers as Record<string, string>) },
+    });
+  } catch (err) {
+    throw new Error(
+      `Network request failed: ${method} ${url}${err instanceof Error ? ` - ${err.message}` : ""}`,
+    );
+  }
 
   if (response.status === 401) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       headers["Authorization"] = `Bearer ${refreshed}`;
-      const retry = await fetch(`${BACKEND_URL}${path}`, {
-        ...init,
-        cache: "no-store",
-        headers: { ...headers, ...(init?.headers as Record<string, string>) },
-      });
+      let retry: Response;
+      try {
+        retry = await fetch(url, {
+          ...init,
+          cache: "no-store",
+          headers: { ...headers, ...(init?.headers as Record<string, string>) },
+        });
+      } catch (err) {
+        throw new Error(
+          `Network request failed: ${method} ${url}${err instanceof Error ? ` - ${err.message}` : ""}`,
+        );
+      }
       if (retry.ok) {
         if (retry.status === 204) return undefined as T;
         return retry.json() as Promise<T>;

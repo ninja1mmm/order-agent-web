@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from "react";
-import { Download, History, LoaderCircle, Save, Table2 } from "lucide-react";
+import { CalendarDays, Download, History, LoaderCircle, Save, Table2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,11 +24,13 @@ import {
   type RollingForecastCellWithHistory,
   type RollingForecastResponse,
   type RollingForecastRowGroup,
+  type TimeGranularity,
 } from "@/services/orders";
 import { copy, customerLabel, formatDateTime, useCustomerConfig, useLocale } from "../../_components/shared";
 import { OrdersFilters } from "./orders-filters";
 import {
   DEMAND_KIND_LABEL,
+  addDays,
   addMonths,
   buildColumns,
   buildDayColumnsForWeek,
@@ -39,7 +42,6 @@ import {
   relevantHistoryCells,
   rowMatchesStatus,
   rowUpdatedAt,
-  sourceLabel,
   todayKey,
   type BucketProjection,
   type CellSelection,
@@ -102,7 +104,6 @@ export function OrdersPage() {
   const [totalGroups, setTotalGroups] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selection, setSelection] = useState<CellSelection | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [expandedMonthKey, setExpandedMonthKey] = useState<string | null>(null);
@@ -127,7 +128,6 @@ export function OrdersPage() {
   const fetchPage = useCallback((pageToLoad: number, mode: "replace" | "append") => {
     if (mode === "replace") setLoading(true);
     else setLoadingMore(true);
-    setError(null);
     getRollingForecast({
       timeFrom,
       timeTo,
@@ -144,12 +144,12 @@ export function OrdersPage() {
           return next;
         });
       })
-      .catch((err: Error) => {
+      .catch(() => {
         if (mode === "replace") {
           setGroups([]);
           setTotalGroups(0);
         }
-        setError(err.message);
+        if (mode === "append") toast.error("加载更多订单失败");
       })
       .finally(() => {
         if (mode === "replace") setLoading(false);
@@ -163,7 +163,6 @@ export function OrdersPage() {
       if (cached) {
         setGroups(cached.groups);
         setTotalGroups(cached.totalGroups);
-        setError(null);
         return;
       }
       fetchPage(1, "replace");
@@ -284,38 +283,29 @@ export function OrdersPage() {
           />
 
           <div className="orders-table-fill">
-            {error ? (
-              <div className="orders-state">
-                <strong>订单数据加载失败</strong>
-                <span>{error}</span>
-                <Button variant="default" size="sm" onClick={() => fetchPage(1, "replace")}>重试</Button>
-              </div>
-            ) : (
-              <RollingForecastTable
-                locale={locale}
-                rows={rows}
-                labels={ot}
-                timeline={timeline}
-                totalColumns={baseColumns}
-                visibleDemandKinds={visibleDemandKinds}
-                hasMore={hasMore}
-                loadingMore={loadingMore}
-                onMonthToggle={toggleMonth}
-                onReachEnd={loadMore}
-                onWeekToggle={toggleWeek}
-                onCellSelect={setSelection}
-              />
-            )}
+            <RollingForecastTable
+              locale={locale}
+              rows={rows}
+              labels={ot}
+              timeline={timeline}
+              totalColumns={baseColumns}
+              visibleDemandKinds={visibleDemandKinds}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
+              onMonthToggle={toggleMonth}
+              onReachEnd={loadMore}
+              onWeekToggle={toggleWeek}
+              onCellSelect={setSelection}
+            />
             {loading ? (
               <div className="orders-loading">
                 <LoaderCircle className="h-4 w-4 animate-spin" />
                 同步订单数据...
               </div>
             ) : null}
-            {!loading && !error && rows.length === 0 ? (
+            {!loading && rows.length === 0 ? (
               <div className="orders-state">
                 <strong>暂无滚动预测数据</strong>
-                <span>环境已清空后，需要重新同步邮件并解析附件，发布后这里会出现 Forecast 和 Firm 数据。</span>
               </div>
             ) : null}
           </div>
@@ -446,11 +436,13 @@ function buildTimeline(
 ): TimelineModel {
   const segments: TimeSegment[] = [];
   const leafColumns: TimelineLeaf[] = [];
-  const standaloneWeekKeys = new Set(
-    baseColumns.filter((column) => column.granularity === "week").map((column) => column.key),
-  );
+  const expandedMonthColumn = expandedMonthKey ? baseColumns.find((column) => column.key === expandedMonthKey) : undefined;
 
   for (const column of baseColumns) {
+    if (expandedMonthColumn && column.granularity === "week" && column.startDate <= expandedMonthColumn.endDate && expandedMonthColumn.startDate <= column.endDate) {
+      continue;
+    }
+
     if (column.granularity === "week" && expandedWeekKey === column.key && !expandedMonthKey) {
       const leaves = buildDayColumnsForWeek(column);
       segments.push({ kind: "expanded-week", column, leaves });
@@ -459,8 +451,7 @@ function buildTimeline(
     }
 
     if (column.granularity === "month" && expandedMonthKey === column.key) {
-      const monthWeekColumns = buildWeekColumnsForMonth(column).filter((weekColumn) => !standaloneWeekKeys.has(weekColumn.key));
-      const monthLeaves: MonthLeaf[] = monthWeekColumns.map((weekColumn) => {
+      const monthLeaves: MonthLeaf[] = buildWeekColumnsForMonth(column).map((weekColumn) => {
         if (expandedWeekKey === weekColumn.key) {
           const dayLeaves = buildDayColumnsForWeek(weekColumn);
           leafColumns.push(...dayLeaves.map((leaf) => ({ column: leaf, renderKey: `${column.key}:${weekColumn.key}:${leaf.key}` })));
@@ -569,6 +560,7 @@ function PeriodLabel({ column }: { column: DemandColumn }) {
     <span className="period-label">
       {column.yearMarker ? <span className="period-year-corner">{column.yearMarker}</span> : null}
       <span className="period-main-label">{column.label}</span>
+      {column.rangeLabel ? <span className="period-range-label">{column.rangeLabel}</span> : null}
     </span>
   );
 }
@@ -760,7 +752,7 @@ function renderExpandedWeekCells({
 }) {
   const aggregateCells = renderAggregateIfNoDetails({
     aggregateColumn: weekColumn,
-    aggregateLabel: (quantity) => `${formatWeekLabel(weekColumn.key.replace(/^W-/, ""))} ${kind === "forecast" ? "预测" : "Firm"}: ${formatQuantity(quantity)}`,
+    aggregateLabel: (quantity) => `${formatWeekLabel((weekColumn.sourceKey ?? weekColumn.key).replace(/^W-/, ""))} ${kind === "forecast" ? "预测" : "Firm"}: ${formatQuantity(quantity)}`,
     colSpan: leaves.length,
     detailColumns: leaves,
     kind,
@@ -907,6 +899,8 @@ function DemandDetailSheet({
   const [value, setValue] = useState("");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [splitMode, setSplitMode] = useState(false);
+  const [splitValues, setSplitValues] = useState<Array<{ dateKey: string; value: string }>>([]);
 
   useEffect(() => {
     if (!selection) return;
@@ -918,6 +912,8 @@ function DemandDetailSheet({
       setTargetColKey("");
       setValue("");
       setReason("");
+      setSplitMode(false);
+      setSplitValues([]);
       getRowDetail({ rowKey: currentSelection.row.rowKey, timeFrom, timeTo })
         .then((result) => {
           setDetail(result.cells);
@@ -925,7 +921,7 @@ function DemandDetailSheet({
           setTargetColKey(first?.colKey ?? "");
           setValue(first ? String(first.value) : "");
         })
-        .catch((err: Error) => setError(err.message))
+        .catch(() => setError("来源记录加载失败"))
         .finally(() => setLoading(false));
     }, 0);
     return () => window.clearTimeout(timer);
@@ -938,10 +934,38 @@ function DemandDetailSheet({
 
   const selectedCell = cells.find((cell) => cell.colKey === targetColKey) ?? cells[0];
   const displayed = selection ? selection.projection[selection.kind]?.quantity ?? 0 : 0;
-  const canSave = Boolean(selection && value.trim() && reason.trim() && !saving);
+  const splitTotal = useMemo(
+    () => splitValues.reduce((sum, item) => {
+      const parsed = Number(item.value);
+      return Number.isFinite(parsed) ? sum + parsed : sum;
+    }, 0),
+    [splitValues],
+  );
+  const splitValuesValid = splitValues.length > 0 && splitValues.every((item) => {
+    if (!item.value.trim()) return false;
+    const parsed = Number(item.value);
+    return Number.isFinite(parsed) && parsed >= 0;
+  });
+  const canSaveNormal = Boolean(selection && value.trim() && reason.trim() && !saving);
+  const canSaveSplit = Boolean(
+    selection &&
+    selectedCell?.timeGranularity === "week" &&
+    reason.trim() &&
+    splitValuesValid &&
+    !saving,
+  );
+  const canSave = splitMode ? canSaveSplit : canSaveNormal;
+  const canSplitWeek = Boolean(
+    selection &&
+    selectedCell?.timeGranularity === "week" &&
+    selectedCell.dateStart &&
+    selectedCell.dateEnd &&
+    selectedCell.value > 0 &&
+    !saving,
+  );
 
-  const save = async () => {
-    if (!selection || !canSave) return;
+  const saveNormal = async () => {
+    if (!selection || !canSaveNormal) return;
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return;
     setSaving(true);
@@ -955,11 +979,64 @@ function DemandDetailSheet({
         reason,
       });
       onSaved();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+    } catch {
+      toast.error("保存失败，请检查后端服务后重试");
     } finally {
       setSaving(false);
     }
+  };
+
+  const saveSplitWeekToDays = async () => {
+    if (!selection || !selectedCell || selectedCell.timeGranularity !== "week" || !canSaveSplit) return;
+    const parsedValues = splitValues.map((item) => ({
+      dateKey: item.dateKey,
+      value: Math.round(Number(item.value)),
+    }));
+    setSaving(true);
+    try {
+      for (const item of parsedValues) {
+        await editRollingForecastCell({
+          rowKey: selection.row.rowKey,
+          colKey: `D-${item.dateKey}`,
+          value: item.value,
+          classification: kindToClassification(selection.kind),
+          timeGranularity: "day",
+          reason: `拆解 ${selectedCell.colKey} 到天：${reason}`,
+        });
+      }
+      await editRollingForecastCell({
+        rowKey: selection.row.rowKey,
+        colKey: selectedCell.colKey,
+        value: 0,
+        classification: kindToClassification(selection.kind),
+        timeGranularity: "week",
+        reason: `已拆解到天，原周 cell 归零：${reason}`,
+      });
+      onSaved();
+    } catch {
+      toast.error("拆解保存失败，请检查后端服务后重试");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const save = () => {
+    if (splitMode) {
+      void saveSplitWeekToDays();
+      return;
+    }
+    void saveNormal();
+  };
+
+  const openSplitWeekEditor = () => {
+    if (!selectedCell || selectedCell.timeGranularity !== "week" || !canSplitWeek) return;
+    const dayKeys = buildDateKeys(selectedCell.dateStart, selectedCell.dateEnd);
+    const dayValues = distributeInteger(selectedCell.value, dayKeys.length);
+    setSplitValues(dayKeys.map((dateKey, index) => ({
+      dateKey,
+      value: String(dayValues[index] ?? 0),
+    })));
+    setSplitMode(true);
   };
 
   return (
@@ -968,26 +1045,26 @@ function DemandDetailSheet({
         <SheetHeader>
           <SheetTitle>来源与拆分编辑</SheetTitle>
           <SheetDescription>
-            {selection ? `${selection.row.customerName || selection.row.customerCode} · ${selection.row.internalPartNumber} · ${DEMAND_KIND_LABEL[selection.kind]}` : ""}
+            {selection ? `${selection.row.customerName || selection.row.customerCode} · ${selection.row.internalPartNumber} · ${demandKindText(selection.kind)}` : ""}
           </SheetDescription>
         </SheetHeader>
         <SheetBody className="orders-sheet-body">
           {selection ? (
             <>
               <section className="orders-sheet-section">
-                <h3>Cell Summary</h3>
+                <h3>基础信息</h3>
                 <div className="orders-sheet-grid">
-                  <Field label="Customer" value={selection.row.customerName || selection.row.customerCode || "-"} />
-                  <Field label="Customer P/N" value={selection.row.customerPartNumber || "-"} />
-                  <Field label="Faurecia P/N" value={selection.row.internalPartNumber} />
-                  <Field label="Designation" value={selection.row.designation || "-"} />
-                  <Field label="Bucket" value={`${selection.column.label} · ${selection.column.startDate} - ${selection.column.endDate}`} />
-                  <Field label="Displayed" value={formatQuantity(displayed) || "0"} />
+                  <Field label="客户" value={selection.row.customerName || selection.row.customerCode || "-"} />
+                  <Field label="客户料号" value={selection.row.customerPartNumber || "-"} />
+                  <Field label="Faurecia料号" value={selection.row.internalPartNumber} />
+                  <Field label="产品说明" value={selection.row.designation || "-"} />
+                  <Field label="周期" value={`${selection.column.label} · ${selection.column.startDate} - ${selection.column.endDate}`} />
+                  <Field label="当前显示" value={formatQuantity(displayed) || "0"} />
                 </div>
               </section>
 
               <section className="orders-sheet-section">
-                <h3>Source Details</h3>
+                <h3>来源记录</h3>
                 {loading ? <p className="item-meta">加载来源...</p> : null}
                 {error ? <p className="orders-error-text">{error}</p> : null}
                 {!loading && cells.length === 0 ? (
@@ -1003,11 +1080,13 @@ function DemandDetailSheet({
                         onClick={() => {
                           setTargetColKey(cell.colKey);
                           setValue(String(cell.value));
+                          setSplitMode(false);
+                          setSplitValues([]);
                         }}
                       >
                         <span>
-                          <strong>{sourceLabel(cell)}</strong>
-                          <small>{cell.timeGranularity} · 当前值 {formatQuantity(cell.value) || "0"}</small>
+                          <strong>{cell.colKey}</strong>
+                          <small>{granularityText(cell.timeGranularity)}</small>
                         </span>
                         {cell.hasManualRevision ? <em>人工修改</em> : null}
                       </button>
@@ -1017,35 +1096,76 @@ function DemandDetailSheet({
               </section>
 
               <section className="orders-sheet-section">
-                <h3>Edit Controls</h3>
+                <h3>修改数量</h3>
                 <label className="orders-edit-field">
-                  <span>{DEMAND_KIND_LABEL[selection.kind]} value</span>
+                  <span>{demandKindText(selection.kind)}</span>
                   <input
                     type="number"
                     value={value}
+                    disabled={splitMode}
                     onChange={(event) => setValue(event.target.value)}
                     placeholder="0"
                   />
                 </label>
+              </section>
+
+              {selectedCell?.timeGranularity === "week" ? (
+                <section className="orders-sheet-section">
+                  <h3><CalendarDays className="h-3.5 w-3.5" /> 拆解到天</h3>
+                  <div className="orders-split-panel">
+                    <div>
+                      <strong>{selectedCell.colKey}</strong>
+                    </div>
+                    <Button variant="default" size="sm" disabled={!canSplitWeek} onClick={openSplitWeekEditor}>
+                      {saving ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <CalendarDays className="h-3.5 w-3.5" />}
+                      拆解到天
+                    </Button>
+                  </div>
+                  {splitMode ? (
+                    <div className="orders-split-editor">
+                      <div className="orders-split-grid">
+                        {splitValues.map((item, index) => (
+                          <label className="orders-split-field" key={item.dateKey}>
+                            <span>{item.dateKey.slice(5)}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={item.value}
+                              onChange={(event) => {
+                                const nextValues = [...splitValues];
+                                nextValues[index] = { ...item, value: event.target.value };
+                                setSplitValues(nextValues);
+                              }}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <p className="orders-split-total">
+                        拆解合计 <strong>{formatQuantity(splitTotal) || "0"}</strong>
+                      </p>
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+
+              <section className="orders-sheet-section">
+                <h3>修改原因</h3>
                 <label className="orders-edit-field">
-                  <span>Reason</span>
+                  <span>原因</span>
                   <textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder="填写本次人工修改原因" />
                 </label>
-                <p className="orders-impact-note">
-                  保存会写入一个新的 cell revision。Forecast 与 Firm 分开保存；当前只修改选中的底层记录，不会把两类需求合并。
-                </p>
               </section>
 
               <section className="orders-sheet-section">
-                <h3><History className="h-3.5 w-3.5" /> Audit Timeline</h3>
+                <h3><History className="h-3.5 w-3.5" /> 修订记录</h3>
                 {selectedCell?.revisions.length ? (
                   <div className="orders-timeline">
                     {selectedCell.revisions.map((revision) => (
                       <div className="orders-timeline-item" key={`${revision.revision}-${revision.createdAt}`}>
-                        <strong>v{revision.revision} · {formatQuantity(revision.value) || "0"}</strong>
-                        <span>{formatDateTime(revision.createdAt, locale)} · {revision.changeType}</span>
+                        <strong>版本 {revision.revision} · {formatQuantity(revision.value) || "0"}</strong>
+                        <span>{formatDateTime(revision.createdAt, locale)} · {revisionTypeText(revision.changeType)}</span>
                         <small>
-                          {revision.sourceFile || revision.mailSubject || revision.actorName || revision.note || "No source metadata"}
+                          {revision.sourceFile || revision.mailSubject || revision.actorName || revision.note || "无来源信息"}
                         </small>
                       </div>
                     ))}
@@ -1076,4 +1196,39 @@ function Field({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function demandKindText(kind: DemandKind): string {
+  return kind === "forecast" ? "预测" : "确定需求";
+}
+
+function granularityText(granularity: TimeGranularity): string {
+  if (granularity === "day") return "日来源";
+  if (granularity === "week") return "周来源";
+  return "月来源";
+}
+
+function revisionTypeText(type: string): string {
+  if (type === "manual_edit") return "人工修改";
+  if (type === "pipeline") return "系统导入";
+  return type;
+}
+
+function buildDateKeys(startDate: string, endDate: string): string[] {
+  const keys: string[] = [];
+  for (let key = startDate; key <= endDate; key = addDays(key, 1)) {
+    keys.push(key);
+  }
+  return keys;
+}
+
+function distributeInteger(total: number, count: number): number[] {
+  if (count <= 0) return [];
+  const base = Math.floor(total / count);
+  let remainder = total - base * count;
+  return Array.from({ length: count }, () => {
+    const extra = remainder > 0 ? 1 : 0;
+    remainder -= extra;
+    return base + extra;
+  });
 }

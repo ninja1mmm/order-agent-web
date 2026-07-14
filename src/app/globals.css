@@ -3401,7 +3401,8 @@ button.heat-cell {
 
 .period-label,
 .period-main-label,
-.period-day-label {
+.period-day-label,
+.period-range-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3411,13 +3412,23 @@ button.heat-cell {
 
 .period-label {
   width: 100%;
+  flex-direction: column;
+  gap: 2px;
   padding-inline: 24px;
 }
 
 .period-main-label,
-.period-day-label {
+.period-day-label,
+.period-range-label {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.period-range-label {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
 }
 
 .period-year-corner {
@@ -3774,6 +3785,102 @@ button.heat-cell {
   line-height: 1.55;
   margin: 0;
   padding-left: 10px;
+}
+
+.orders-split-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--surface-muted);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+.orders-split-panel div {
+  min-width: 0;
+}
+
+.orders-split-panel strong,
+.orders-split-panel span {
+  display: block;
+  min-width: 0;
+}
+
+.orders-split-panel strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.orders-split-panel span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.orders-split-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.orders-split-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.orders-split-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.orders-split-field span {
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+.orders-split-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+  outline: none;
+  padding: 6px;
+  text-align: center;
+}
+
+.orders-split-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.orders-split-total strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.orders-split-total span {
+  text-align: right;
 }
 
 .orders-timeline-item {

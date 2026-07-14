@@ -14,6 +14,8 @@ export type StatusFilter = "all" | "forecast" | "firm" | "mixed" | "manual";
 export type DemandColumn = {
   key: string;
   label: string;
+  sourceKey?: string;
+  rangeLabel?: string;
   yearMarker?: string;
   granularity: TimeGranularity;
   startDate: string;
@@ -167,7 +169,8 @@ export function sourceLabel(cell: Pick<RollingForecastCell, "colKey" | "timeGran
 
 export function buildDayColumnsForWeek(weekColumn: DemandColumn): DemandColumn[] {
   const columns: DemandColumn[] = [];
-  for (let i = 0; i < 7; i++) {
+  const dayCount = inclusiveDays(weekColumn.startDate, weekColumn.endDate);
+  for (let i = 0; i < dayCount; i++) {
     const key = addDays(weekColumn.startDate, i);
     columns.push({
       key: `D-${key}`,
@@ -183,18 +186,25 @@ export function buildDayColumnsForWeek(weekColumn: DemandColumn): DemandColumn[]
 
 export function buildWeekColumnsForMonth(monthColumn: DemandColumn): DemandColumn[] {
   const columns: DemandColumn[] = [];
+  const monthStart = parseDateKey(monthColumn.startDate);
   const end = parseDateKey(monthColumn.endDate);
   const cursor = startOfIsoWeek(monthColumn.startDate);
 
   while (cursor <= end) {
-    const startDate = toDateKey(cursor);
+    const weekStartDate = toDateKey(cursor);
+    const weekEndDate = addDays(weekStartDate, 6);
+    const clippedStart = toDateKey(new Date(Math.max(cursor.getTime(), monthStart.getTime())));
+    const clippedEnd = minDateKey(weekEndDate, monthColumn.endDate);
     const weekKey = isoWeekKey(cursor);
+    const sourceKey = `W-${weekKey}`;
     columns.push({
-      key: `W-${weekKey}`,
+      key: `${monthColumn.key}:${sourceKey}`,
+      sourceKey,
       label: formatWeekLabel(weekKey),
+      rangeLabel: clippedStart === weekStartDate && clippedEnd === weekEndDate ? undefined : formatCompactDateRange(clippedStart, clippedEnd),
       granularity: "week",
-      startDate,
-      endDate: addDays(startDate, 6),
+      startDate: clippedStart,
+      endDate: clippedEnd,
       zone: monthColumn.zone,
     });
     cursor.setUTCDate(cursor.getUTCDate() + 7);
@@ -259,17 +269,16 @@ function buildWeekMonthColumns(timeFrom: string, timeTo: string): DemandColumn[]
 }
 
 function displayQuantityForCell(cell: RollingForecastCell, column: DemandColumn): number {
-  if (column.granularity === "day" && cell.timeGranularity !== "day") {
-    const overlapDays = overlappingDays(cell.dateStart, cell.dateEnd, column.startDate, column.endDate);
-    const sourceDays = Math.max(1, inclusiveDays(cell.dateStart, cell.dateEnd));
-    return Math.round((cell.value / sourceDays) * overlapDays);
-  }
+  if (!cell.dateStart || !cell.dateEnd) return cell.value;
+  const overlapDays = overlappingDays(cell.dateStart, cell.dateEnd, column.startDate, column.endDate);
+  const sourceDays = Math.max(1, inclusiveDays(cell.dateStart, cell.dateEnd));
+  if (overlapDays > 0 && overlapDays < sourceDays) return Math.round((cell.value / sourceDays) * overlapDays);
   if (column.granularity === "month" && cell.timeGranularity === "month") return cell.value;
   return cell.value;
 }
 
 export function cellOverlapsColumn(cell: RollingForecastCell, column: DemandColumn): boolean {
-  if (!cell.dateStart || !cell.dateEnd) return cell.colKey === column.key;
+  if (!cell.dateStart || !cell.dateEnd) return cell.colKey === (column.sourceKey ?? column.key);
   return rangesOverlap(cell.dateStart, cell.dateEnd, column.startDate, column.endDate);
 }
 
@@ -323,6 +332,15 @@ function endOfMonth(monthKey: string): string {
 function formatDayLabel(dateKey: string): string {
   const date = parseDateKey(dateKey);
   return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
+}
+
+function formatCompactDateRange(startDate: string, endDate: string): string {
+  if (startDate === endDate) return formatDayLabel(startDate);
+  return `${formatDayLabel(startDate)}-${formatDayLabel(endDate)}`;
+}
+
+function minDateKey(a: string, b: string): string {
+  return a <= b ? a : b;
 }
 
 function parseDateKey(dateKey: string): Date {
