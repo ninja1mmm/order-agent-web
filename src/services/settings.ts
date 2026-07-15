@@ -14,7 +14,7 @@ export type MaterialMapping = {
   productionLine: string | null;
   oem: string | null;
   program: string | null;
-  product: string | null;
+  designation: string | null;
   status: string;
 };
 

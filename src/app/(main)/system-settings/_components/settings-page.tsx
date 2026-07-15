@@ -105,7 +105,7 @@ export function SettingsPage() {
             productionLine: null,
             oem: null,
             program: null,
-            product: null,
+            designation: null,
             status: "active",
           },
         ];
@@ -251,7 +251,7 @@ export function SettingsPage() {
           productionLine: null,
           oem: null,
           program: null,
-          product: null,
+          designation: null,
           status: "active",
         },
       ],

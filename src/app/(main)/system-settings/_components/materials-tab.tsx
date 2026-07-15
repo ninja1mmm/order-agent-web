@@ -34,6 +34,7 @@ export function MaterialsTab({
             <tr>
               <th>Customer P/N</th>
               <th>Faurecia P/N</th>
+              <th>Designation</th>
               <th style={{ width: 48 }}></th>
             </tr>
           </thead>
@@ -63,6 +64,20 @@ export function MaterialsTab({
                       materialMappings[index] = {
                         ...mapping,
                         internalPartNumber: event.target.value,
+                      };
+                      onDraftChange({ ...draft, materialMappings });
+                    }}
+                  />
+                </td>
+                <td>
+                  <Input
+                    value={mapping.designation ?? ""}
+                    placeholder="Designation"
+                    onChange={(event) => {
+                      const materialMappings = [...(draft.materialMappings ?? [])];
+                      materialMappings[index] = {
+                        ...mapping,
+                        designation: event.target.value || null,
                       };
                       onDraftChange({ ...draft, materialMappings });
                     }}
