@@ -96,6 +96,138 @@ function initPrototype() {
     });
   });
 
+  document.querySelectorAll("[data-recon-tab]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      const tab = trigger.dataset.reconTab;
+      document.querySelectorAll("[data-recon-panel]").forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.reconPanel === tab);
+      });
+      document.querySelectorAll(".recon-tabs [data-recon-tab]").forEach((item) => {
+        item.classList.toggle("active", item.dataset.reconTab === tab);
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-recon-start]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      const board = document.querySelector("[data-recon-board]");
+      if (board) board.classList.add("matching-active");
+      trigger.classList.add("primary");
+      trigger.innerHTML = '<i data-lucide="check-circle-2"></i>对帐高亮已生成';
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-parse-upload]").forEach((trigger) => {
+    let parseTimer;
+    trigger.addEventListener("click", () => {
+      const panel = document.querySelector("[data-analysis-panel]");
+      const status = document.querySelector("[data-analysis-status]");
+      const badge = document.querySelector("[data-analysis-badge]");
+      const confirmButton = document.querySelector("[data-confirm-create]");
+      const steps = document.querySelectorAll("[data-analysis-step]");
+
+      window.clearTimeout(parseTimer);
+      panel?.classList.remove("is-complete");
+      panel?.classList.add("is-running");
+      steps.forEach((step) => step.classList.remove("done"));
+      if (status) status.textContent = "正在解析 SAP 发运、交货映射和客户收货单，校验模板字段、客户范围和日期窗口。";
+      if (badge) {
+        badge.textContent = "解析中";
+        badge.className = "badge blue";
+      }
+      if (confirmButton) {
+        confirmButton.disabled = true;
+        confirmButton.classList.remove("primary");
+      }
+      trigger.innerHTML = '<i data-lucide="loader-circle"></i>解析中';
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      parseTimer = window.setTimeout(() => {
+        panel?.classList.remove("is-running");
+        panel?.classList.add("is-complete");
+        steps.forEach((step) => step.classList.add("done"));
+        if (status) status.textContent = "解析完成。已生成文件摘要和上传校验结果，可复核提示后正式创建任务。";
+        if (badge) {
+          badge.textContent = "已解析";
+          badge.className = "badge green";
+        }
+        if (confirmButton) {
+          confirmButton.disabled = false;
+          confirmButton.classList.add("primary");
+        }
+        trigger.innerHTML = '<i data-lucide="rotate-cw"></i>重新解析';
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, 1100);
+    });
+  });
+
+  document.querySelectorAll("[data-receipt-route-card]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      document.querySelectorAll("[data-receipt-route-card]").forEach((card) => {
+        const selected = card === trigger;
+        card.classList.toggle("selected", selected);
+        const input = card.querySelector('input[type="radio"]');
+        if (input) input.checked = selected;
+      });
+
+      const status = document.querySelector("[data-receipt-route-status]");
+      const uploadMeta = document.querySelector("[data-receipt-upload-meta]");
+      const validation = document.querySelector("[data-receipt-route-validation]");
+      const summaryMeta = document.querySelector("[data-receipt-summary-meta]");
+
+      if (status) status.textContent = trigger.dataset.routeLabel;
+      if (uploadMeta) uploadMeta.textContent = trigger.dataset.uploadMeta;
+      if (validation) validation.textContent = trigger.dataset.validation;
+      if (summaryMeta) summaryMeta.textContent = trigger.dataset.summaryMeta;
+    });
+  });
+
+  document.querySelectorAll("[data-history-tab]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      const tab = trigger.dataset.historyTab;
+      const scope = trigger.closest(".history-section") ?? document;
+      scope.querySelectorAll("[data-history-panel]").forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.historyPanel === tab);
+      });
+      scope.querySelectorAll("[data-history-tab]").forEach((item) => {
+        item.classList.toggle("active", item === trigger);
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-file-tab]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      const tab = trigger.dataset.fileTab;
+      const scope = trigger.closest(".file-preview") ?? document;
+      scope.querySelectorAll("[data-file-panel]").forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.filePanel === tab);
+      });
+      scope.querySelectorAll("[data-file-tab]").forEach((item) => {
+        item.classList.toggle("active", item === trigger);
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-prep-tab]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      const tab = trigger.dataset.prepTab;
+      const scope = trigger.closest(".panel-body") ?? document;
+      scope.querySelectorAll("[data-prep-panel]").forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.prepPanel === tab);
+      });
+      scope.querySelectorAll("[data-prep-tab]").forEach((item) => {
+        item.classList.toggle("active", item === trigger);
+      });
+    });
+  });
+
   document.querySelectorAll("[data-service-mail-view]").forEach((trigger) => {
     trigger.addEventListener("click", () => {
       const view = trigger.dataset.serviceMailView;

@@ -2,7 +2,6 @@
 
 import { FilterSelect } from "@/components/ui/select";
 import type { DemandKind } from "@/services/orders";
-import type { StatusFilter } from "./order-utils";
 
 type FilterOption = string | { value: string; label: string };
 
@@ -11,15 +10,12 @@ type OrdersFiltersProps = {
   materialLabel: string;
   customerFilter: string;
   materialFilter: string;
-  statusFilter: StatusFilter;
   timeFrom: string;
   timeTo: string;
   visibleDemandKinds: DemandKind[];
   customerOptions: FilterOption[];
-  statusOptions: { value: StatusFilter; label: string }[];
   onCustomerFilterChange: (value: string) => void;
   onMaterialFilterChange: (value: string) => void;
-  onStatusFilterChange: (value: StatusFilter) => void;
   onDemandKindToggle: (value: DemandKind) => void;
   onTimeFromChange: (value: string) => void;
   onTimeToChange: (value: string) => void;
@@ -30,15 +26,12 @@ export function OrdersFilters({
   materialLabel,
   customerFilter,
   materialFilter,
-  statusFilter,
   timeFrom,
   timeTo,
   visibleDemandKinds,
   customerOptions,
-  statusOptions,
   onCustomerFilterChange,
   onMaterialFilterChange,
-  onStatusFilterChange,
   onDemandKindToggle,
   onTimeFromChange,
   onTimeToChange,
@@ -60,12 +53,6 @@ export function OrdersFilters({
             placeholder="Faurecia P/N"
           />
         </label>
-        <FilterSelect
-          label="状态"
-          value={statusFilter}
-          options={statusOptions}
-          onChange={(value) => onStatusFilterChange(value as StatusFilter)}
-        />
         <label className="orders-inline-date-filter">
           <span>开始</span>
           <input type="date" value={timeFrom} onChange={(event) => onTimeFromChange(event.target.value)} />

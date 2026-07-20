@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>发运收货对账流程 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body {
+      overflow: hidden;
+    }
+
+    .flow-page {
+      height: calc(100vh - 64px);
+      padding: 14px 18px 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .flow-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 18px;
+    }
+
+    .flow-top h1 {
+      margin: 2px 0 4px;
+      font-size: 24px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .flow-top .subtitle {
+      max-width: 1080px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .flow-legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      min-width: 360px;
+    }
+
+    .legend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--forvia-blue);
+    }
+
+    .legend-dot.success { background: var(--success); }
+    .legend-dot.warning { background: var(--warning); }
+    .legend-dot.danger { background: var(--danger); }
+
+    .flow-stage {
+      flex: 1;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.07);
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .flow-map {
+      width: 1765px;
+      min-width: 1765px;
+      height: 100%;
+      min-height: 560px;
+      display: grid;
+      grid-template-columns: 150px 150px 150px 160px 155px 170px 150px 170px 165px 165px;
+      grid-template-rows: 124px 124px 124px 118px;
+      gap: 18px 20px;
+      align-items: center;
+      position: relative;
+    }
+
+    .node,
+    .decision,
+    .source-box,
+    .note-box {
+      position: relative;
+      z-index: 1;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
+    }
+
+    .source-box {
+      grid-row: 1 / span 3;
+      align-self: stretch;
+      display: grid;
+      gap: 10px;
+      align-content: center;
+      background: var(--surface-alt);
+    }
+
+    .source-item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: white;
+    }
+
+    .source-item.sap {
+      border-color: var(--forvia-blue-border);
+      background: var(--forvia-blue-soft);
+    }
+
+    .source-item.customer {
+      border-color: #cfe7ef;
+      background: var(--forvia-cyan-soft);
+    }
+
+    .node {
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .node.success {
+      border-color: #bbf7d0;
+      background: var(--success-soft);
+    }
+
+    .node.warning {
+      border-color: #fed7aa;
+      background: var(--warning-soft);
+    }
+
+    .node.danger {
+      border-color: #fecdd3;
+      background: var(--danger-soft);
+    }
+
+    .node-title,
+    .source-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 0 7px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+
+    .node-title.center {
+      justify-content: center;
+    }
+
+    .node-index {
+      flex: 0 0 auto;
+      width: 21px;
+      height: 21px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--forvia-blue-soft);
+      color: var(--forvia-blue);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .node-desc,
+    .source-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.42;
+    }
+
+    .decision {
+      width: 132px;
+      height: 132px;
+      justify-self: center;
+      text-align: center;
+      display: grid;
+      place-items: center;
+      transform: rotate(45deg);
+      border-color: var(--forvia-blue-border);
+      background: #fff;
+    }
+
+    .decision-content {
+      width: 92px;
+      transform: rotate(-45deg);
+    }
+
+    .decision-title {
+      margin: 0 0 5px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .decision-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .flow-connectors {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      width: 1765px;
+      height: 544px;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .connector {
+      fill: none;
+      stroke: #cbd5e1;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .connector.soft {
+      stroke: #d9dfff;
+      stroke-width: 1.6;
+      stroke-dasharray: 5 6;
+    }
+
+    .connector.success-line {
+      stroke: #86efac;
+    }
+
+    .connector.warning-line {
+      stroke: #fdba74;
+    }
+
+    .connector.danger-line {
+      stroke: #fda4af;
+    }
+
+    .marker-success {
+      fill: #86efac;
+    }
+
+    .marker-warning {
+      fill: #fdba74;
+    }
+
+    .marker-danger {
+      fill: #fda4af;
+    }
+
+    .marker-neutral {
+      fill: #cbd5e1;
+    }
+
+    .arrow {
+      display: none;
+      position: absolute;
+      z-index: 0;
+      background: #cbd5e1;
+    }
+
+    .arrow::after {
+      content: "";
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+      border-left: 8px solid #cbd5e1;
+      right: -7px;
+      top: -5px;
+    }
+
+    .arrow.main {
+      display: none;
+    }
+
+    .arrow.yes {
+      left: 1022px;
+      top: 142px;
+      width: 86px;
+      height: 2px;
+      transform: rotate(-28deg);
+      transform-origin: left center;
+    }
+
+    .arrow.no {
+      left: 1020px;
+      top: 264px;
+      width: 88px;
+      height: 2px;
+      transform: rotate(30deg);
+      transform-origin: left center;
+    }
+
+    .arrow.candidate-yes {
+      left: 1284px;
+      top: 306px;
+      width: 98px;
+      height: 2px;
+      transform: rotate(-39deg);
+      transform-origin: left center;
+    }
+
+    .arrow.candidate-no {
+      left: 1284px;
+      top: 316px;
+      width: 92px;
+      height: 2px;
+      transform: rotate(38deg);
+      transform-origin: left center;
+    }
+
+    .branch-tag {
+      position: absolute;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: white;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .tag-yes {
+      left: 1198px;
+      top: 92px;
+      color: var(--success);
+      border-color: #bbf7d0;
+      background: var(--success-soft);
+    }
+
+    .tag-no {
+      left: 1198px;
+      top: 296px;
+      color: var(--warning);
+      border-color: #fed7aa;
+      background: var(--warning-soft);
+    }
+
+    .tag-candidate-yes {
+      left: 1374px;
+      top: 92px;
+      color: var(--warning);
+      border-color: #fed7aa;
+      background: var(--warning-soft);
+    }
+
+    .tag-candidate-no {
+      left: 1376px;
+      top: 296px;
+      color: var(--danger);
+      border-color: #fecdd3;
+      background: var(--danger-soft);
+    }
+
+    .note-box {
+      grid-column: 2 / span 5;
+      grid-row: 4;
+      min-height: 100px;
+      background: var(--surface-alt);
+    }
+
+    .note-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .note-item {
+      border-left: 3px solid var(--forvia-blue);
+      padding-left: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .note-item strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .export-card {
+      grid-column: 8 / span 3;
+      grid-row: 4;
+      align-self: stretch;
+      border-color: var(--forvia-blue-border);
+      background: var(--forvia-blue-soft);
+    }
+
+    .export-card .node-desc {
+      font-size: 12px;
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        overflow: auto;
+      }
+
+      .flow-page {
+        height: auto;
+        min-height: calc(100vh - 64px);
+        overflow: visible;
+      }
+
+      .flow-top {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-legend {
+        justify-content: flex-start;
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link" href="00-intelligent-service.html">智能客服</a>
+        <a class="nav-link" href="01-task-workbench.html">智能供应链</a>
+        <a class="nav-link" href="05-customer-profile.html">客户</a>
+        <a class="nav-link active" href="06-financial-reconciliation.html">财务对账</a>
+        <a class="nav-link" href="07-system-settings.html">系统配置</a>
+      </nav>
+      <div class="user-chip"><span>财务 · 简中</span><span class="avatar">FN</span></div>
+    </header>
+
+    <main class="page flow-page">
+      <div class="subnav">
+        <a href="06-financial-reconciliation.html">对账工作台</a>
+        <a class="active" href="06-financial-reconciliation-flow.html">对账流程图</a>
+      </div>
+
+      <section class="flow-top">
+        <div>
+          <p class="eyebrow">Reconciliation Workflow</p>
+          <h1>发运清单与客户到货清单对账流程</h1>
+          <p class="subtitle">主视角：先按 SAP 客户编号、过账日期区间、物料编号圈定发运，再加潜在物流天数推导客户到货窗口；由于缺少强关联字段，系统只给潜在对应和异常，最终由人工确认。</p>
+        </div>
+        <div class="flow-legend">
+          <span class="legend-pill"><span class="legend-dot warning"></span>潜在对应</span>
+          <span class="legend-pill"><span class="legend-dot danger"></span>无候选异常</span>
+          <span class="legend-pill"><span class="legend-dot"></span>人工确认</span>
+        </div>
+      </section>
+
+      <section class="flow-stage" aria-label="横向对账流程图">
+        <div class="flow-map">
+          <svg class="flow-connectors" viewBox="0 0 1765 544" aria-hidden="true">
+            <defs>
+              <marker id="arrow-neutral" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path class="marker-neutral" d="M0,0 L8,4 L0,8 Z"></path>
+              </marker>
+              <marker id="arrow-success" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path class="marker-success" d="M0,0 L8,4 L0,8 Z"></path>
+              </marker>
+              <marker id="arrow-warning" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path class="marker-warning" d="M0,0 L8,4 L0,8 Z"></path>
+              </marker>
+              <marker id="arrow-danger" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path class="marker-danger" d="M0,0 L8,4 L0,8 Z"></path>
+              </marker>
+            </defs>
+
+            <path class="connector" marker-end="url(#arrow-neutral)" d="M150 204 H170"></path>
+            <path class="connector" marker-end="url(#arrow-neutral)" d="M320 204 H340"></path>
+            <path class="connector" marker-end="url(#arrow-neutral)" d="M490 204 H510"></path>
+            <path class="connector" marker-end="url(#arrow-neutral)" d="M670 204 H690"></path>
+            <path class="connector" marker-end="url(#arrow-neutral)" d="M845 204 H865"></path>
+            <path class="connector" marker-end="url(#arrow-neutral)" d="M1035 204 H1055"></path>
+            <path class="connector" marker-end="url(#arrow-neutral)" d="M1205 204 H1244"></path>
+
+            <path class="connector warning-line" marker-end="url(#arrow-warning)" d="M1356 160 C1370 122, 1394 62, 1415 62"></path>
+            <path class="connector danger-line" marker-end="url(#arrow-danger)" d="M1356 248 C1370 286, 1394 346, 1415 346"></path>
+
+            <path class="connector soft warning-line" marker-end="url(#arrow-warning)" d="M1580 62 H1590 V426"></path>
+            <path class="connector soft danger-line" marker-end="url(#arrow-danger)" d="M1580 346 H1602 V426"></path>
+          </svg>
+
+          <div class="source-box" style="grid-column:1; grid-row:1 / span 3;">
+            <div class="source-item sap">
+              <p class="source-title">SAP 发运清单</p>
+              <p class="source-desc">客户编号、过账日期、物料、数量、单位、移动类型、交货号、参照号。</p>
+            </div>
+            <div class="source-item customer">
+              <p class="source-title">客户到货清单</p>
+              <p class="source-desc">外库诺博到货明细、内部客户对账单或收货明细。</p>
+            </div>
+            <div class="source-item">
+              <p class="source-title">基础主数据</p>
+              <p class="source-desc">物料映射、客户映射、单位换算、模板字段映射。</p>
+            </div>
+          </div>
+
+          <div class="node" style="grid-column:2; grid-row:2;">
+            <p class="node-title"><span class="node-index">1</span>筛选 SAP</p>
+            <p class="node-desc">客户编号、过账日期区间、物料编号。</p>
+          </div>
+
+          <div class="node" style="grid-column:3; grid-row:2;">
+            <p class="node-title"><span class="node-index">2</span>设置物流天</p>
+            <p class="node-desc">按客户、路线或本次对账设置潜在物流天数。</p>
+          </div>
+
+          <div class="node" style="grid-column:4; grid-row:2;">
+            <p class="node-title"><span class="node-index">3</span>推导到货窗口</p>
+            <p class="node-desc">到货日期区间 = 过账日期区间 + 物流天数。</p>
+          </div>
+
+          <div class="node" style="grid-column:5; grid-row:2;">
+            <p class="node-title"><span class="node-index">4</span>清洗映射</p>
+            <p class="node-desc">客户物料映射内部物料，统一单位、日期和数量正负。</p>
+          </div>
+
+          <div class="node" style="grid-column:6; grid-row:2;">
+            <p class="node-title"><span class="node-index">5</span>按物料月汇总</p>
+            <p class="node-desc">月发货量 vs 月到货量，形成主对账口径。</p>
+          </div>
+
+          <div class="node warning" style="grid-column:7; grid-row:2;">
+            <p class="node-title"><span class="node-index">6</span>查潜在订单</p>
+            <p class="node-desc">没有强关联字段时，不做自动通过；统一查找潜在对应订单。</p>
+          </div>
+
+          <div class="decision" style="grid-column:8; grid-row:2;">
+            <div class="decision-content">
+              <p class="decision-title">有潜在对应？</p>
+              <p class="decision-desc">能否解释差异</p>
+            </div>
+          </div>
+
+          <div class="node warning" style="grid-column:9; grid-row:1;">
+            <p class="node-title"><span class="node-index">7A</span>黄色候选</p>
+            <p class="node-desc">展示每笔候选订单、匹配原因、置信度，等待人工确认。</p>
+          </div>
+
+          <div class="node danger" style="grid-column:9; grid-row:3;">
+            <p class="node-title"><span class="node-index">7B</span>红色异常</p>
+            <p class="node-desc">无潜在对应，需补充说明、调整映射或确认差异。</p>
+          </div>
+
+          <div class="note-box">
+            <div class="note-grid">
+              <div class="note-item"><strong>主视角</strong>以 SAP 过账日期选发货，再向后扩展客户到货日期。</div>
+              <div class="note-item"><strong>细追溯前提</strong>有交货号、参考号、要货令或客户收货单号时，可下钻到订单。</div>
+              <div class="note-item"><strong>无强关联字段</strong>不能自动判定对账通过，只能提供物料聚合差异和候选匹配。</div>
+            </div>
+          </div>
+
+          <div class="node export-card">
+            <p class="node-title"><span class="node-index">8</span>人工确认并导出</p>
+            <p class="node-desc">人工确认黄色候选和红色异常；确认无问题的条目可批量标记为对账成功，并导出对账结果、异常清单和确认记录。</p>
+          </div>
+
+          <span class="branch-tag tag-candidate-yes">有</span>
+          <span class="branch-tag tag-candidate-no">无</span>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

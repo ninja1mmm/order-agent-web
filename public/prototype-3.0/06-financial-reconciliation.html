@@ -14,228 +14,1377 @@
       <nav class="nav-group">
         <a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i>智能客服</a>
         <a class="nav-link" href="01-task-workbench.html"><i data-lucide="workflow"></i>智能供应链</a>
-        <a class="nav-link active" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link active" href="06-financial-reconciliation.html"><i data-lucide="scale"></i>财务对账</a>
         <a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
       </nav>
       <div class="user-chip"><span>财务 · 简中</span><span class="avatar">FN</span></div>
     </header>
 
-    <main class="page fit-screen">
-      <div class="subnav"><a href="05-customer-profile.html">客户画像</a><a class="active" href="06-financial-reconciliation.html">财务对账</a></div>
-      <div class="recon-grid screen-fill">
-        <aside class="panel scroll-panel">
-          <div class="panel-head"><h2 class="panel-title"><i data-lucide="sliders-horizontal"></i>对账任务</h2><span class="badge amber">进行中</span></div>
-          <div class="panel-body stack">
-            <div class="card">
-              <p class="mini-title">对账条件</p>
-              <div class="stack">
-                <details class="filter-select">
-                  <summary>客户：天津旭阳 / VW</summary>
-                  <div class="filter-options"><span>天津旭阳 / VW</span><span>WLB1343</span><span>BYD 合肥</span></div>
-                </details>
-                <details class="filter-select">
-                  <summary>期间：2026-02</summary>
-                  <div class="filter-options"><span>2026-01</span><span>2026-02</span><span>2026-03</span><span>自定义日期</span></div>
-                </details>
-                <div class="row">
-                  <div>
-                    <p class="item-title">receipt-2026-02.xlsx</p>
-                    <p class="item-meta">162 行 · 18 个物料</p>
+    <main class="page fit-screen recon-page">
+      <div class="tabs recon-tabs">
+        <span class="active" data-recon-tab="history"><i data-lucide="history"></i>对帐历史</span>
+        <span data-recon-tab="create"><i data-lucide="plus-circle"></i>新建任务</span>
+        <span class="task-stage" data-recon-tab="prep"><i data-lucide="database-zap"></i>数据准备</span>
+        <span class="task-stage" data-recon-tab="confirm"><i data-lucide="git-compare-arrows"></i>结果确认</span>
+      </div>
+
+      <section class="tab-panel screen-fill" data-recon-panel="create">
+        <div class="create-task-grid screen-fill">
+          <section class="panel scroll-panel">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="file-plus-2"></i>新建对帐任务</h2>
+              <span class="badge slate">上传 Excel</span>
+            </div>
+            <div class="panel-body stack">
+              <div class="task-form-grid">
+                <label class="filter-field">
+                  <span class="filter-label">客户 *</span>
+                  <div class="filter-value">FAURECIA SISTEMAS · 1464000000 <i data-lucide="chevron-down"></i></div>
+                </label>
+                <label class="filter-field">
+                  <span class="filter-label">客户对帐周期 *</span>
+                  <div class="filter-value">2026-07-01 至 2026-07-31 <i data-lucide="calendar-range"></i></div>
+                </label>
+                <label class="filter-field">
+                  <span class="filter-label">SAP 发运窗口 *</span>
+                  <div class="filter-value">2026-06-25 至 2026-07-31 <i data-lucide="wand-sparkles"></i></div>
+                </label>
+              </div>
+
+              <div class="excel-upload-stack">
+                <section class="upload-section">
+                  <div class="upload-section-head">
+                    <div>
+                      <p class="mini-title">发运</p>
+                      <p class="item-meta">两个 Excel 均为必填，用于建立发运池与交货映射关系。</p>
+                    </div>
+                    <span class="badge green">2 / 2 已上传</span>
                   </div>
-                  <span class="badge green">已解析</span>
+
+                  <div class="excel-upload-card required">
+                    <div class="upload-icon"><i data-lucide="sheet"></i></div>
+                    <div>
+                      <div class="row compact-row">
+                        <p class="item-title">SAP 发运记录</p>
+                        <span class="badge green">已上传</span>
+                      </div>
+                      <p class="item-meta">必填 · 仅支持 .xlsx / .xls · 2026-06-17 SAP 发运记录.xlsx</p>
+                    </div>
+                    <label class="upload-picker">
+                      <input type="file" accept=".xlsx,.xls" required aria-label="上传 SAP 发运记录">
+                      <span><i data-lucide="upload"></i>更换</span>
+                    </label>
+                  </div>
+
+                  <div class="excel-upload-card required">
+                    <div class="upload-icon"><i data-lucide="link-2"></i></div>
+                    <div>
+                      <div class="row compact-row">
+                        <p class="item-title">交货-要货令映射</p>
+                        <span class="badge green">已上传</span>
+                      </div>
+                      <p class="item-meta">必填 · 仅支持 .xlsx / .xls · 要货令匹配交货单.xlsx</p>
+                    </div>
+                    <label class="upload-picker">
+                      <input type="file" accept=".xlsx,.xls" required aria-label="上传交货要货令映射">
+                      <span><i data-lucide="upload"></i>更换</span>
+                    </label>
+                  </div>
+                </section>
+
+                <section class="upload-section">
+                  <div class="upload-section-head">
+                    <div>
+                      <p class="mini-title">收货</p>
+                      <p class="item-meta">先选择客户类型，再上传对应收货单；内部客户走固定模板，外部客户进入 VLM 解析。</p>
+                    </div>
+                    <span class="badge blue" data-receipt-route-status>内部客户</span>
+                  </div>
+
+                  <div class="receipt-routing-options" role="radiogroup" aria-label="选择收货单客户类型">
+                    <label class="receipt-routing-card selected" data-receipt-route-card data-route-label="内部客户" data-upload-meta="必填 · 当前上传到内部客户 · 固定模板 · 客户回传收货单.xlsx" data-validation="收货已选择内部客户，按固定模板解析，不进入 VLM 字段识别流程。" data-summary-meta="内部客户 · 固定模板解析 · 当前周期 95 行 · 需复核 1 行">
+                      <input type="radio" name="receipt_customer_type" checked>
+                      <span class="routing-icon"><i data-lucide="building-2"></i></span>
+                      <span>
+                        <strong>内部客户</strong>
+                        <small>固定模板字段映射 · 不需要 VLM 解析</small>
+                      </span>
+                    </label>
+                    <label class="receipt-routing-card" data-receipt-route-card data-route-label="外部客户" data-upload-meta="必填 · 当前上传到外部客户 · VLM 解析 · 客户回传收货单.xlsx" data-validation="收货已选择外部客户，上传后进入 VLM 字段识别与人工确认流程。" data-summary-meta="外部客户 · VLM 字段识别 · 当前周期 95 行 · 需复核 1 行">
+                      <input type="radio" name="receipt_customer_type">
+                      <span class="routing-icon"><i data-lucide="scan-line"></i></span>
+                      <span>
+                        <strong>外部客户</strong>
+                        <small>模板不固定 · 上传后进入 VLM 解析与字段确认</small>
+                      </span>
+                    </label>
+                  </div>
+
+                  <div class="excel-upload-card required">
+                    <div class="upload-icon"><i data-lucide="file-spreadsheet"></i></div>
+                    <div>
+                      <div class="row compact-row">
+                        <p class="item-title">客户回传收货单</p>
+                        <span class="badge green">已上传</span>
+                      </div>
+                      <p class="item-meta" data-receipt-upload-meta>必填 · 当前上传到内部客户 · 固定模板 · 客户回传收货单.xlsx</p>
+                    </div>
+                    <label class="upload-picker">
+                      <input type="file" accept=".xlsx,.xls" required aria-label="上传客户回传收货单">
+                      <span><i data-lucide="upload"></i>更换</span>
+                    </label>
+                  </div>
+                </section>
+              </div>
+
+            </div>
+          </section>
+
+          <section class="panel scroll-panel">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="clipboard-check"></i>文件摘要</h2>
+              <div class="mode-strip">
+                <button class="btn small primary" data-parse-upload><i data-lucide="scan-search"></i>解析文件</button>
+                <button class="btn small" data-confirm-create data-recon-tab="prep" disabled><i data-lucide="check-circle-2"></i>确认创建</button>
+              </div>
+            </div>
+            <div class="panel-body stack">
+              <div class="analysis-progress-panel" data-analysis-panel>
+                <div class="analysis-progress-head">
+                  <div>
+                    <p class="mini-title">解析分析</p>
+                    <p class="item-meta" data-analysis-status>等待解析。上传完成后点击“解析文件”，系统会校验槽位、模板和日期范围。</p>
+                  </div>
+                  <span class="badge slate" data-analysis-badge>待解析</span>
                 </div>
-                <div class="list-actions">
-                  <button class="btn small"><i data-lucide="upload"></i>上传</button>
-                  <button class="btn small primary"><i data-lucide="scan-search"></i>执行对比</button>
+                <div class="analysis-progress-track">
+                  <span data-analysis-progress></span>
+                </div>
+                <div class="analysis-step-grid">
+                  <span class="analysis-step done"><i data-lucide="check"></i>文件槽位</span>
+                  <span class="analysis-step" data-analysis-step="parse"><i data-lucide="scan-line"></i>模板解析</span>
+                  <span class="analysis-step" data-analysis-step="validate"><i data-lucide="shield-check"></i>规则校验</span>
+                </div>
+              </div>
+
+              <div class="file-summary-grid">
+                <div class="file-summary-card">
+                  <span class="badge slate">sap_shipment</span>
+                  <p class="item-title">SAP 发运记录.xlsx</p>
+                  <p class="item-meta">解析 128 行 · 当前客户 124 行 · 需复核 3 行</p>
+                </div>
+                <div class="file-summary-card">
+                  <span class="badge slate">delivery_demand_map</span>
+                  <p class="item-title">交货-要货令映射.xlsx</p>
+                  <p class="item-meta">解析 125 行 · 交货号 125 个 · 冲突 0 行</p>
+                </div>
+                <div class="file-summary-card">
+                  <span class="badge slate">customer_receipt</span>
+                  <p class="item-title">客户回传收货单.xlsx</p>
+                  <p class="item-meta" data-receipt-summary-meta>内部客户 · 固定模板解析 · 当前周期 95 行 · 需复核 1 行</p>
+                </div>
+              </div>
+
+              <div class="upload-validation-panel">
+                <div class="row compact-row">
+                  <p class="mini-title">上传校验</p>
+                  <span class="badge amber">2 条需复核</span>
+                </div>
+                <div class="upload-validation-list">
+                  <div class="validation-item success">
+                    <i data-lucide="check-circle-2"></i>
+                    <span>发运 2 个必填 Excel 均已上传，SAP 发运记录与交货-要货令映射槽位识别通过。</span>
+                  </div>
+                  <div class="validation-item success">
+                    <i data-lucide="check-circle-2"></i>
+                    <span data-receipt-route-validation>收货已选择内部客户，按固定模板解析，不进入 VLM 字段识别流程。</span>
+                  </div>
+                  <div class="validation-item warning">
+                    <i data-lucide="triangle-alert"></i>
+                    <span>SAP 发运记录包含 3 行 2026-06-20 数据，早于发运窗口 2026-06-25。</span>
+                  </div>
+                  <div class="validation-item warning">
+                    <i data-lucide="triangle-alert"></i>
+                    <span>客户回传收货单包含 1 行 2026-08-02 数据，超出客户对帐周期。</span>
+                  </div>
                 </div>
               </div>
             </div>
+          </section>
+        </div>
+      </section>
 
-            <div class="card">
-              <p class="mini-title">历史对比</p>
-              <div class="stack history-list">
-                <div class="list-item selected">
-                  <div class="row"><p class="item-title">天津旭阳 / VW · 2026-02</p><button class="icon-link" aria-label="删除"><i data-lucide="trash-2"></i></button></div>
-                  <p class="item-meta">差异 4 行 · 刚刚生成</p>
-                </div>
-                <div class="list-item">
-                  <div class="row"><p class="item-title">WLB1343 · 2026-01</p><button class="icon-link" aria-label="删除"><i data-lucide="trash-2"></i></button></div>
-                  <p class="item-meta">差异 1 行 · 已导出</p>
-                </div>
-                <div class="list-item">
-                  <div class="row"><p class="item-title">Audi · 2025-12</p><button class="icon-link" aria-label="删除"><i data-lucide="trash-2"></i></button></div>
-                  <p class="item-meta">差异 3 行 · 建议复核</p>
-                </div>
-                <div class="list-item">
-                  <div class="row"><p class="item-title">天津旭阳 / VW · 2026-01</p><button class="icon-link" aria-label="删除"><i data-lucide="trash-2"></i></button></div>
-                  <p class="item-meta">无差异 · 已归档</p>
-                </div>
-                <div class="list-item">
-                  <div class="row"><p class="item-title">BYD 合肥 · 2025-12</p><button class="icon-link" aria-label="删除"><i data-lucide="trash-2"></i></button></div>
-                  <p class="item-meta">差异 6 行 · 待说明</p>
-                </div>
+      <section class="tab-panel screen-fill" data-recon-panel="prep">
+        <div class="prep-review-grid screen-fill">
+          <aside class="panel scroll-panel">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="folder-open"></i>REC-202606-014</h2>
+            </div>
+            <div class="panel-body stack">
+              <div class="prep-context-card">
+                <span class="filter-label">客户</span>
+                <p class="item-title">FAURECIA SISTEMAS</p>
+                <p class="item-meta">1464000000</p>
+              </div>
+              <div class="prep-context-card">
+                <span class="filter-label">客户对帐周期</span>
+                <p class="item-title">2026-07-01 至 2026-07-31</p>
+                <p class="item-meta">SAP 发运窗口：2026-06-25 至 2026-07-31</p>
+              </div>
+
+              <div class="history-section">
+                <p class="mini-title" style="margin-bottom:0">原文件</p>
+                <button class="prep-source-file selected" data-open="#rawExcelSheet">
+                  <span><i data-lucide="sheet"></i>SAP 发运记录.xlsx</span>
+                  <strong>128 行</strong>
+                </button>
+                <button class="prep-source-file" data-open="#rawExcelSheet">
+                  <span><i data-lucide="link-2"></i>交货-要货令映射.xlsx</span>
+                  <strong>125 行</strong>
+                </button>
+                <button class="prep-source-file" data-open="#receiptRawExcelSheet">
+                  <span><i data-lucide="file-spreadsheet"></i>客户回传收货单.xlsx</span>
+                  <strong>96 行</strong>
+                </button>
               </div>
             </div>
-          </div>
-        </aside>
+          </aside>
 
-        <section class="panel scroll-panel">
-          <div class="panel-head">
-            <h2 class="panel-title"><i data-lucide="sheet"></i>客户收货 Excel 预览</h2>
-            <span class="badge blue">原始上传侧</span>
-          </div>
-          <div class="panel-body stack">
-            <div class="card">
-              <div class="row">
-                <p class="item-title">receipt-2026-02.xlsx</p>
-                <div class="chip-wrap">
-                  <span class="badge green">模板有效</span>
-                  <span class="badge slate">字段已识别</span>
+          <section class="panel scroll-panel">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="table-2"></i>数据准备</h2>
+              <div class="mode-strip">
+                <button class="btn small"><i data-lucide="filter"></i>筛选</button>
+                <button class="btn small primary" data-recon-tab="confirm"><i data-lucide="database-zap"></i>确认数据</button>
+              </div>
+            </div>
+            <div class="panel-body stack">
+              <div class="prep-tabbar">
+                <button class="active" data-prep-tab="shipment"><i data-lucide="truck"></i>发运</button>
+                <button data-prep-tab="receipt"><i data-lucide="package-check"></i>收货</button>
+              </div>
+
+              <div class="filter-workbar prep-filter">
+                <div class="filter-field">
+                  <span class="filter-label">问题类型</span>
+                  <div class="filter-value">全部 <i data-lucide="chevron-down"></i></div>
+                </div>
+                <div class="filter-field">
+                  <span class="filter-label">状态</span>
+                  <div class="filter-value">全部状态 <i data-lucide="chevron-down"></i></div>
+                </div>
+                <input class="input" value="1651629X / 0255802956 / BAQST" aria-label="搜索历史记录">
+                <button class="btn"><i data-lucide="search"></i>搜索</button>
+              </div>
+
+              <div class="issue-rule-strip">
+                <span class="issue-chip none">无问题</span>
+                <span class="issue-chip out-range">日期超区间</span>
+                <span class="issue-chip duplicate">重复一致</span>
+                <span class="issue-chip conflict">重复变更</span>
+                <span class="issue-chip map">映射冲突</span>
+              </div>
+
+              <div class="prep-data-panel active" data-prep-panel="shipment">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:1280px">
+                    <thead>
+                      <tr>
+                        <th>发运日期</th>
+                        <th>物料</th>
+                        <th>数量</th>
+                        <th>交货</th>
+                        <th>要货令</th>
+                        <th>来源</th>
+                        <th>历史对比</th>
+                        <th>问题类型</th>
+                        <th>规则说明</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>2026-05-28</td>
+                        <td>1651628X</td>
+                        <td>2,400</td>
+                        <td>46385891</td>
+                        <td>0255802890</td>
+                        <td>历史发运</td>
+                        <td>已合并历史池</td>
+                        <td><span class="issue-chip none">无</span></td>
+                        <td>历史有效发运，保留用于本期 open item 对帐。</td>
+                        <td><span class="badge green">有效</span></td>
+                        <td>
+                          <div class="row-actions">
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="查看发运"><i data-lucide="eye"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>2026-06-03</td>
+                        <td>1651629X</td>
+                        <td>600</td>
+                        <td>46385940</td>
+                        <td>0255802921</td>
+                        <td>历史发运</td>
+                        <td>未发现历史冲突</td>
+                        <td><span class="issue-chip none">无</span></td>
+                        <td>历史有效发运，保留在客户发运池。</td>
+                        <td><span class="badge green">有效</span></td>
+                        <td>
+                          <div class="row-actions">
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="查看发运"><i data-lucide="eye"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>2026-06-12</td>
+                        <td>1651631X</td>
+                        <td>1,200</td>
+                        <td>46386002</td>
+                        <td>0255802940</td>
+                        <td>历史发运</td>
+                        <td>已合并历史池</td>
+                        <td><span class="issue-chip none">无</span></td>
+                        <td>历史有效发运，等待后续收货对帐。</td>
+                        <td><span class="badge green">有效</span></td>
+                        <td>
+                          <div class="row-actions">
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="查看发运"><i data-lucide="eye"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>2026-06-17</td>
+                        <td>1651629X</td>
+                        <td>5,120</td>
+                        <td>46386024</td>
+                        <td>0255802956</td>
+                        <td>本任务发运</td>
+                        <td>未发现历史冲突</td>
+                        <td><span class="issue-chip none">无</span></td>
+                        <td>可进入后续结果确认。</td>
+                        <td><span class="badge green">有效</span></td>
+                        <td>
+                          <div class="row-actions">
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="编辑发运"><i data-lucide="pencil"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-duplicate">
+                        <td>2026-06-17</td>
+                        <td>1651629X</td>
+                        <td>5,120</td>
+                        <td>46386024</td>
+                        <td>0255802956</td>
+                        <td>历史发运</td>
+                        <td>业务键已存在</td>
+                        <td><span class="issue-chip duplicate">重复一致</span></td>
+                        <td>同一发运业务键已存在，需选择保留历史或替换。</td>
+                        <td><span class="badge amber">待复核</span></td>
+                        <td>
+                          <div class="row-actions">
+                            <button class="icon-link" data-open="#shipmentIssueSheet" aria-label="处理发运重复"><i data-lucide="panel-right-open"></i></button>
+                            <button class="icon-link danger" aria-label="忽略"><i data-lucide="circle-slash"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-conflict">
+                        <td>2026-06-18</td>
+                        <td>1651630X</td>
+                        <td>2,304</td>
+                        <td>46386025</td>
+                        <td>0255802957</td>
+                        <td>本任务发运</td>
+                        <td>历史同业务键数量 2,300</td>
+                        <td><span class="issue-chip conflict">重复变更</span></td>
+                        <td>业务键相同但内容不同，必须人工确认保留哪一条。</td>
+                        <td><span class="badge red">阻断</span></td>
+                        <td>
+                          <div class="row-actions">
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="编辑发运"><i data-lucide="pencil"></i></button>
+                            <button class="icon-link" aria-label="保留"><i data-lucide="check"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>2026-06-20</td>
+                        <td>1651632X</td>
+                        <td>960</td>
+                        <td>46386040</td>
+                        <td>0255802960</td>
+                        <td>本任务发运</td>
+                        <td>未发现历史冲突</td>
+                        <td><span class="issue-chip none">无</span></td>
+                        <td>本次导入发运，合并进入客户发运池。</td>
+                        <td><span class="badge green">有效</span></td>
+                        <td>
+                          <div class="row-actions">
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="编辑发运"><i data-lucide="pencil"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="table-footer">
+                  <span>发运数据按发运日期升序排列，展示该客户历史发运与本次导入合并后的完整数据；问题行高亮。</span>
+                  <span>1-7 / 128</span>
                 </div>
               </div>
-            </div>
 
-            <div class="scroll-x">
-              <table class="table" style="min-width:1380px">
-                <thead>
-                  <tr>
-                    <th>状态</th>
-                    <th>收货数量</th>
-                    <th>数量单位</th>
-                    <th>工厂编码</th>
-                    <th>物料编码</th>
-                    <th>物料名称</th>
-                    <th>收货日期</th>
-                    <th>移动类型</th>
-                    <th>收货编号</th>
-                    <th>收货行</th>
-                    <th>收货年</th>
-                    <th>订单编号</th>
-                    <th>订单行</th>
-                    <th>参考收货编号</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td>未确认</td><td>-16</td><td>PCE</td><td>2082</td><td>2777978X</td><td>VW MVSG2 E-Pump2.0 no memo right</td><td>2026-02-25</td><td>122</td><td>5313190727</td><td>0003</td><td>2026</td><td>5700168176</td><td>00010</td><td>5313129109</td></tr>
-                  <tr><td>未确认</td><td>-11</td><td>ST</td><td>2082</td><td>2372846XL</td><td>LINEAR ACTUATOR (LA) E-TILT MRA2 NO</td><td>2026-02-25</td><td>122</td><td>5313190727</td><td>0001</td><td>2026</td><td>5700291251</td><td>00010</td><td>5313129109</td></tr>
-                  <tr><td>未确认</td><td>-10</td><td>PCE</td><td>2082</td><td>2777977X</td><td>VW MVSG2 E-Pump2.0 no memo left</td><td>2026-02-25</td><td>122</td><td>5313190727</td><td>0002</td><td>2026</td><td>5700168175</td><td>00010</td><td>5313129109</td></tr>
-                  <tr><td>未确认</td><td>13552</td><td>PCE</td><td>2082</td><td>2179866X</td><td>RECLINER - CONTINUOUS POWER RC70</td><td>2026-02-12</td><td>109</td><td>5313164610</td><td>0001</td><td>2026</td><td>5700265294</td><td>00010</td><td>-</td></tr>
-                  <tr><td>未确认</td><td>4608</td><td>ST</td><td>2082</td><td>2372846XL</td><td>LINEAR ACTUATOR (LA) E-TILT MRA2 NO</td><td>2026-02-12</td><td>109</td><td>5313164609</td><td>0004</td><td>2026</td><td>5700291251</td><td>00010</td><td>-</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <aside class="panel scroll-panel">
-          <div class="panel-head">
-            <h2 class="panel-title"><i data-lucide="git-compare-arrows"></i>对账目标 vs Shipping</h2>
-            <span class="badge red">4 差异</span>
-          </div>
-          <div class="panel-body stack">
-            <div class="card">
-              <div class="row">
-                <p class="mini-title" style="margin-bottom:0">订单号 / 物料号</p>
-                <button class="btn small" data-open="#shippingDetailSheet"><i data-lucide="panel-right-open"></i>明细</button>
-              </div>
-              <p class="item-title" style="margin-top:8px">全部订单行 · 2026-02</p>
-            </div>
-
-            <div class="card">
-              <p class="mini-title">对比表</p>
-              <div class="scroll-x">
-                <table class="table table-compact" style="min-width:520px">
+              <div class="prep-data-panel" data-prep-panel="receipt">
+                <div class="scroll-x">
+                  <table class="table" style="min-width:1280px">
                   <thead>
                     <tr>
-                      <th>物料号</th>
-                      <th>对账目标文件</th>
-                      <th>Shipping Plan</th>
-                      <th>差异</th>
+                      <th>收货日期</th>
+                      <th>物料</th>
+                      <th>数量</th>
+                      <th>交货</th>
+                      <th>要货令</th>
+                      <th>来源</th>
+                      <th>历史对比</th>
+                      <th>问题类型</th>
+                      <th>规则说明</th>
+                      <th>状态</th>
+                      <th>操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>2777978X</td>
-                      <td><span class="badge red">-16</span></td>
-                      <td>16</td>
-                      <td><span class="badge red">-32</span></td>
+                      <td>2026-05-06</td>
+                      <td>1651628X</td>
+                      <td>2,400</td>
+                      <td>46385891</td>
+                      <td>0255802890</td>
+                      <td>历史收货</td>
+                      <td>已合并历史池</td>
+                      <td><span class="issue-chip none">无</span></td>
+                      <td>历史有效收货，保留用于本期 open item 对帐。</td>
+                      <td><span class="badge green">有效</span></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="查看收货"><i data-lucide="eye"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="row-out-range">
+                      <td>2026-05-11</td>
+                      <td>6801702WKU00A</td>
+                      <td>1,000</td>
+                      <td>-</td>
+                      <td>-</td>
+                      <td>历史收货</td>
+                      <td>当前任务周期 2026-06</td>
+                      <td><span class="issue-chip out-range">日期超区间</span></td>
+                      <td>不在创建任务定义的收货周期内，本任务不写入该行。</td>
+                      <td><span class="badge amber">待复核</span></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-open="#receiptIssueSheet" aria-label="处理收货日期"><i data-lucide="panel-right-open"></i></button>
+                          <button class="icon-link danger" aria-label="忽略"><i data-lucide="circle-slash"></i></button>
+                        </div>
+                      </td>
                     </tr>
                     <tr>
-                      <td>2372846XL</td>
-                      <td><span class="badge red">-11</span></td>
-                      <td>11</td>
-                      <td><span class="badge red">-22</span></td>
+                      <td>2026-06-02</td>
+                      <td>1651629X</td>
+                      <td>500</td>
+                      <td>46385980</td>
+                      <td>0255802938</td>
+                      <td>历史收货</td>
+                      <td>未发现历史冲突</td>
+                      <td><span class="issue-chip none">无</span></td>
+                      <td>历史有效收货，已合并进入客户收货池。</td>
+                      <td><span class="badge green">有效</span></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="查看收货"><i data-lucide="eye"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="row-conflict">
+                      <td>2026-06-05</td>
+                      <td>1651630X</td>
+                      <td>2,300</td>
+                      <td>-</td>
+                      <td>-</td>
+                      <td>本任务收货</td>
+                      <td>历史同业务键数量 2,304</td>
+                      <td><span class="issue-chip conflict">重复变更</span></td>
+                      <td>业务键相同但内容不同，必须人工确认保留哪一条。</td>
+                      <td><span class="badge red">阻断</span></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="编辑收货"><i data-lucide="pencil"></i></button>
+                          <button class="icon-link" aria-label="保留"><i data-lucide="check"></i></button>
+                        </div>
+                      </td>
                     </tr>
                     <tr>
-                      <td>2377977X</td>
-                      <td>24</td>
-                      <td>24</td>
+                      <td>2026-06-05</td>
+                      <td>1651630X</td>
+                      <td>2,304</td>
+                      <td>-</td>
+                      <td>-</td>
+                      <td>历史收货</td>
+                      <td>被本次导入同业务键命中</td>
+                      <td><span class="issue-chip none">无</span></td>
+                      <td>现存历史记录，用于和本次 2,300 数量行对比。</td>
+                      <td><span class="badge green">有效</span></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="查看历史收货"><i data-lucide="eye"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="row-duplicate">
+                      <td>2026-06-06</td>
+                      <td>1651629X</td>
+                      <td>300</td>
+                      <td>46386024</td>
+                      <td>0255802956</td>
+                      <td>历史收货</td>
+                      <td>历史记录完全一致</td>
+                      <td><span class="issue-chip duplicate">重复一致</span></td>
+                      <td>完全重复，默认保留历史记录并忽略本次重复行。</td>
+                      <td><span class="badge slate">可忽略</span></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-open="#receiptIssueSheet" aria-label="处理收货重复"><i data-lucide="panel-right-open"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>2026-06-09</td>
+                      <td>1651632X</td>
+                      <td>960</td>
+                      <td>46386040</td>
+                      <td>0255802960</td>
+                      <td>本任务收货</td>
+                      <td>未发现历史冲突</td>
+                      <td><span class="issue-chip none">无</span></td>
+                      <td>本次导入收货，合并进入客户收货池。</td>
+                      <td><span class="badge green">有效</span></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="编辑收货"><i data-lucide="pencil"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                </div>
+                <div class="table-footer">
+                  <span>收货数据按收货日期升序排列，展示该客户历史收货与本次导入合并后的完整数据；问题行高亮。</span>
+                  <span>1-7 / 96</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="tab-panel screen-fill" data-recon-panel="confirm">
+        <div class="panel scroll-panel recon-gantt-panel screen-fill">
+          <div class="panel-head recon-gantt-head">
+            <h2 class="panel-title"><i data-lucide="git-compare-arrows"></i>REC-202606-014 · 结果确认</h2>
+            <div class="mode-strip">
+              <button class="btn small primary" data-recon-start><i data-lucide="play"></i>开始对帐</button>
+              <button class="btn small" data-open="#invoiceSheet"><i data-lucide="receipt-text"></i>记录差异</button>
+              <button class="btn small"><i data-lucide="archive"></i>关闭任务</button>
+            </div>
+          </div>
+          <div class="panel-body recon-gantt-body">
+            <div class="recon-shared-filter">
+              <div class="filter-field">
+                <span class="filter-label">客户</span>
+                <div class="filter-value">1464000000 / 1037000000 <i data-lucide="chevron-down"></i></div>
+              </div>
+              <div class="filter-field">
+                <span class="filter-label">周期</span>
+                <div class="filter-value">2026-06-01 至 2026-06-30 <i data-lucide="calendar"></i></div>
+              </div>
+              <div class="filter-field">
+                <span class="filter-label">匹配范围</span>
+                <div class="filter-value">要货令优先，日期 +/- 3 天 <i data-lucide="sliders-horizontal"></i></div>
+              </div>
+            </div>
+
+            <div class="recon-state-legend" aria-label="匹配状态说明">
+              <span><i class="legend-dot blue"></i>要货令匹配</span>
+              <span><i class="legend-dot amber"></i>日期数量大概率匹配</span>
+              <span><i class="legend-dot red"></i>未匹配</span>
+              <span><i class="legend-dot slate"></i>已匹配/已记录</span>
+            </div>
+
+            <div class="scroll-x recon-gantt-scroll">
+              <table class="recon-gantt-table" data-recon-board>
+                <colgroup>
+                  <col style="width: 220px">
+                  <col style="width: 76px">
+                  <col style="width: 92px">
+                  <col span="10" style="width: 88px">
+                  <col style="width: 112px">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="recon-material-col" rowspan="2">物料</th>
+                    <th class="recon-lane-col" rowspan="2"></th>
+                    <th class="recon-date-label" rowspan="2">日期</th>
+                    <th class="recon-date-range" colspan="10">2026-06</th>
+                    <th class="recon-total-col" rowspan="2">合计/状态</th>
+                  </tr>
+                  <tr>
+                    <th>06-01</th>
+                    <th>06-02</th>
+                    <th>06-03</th>
+                    <th>06-04</th>
+                    <th>06-05</th>
+                    <th>06-06</th>
+                    <th>06-07</th>
+                    <th>06-08</th>
+                    <th>06-09</th>
+                    <th>06-10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="recon-group-start">
+                    <td class="recon-material-col" rowspan="2">
+                      <span class="order-main-text">1651629X</span>
+                      <span class="order-sub-text">要货令 0255802956 · 交货 46386024</span>
+                    </td>
+                    <td class="recon-lane-col"><span class="lane-badge shipment">发运</span></td>
+                    <td class="recon-date-label">发货日</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><button class="recon-qty-cell match-blue" data-open="#invoiceSheet">500</button></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><span class="invoice-pill partial">部分开票</span></td>
+                  </tr>
+                  <tr>
+                    <td class="recon-lane-col"><span class="lane-badge receipt">收货</span></td>
+                    <td class="recon-date-label">到货日</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><button class="recon-qty-cell match-blue" data-open="#invoiceSheet">300</button></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><strong class="recon-diff-text">差异 200</strong></td>
+                  </tr>
+
+                  <tr class="recon-group-start">
+                    <td class="recon-material-col" rowspan="2">
+                      <span class="order-main-text">1651630X</span>
+                      <span class="order-sub-text">无稳定要货令 · 日期数量候选</span>
+                    </td>
+                    <td class="recon-lane-col"><span class="lane-badge shipment">发运</span></td>
+                    <td class="recon-date-label">发货日</td>
+                    <td></td>
+                    <td></td>
+                    <td><button class="recon-qty-cell match-amber" data-open="#manualIssueSheet">2,304</button></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><span class="badge amber">待确认</span></td>
+                  </tr>
+                  <tr>
+                    <td class="recon-lane-col"><span class="lane-badge receipt">收货</span></td>
+                    <td class="recon-date-label">到货日</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><button class="recon-qty-cell match-amber" data-open="#manualIssueSheet">2,300</button></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><strong class="recon-diff-text">偏差 4</strong></td>
+                  </tr>
+
+                  <tr class="recon-group-start">
+                    <td class="recon-material-col" rowspan="2">
+                      <span class="order-main-text">1651629X</span>
+                      <span class="order-sub-text">上月发运结转 · 0255702801</span>
+                    </td>
+                    <td class="recon-lane-col"><span class="lane-badge shipment">发运</span></td>
+                    <td class="recon-date-label">上月发货</td>
+                    <td><button class="recon-qty-cell match-slate" data-open="#invoiceSheet">300</button></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><span class="badge slate">已记录</span></td>
+                  </tr>
+                  <tr>
+                    <td class="recon-lane-col"><span class="lane-badge receipt">收货</span></td>
+                    <td class="recon-date-label">本月到货</td>
+                    <td></td>
+                    <td><button class="recon-qty-cell match-slate" data-open="#invoiceSheet">300</button></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><span class="invoice-pill open">待本月开票</span></td>
+                  </tr>
+
+                  <tr class="recon-group-start">
+                    <td class="recon-material-col" rowspan="2">
+                      <span class="order-main-text">6801702WKU00A</span>
+                      <span class="order-sub-text">BAQST · 未找到同物料发运</span>
+                    </td>
+                    <td class="recon-lane-col"><span class="lane-badge shipment">发运</span></td>
+                    <td class="recon-date-label">发货日</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><span class="badge red">缺发运</span></td>
+                  </tr>
+                  <tr>
+                    <td class="recon-lane-col"><span class="lane-badge receipt">收货</span></td>
+                    <td class="recon-date-label">到货日</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><button class="recon-qty-cell match-red" data-open="#receiptIssueSheet">1,000</button></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><span class="badge red">未匹配</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel active screen-fill" data-recon-panel="history">
+        <div class="history-workspace screen-fill">
+          <aside class="panel scroll-panel">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="history"></i>对帐台账</h2>
+              <button class="btn small primary"><i data-lucide="download"></i>导出台账</button>
+            </div>
+            <div class="panel-body stack">
+              <div class="filter-field">
+                <span class="filter-label">客户</span>
+                <div class="filter-value">全部客户 <i data-lucide="chevron-down"></i></div>
+              </div>
+              <div class="filter-field">
+                <span class="filter-label">任务状态</span>
+                <div class="filter-value">进行中 / 已关闭 <i data-lucide="chevron-down"></i></div>
+              </div>
+              <div class="filter-field">
+                <span class="filter-label">周期</span>
+                <div class="filter-value">2026-01 至 2026-07 <i data-lucide="calendar-range"></i></div>
+              </div>
+
+              <div class="history-section">
+                <p class="mini-title" style="margin-bottom:0">快捷筛选</p>
+                <div class="quick-filter-grid">
+                  <button class="active">全部任务</button>
+                  <button>待确认</button>
+                  <button>有差异</button>
+                  <button>历史结转</button>
+                  <button>已对帐未开票</button>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="panel scroll-panel">
+            <div class="panel-head">
+              <h2 class="panel-title"><i data-lucide="clipboard-list"></i>任务记录</h2>
+              <div class="mode-strip">
+                <button class="btn small" data-recon-tab="create"><i data-lucide="plus"></i>新建任务</button>
+                <button class="btn small" data-recon-tab="confirm"><i data-lucide="eye"></i>复查选中</button>
+              </div>
+            </div>
+            <div class="panel-body stack">
+              <div class="summary-strip">
+                <span><strong>28</strong>对帐任务</span>
+                <span><strong>6</strong>进行中</span>
+                <span><strong>13</strong>有结转</span>
+                <span><strong>3</strong>待开票</span>
+              </div>
+
+              <div class="scroll-x">
+                <table class="table" style="min-width:1180px">
+                  <thead>
+                    <tr>
+                      <th>状态</th>
+                      <th>任务号</th>
+                      <th>客户</th>
+                      <th>客户对帐周期</th>
+                      <th>SAP 发运窗口</th>
+                      <th>确认数量</th>
+                      <th>差异</th>
+                      <th>结转</th>
+                      <th>开票状态</th>
+                      <th>关闭/更新</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="clickable" data-recon-tab="prep">
+                      <td><span class="badge amber">复核中</span></td>
+                      <td>REC-202607-018</td>
+                      <td>FAURECIA SISTEMAS · 1464000000</td>
+                      <td>2026-07</td>
+                      <td>2026-06-25 至 2026-07-31</td>
+                      <td>-</td>
+                      <td>待复核</td>
+                      <td>18</td>
+                      <td><span class="invoice-pill open">未生成</span></td>
+                      <td>2026-07-20 14:36</td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-recon-tab="prep" aria-label="进入数据准备"><i data-lucide="panel-right-open"></i></button>
+                          <button class="icon-link" data-open="#rawExcelSheet" aria-label="查看来源"><i data-lucide="sheet"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="clickable" data-recon-tab="confirm">
+                      <td><span class="badge amber">待确认</span></td>
+                      <td>REC-202606-014</td>
+                      <td>FAURECIA SISTEMAS · 1464000000</td>
+                      <td>2026-06</td>
+                      <td>2026-05-25 至 2026-06-30</td>
+                      <td>42</td>
+                      <td>6</td>
+                      <td>18</td>
+                      <td><span class="invoice-pill partial">部分开票</span></td>
+                      <td>2026-07-02 10:18</td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-recon-tab="confirm" aria-label="进入结果确认"><i data-lucide="panel-right-open"></i></button>
+                          <button class="icon-link" data-open="#rawExcelSheet" aria-label="查看来源"><i data-lucide="sheet"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="clickable" data-recon-tab="confirm">
+                      <td><span class="badge green">已关闭</span></td>
+                      <td>REC-202605-011</td>
+                      <td>TJ 客户 · BAQST</td>
+                      <td>2026-05</td>
+                      <td>2026-04-25 至 2026-05-31</td>
+                      <td>36</td>
+                      <td>2</td>
+                      <td>4</td>
+                      <td><span class="invoice-pill done">已开票</span></td>
+                      <td>2026-06-03 16:20</td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-recon-tab="confirm" aria-label="只读复查"><i data-lucide="eye"></i></button>
+                          <button class="icon-link" aria-label="导出"><i data-lucide="download"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge slate">已关闭</span></td>
+                      <td>REC-202502-006</td>
+                      <td>内部客户 · 1037000000</td>
+                      <td>2026-02</td>
+                      <td>2026-02-01 至 2026-02-29</td>
+                      <td>91</td>
                       <td>0</td>
-                    </tr>
-                    <tr>
-                      <td>2179866X</td>
-                      <td>13,552</td>
-                      <td>13,552</td>
                       <td>0</td>
-                    </tr>
-                    <tr>
-                      <td>2777977X</td>
-                      <td><span class="badge red">-10</span></td>
-                      <td>0</td>
-                      <td><span class="badge red">-10</span></td>
-                    </tr>
-                    <tr>
-                      <td>2372846XL</td>
-                      <td>4,608</td>
-                      <td>4,608</td>
-                      <td>0</td>
-                    </tr>
-                    <tr>
-                      <td>1191923XB</td>
-                      <td>2,560</td>
-                      <td>2,560</td>
-                      <td>0</td>
-                    </tr>
-                    <tr>
-                      <td>21779866X</td>
-                      <td>20,400</td>
-                      <td>20,400</td>
-                      <td>0</td>
+                      <td><span class="invoice-pill done">已开票</span></td>
+                      <td>2026-03-01 09:42</td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="icon-link" data-recon-tab="confirm" aria-label="只读复查"><i data-lucide="eye"></i></button>
+                          <button class="icon-link" aria-label="导出"><i data-lucide="download"></i></button>
+                        </div>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-            </div>
 
-            <div class="card">
-              <p class="mini-title">差异导出</p>
-              <div class="list-actions">
-                <button class="btn small"><i data-lucide="save"></i>保存结果</button>
-                <button class="btn small primary"><i data-lucide="file-down"></i>导出差异</button>
+              <div class="table-footer">
+                <span>已关闭任务按关闭时 snapshot / export version 复查，后续导入不会改写当时结果。</span>
+                <span>1-4 / 28</span>
               </div>
             </div>
-          </div>
-        </aside>
-      </div>
+          </section>
+        </div>
+      </section>
     </main>
   </div>
 
-  <div class="sheet-backdrop" id="shippingDetailSheet">
+  <div class="sheet-backdrop" id="manualIssueSheet">
     <div class="sheet">
-      <div class="panel-head"><h2 class="panel-title">Shipping Plan 明细</h2><button class="btn" data-close>关闭</button></div>
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="user-check"></i>人工处理</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
       <div class="panel-body stack">
         <div class="card">
-          <p class="item-title">2777978X · 订单 5700168176 / 00010</p>
-          <p class="item-meta">系统侧候选发货行，用于解释客户侧收货差异。</p>
+          <p class="mini-title">当前问题</p>
+          <p class="item-title">业务键重复或客户收货日期超出对账窗口</p>
+          <p class="item-meta">保留原始 Excel 行，人工选择后才写入业务行。</p>
         </div>
-        <div class="list-item">
-          <p class="item-title">2026-02-24 · Delivery Note 5313129109</p>
-          <p class="item-meta">Shipping Plan Qty 16 · Source FirmOrder.pdf</p>
+        <label class="filter-field">
+          <span class="filter-label">处理结果</span>
+          <div class="filter-value">保留为有效记录 <i data-lucide="chevron-down"></i></div>
+        </label>
+        <textarea class="textarea compact-textarea" aria-label="处理备注">确认该行属于本次发运/收货，保留进入业务表。</textarea>
+        <button class="btn primary"><i data-lucide="save"></i>保存处理结果</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="shipmentEditSheet">
+    <div class="sheet">
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="pencil"></i>编辑发运记录</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <div class="card">
+          <p class="mini-title">来源</p>
+          <p class="item-title">发运记录.xlsx / 第 2 行</p>
+          <p class="item-meta">修改会保留原始 Excel 行，只更新标准业务字段。</p>
         </div>
-        <div class="list-item">
-          <p class="item-title">客户侧收货</p>
-          <p class="item-meta">2026-02-25 · 收货编号 5313190727 / 0003 · Qty -16</p>
+        <div class="split-card">
+          <label class="filter-field">
+            <span class="filter-label">客户</span>
+            <input class="selector-search" value="1464000000">
+          </label>
+          <label class="filter-field">
+            <span class="filter-label">日期</span>
+            <input class="selector-search" value="2026-06-17">
+          </label>
         </div>
+        <div class="split-card">
+          <label class="filter-field">
+            <span class="filter-label">物料</span>
+            <input class="selector-search" value="1651629X">
+          </label>
+          <label class="filter-field">
+            <span class="filter-label">数量</span>
+            <input class="selector-search" value="5120">
+          </label>
+        </div>
+        <div class="split-card">
+          <label class="filter-field">
+            <span class="filter-label">交货</span>
+            <input class="selector-search" value="46386024">
+          </label>
+          <label class="filter-field">
+            <span class="filter-label">要货令</span>
+            <input class="selector-search" value="0255802956">
+          </label>
+        </div>
+        <textarea class="textarea compact-textarea" aria-label="修改备注">修正标准业务字段，原始 Excel 不变。</textarea>
+        <button class="btn primary"><i data-lucide="save"></i>保存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="rawExcelSheet">
+    <div class="sheet sheet-wide">
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="sheet"></i>原始 Excel</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack file-preview">
+        <div class="history-tabs">
+          <button class="active" data-file-tab="shipment">SAP 发运</button>
+          <button data-file-tab="map">交货映射</button>
+        </div>
+        <div class="file-panel active" data-file-panel="shipment">
+        <div class="card">
+          <div class="row">
+            <div>
+              <p class="item-title">发运记录.xlsx</p>
+              <p class="item-meta">ImportFile + ImportStagingRow 原始视图，只用于追溯，不等于业务字段。</p>
+            </div>
+            <span class="badge slate">Sheet1</span>
+          </div>
+        </div>
+        <div class="scroll-x">
+          <table class="table table-compact" style="min-width:980px">
+            <thead>
+              <tr>
+                <th>工厂</th>
+                <th>过账日期</th>
+                <th>客户</th>
+                <th>物料</th>
+                <th>物料描述</th>
+                <th>数量</th>
+                <th>基本计量单位</th>
+                <th>移动类型</th>
+                <th>交货</th>
+                <th>物料凭证</th>
+                <th>物料凭证项目</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1037</td>
+                <td>2026-06-17</td>
+                <td>1464000000</td>
+                <td>1651629X</td>
+                <td>EP2.0 GM Synergy 调高器 LH-NO MEMO</td>
+                <td>-5120</td>
+                <td>ZDP</td>
+                <td>601</td>
+                <td>46386024</td>
+                <td>4621493396</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>1037</td>
+                <td>2026-06-17</td>
+                <td>1464000000</td>
+                <td>1651630X</td>
+                <td>EP2.0 GM Synergy 调高器 LH-NO MEMO</td>
+                <td>-2304</td>
+                <td>ZDP</td>
+                <td>601</td>
+                <td>46386024</td>
+                <td>4621493396</td>
+                <td>2</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        </div>
+        <div class="file-panel" data-file-panel="map">
+          <div class="card">
+            <div class="row">
+              <div>
+                <p class="item-title">要货令匹配交货单.xlsx</p>
+                <p class="item-meta">映射原始视图用于追溯交货号和要货令的来源。</p>
+              </div>
+              <span class="badge slate">Sheet1</span>
+            </div>
+          </div>
+          <div class="scroll-x">
+            <table class="table table-compact" style="min-width:1180px">
+              <thead>
+                <tr>
+                  <th>交货</th>
+                  <th>外部交货标识</th>
+                  <th>运达方</th>
+                  <th>运达方的名字</th>
+                  <th>发货日期</th>
+                  <th>交货时间</th>
+                  <th>发货时间</th>
+                  <th>装运点/接收点</th>
+                  <th>货物移动状态总计</th>
+                  <th>创建者</th>
+                  <th>运输计划日期</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>46386024</td>
+                  <td>0255802956</td>
+                  <td>1464000000</td>
+                  <td>FAURECIA SISTEMAS AUTOMOTRICES</td>
+                  <td>2026-06-17</td>
+                  <td>11:32:02</td>
+                  <td>15:00:00</td>
+                  <td>S181</td>
+                  <td>C</td>
+                  <td>PANDANDA</td>
+                  <td>2026-06-17</td>
+                </tr>
+                <tr>
+                  <td>46386023</td>
+                  <td>0255802955</td>
+                  <td>1464000000</td>
+                  <td>FAURECIA SISTEMAS AUTOMOTRICES</td>
+                  <td>2026-06-17</td>
+                  <td>11:32:11</td>
+                  <td>15:00:00</td>
+                  <td>S181</td>
+                  <td>C</td>
+                  <td>PANDANDA</td>
+                  <td>2026-06-17</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="receiptRawExcelSheet">
+    <div class="sheet sheet-wide">
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="file-spreadsheet"></i>收货原始 Excel</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <div class="card">
+          <div class="row">
+            <div>
+              <p class="item-title">内部客户对账单.xlsx</p>
+              <p class="item-meta">ImportFile + ImportStagingRow 原始视图，只用于追溯，不等于 ReceiptLine 业务字段。</p>
+            </div>
+            <span class="badge slate">2026-02</span>
+          </div>
+        </div>
+        <div class="scroll-x">
+          <table class="table table-compact" style="min-width:1120px">
+            <thead>
+              <tr>
+                <th>客户代码</th>
+                <th>收货日期</th>
+                <th>物料号</th>
+                <th>物料描述</th>
+                <th>收货数量</th>
+                <th>要货令</th>
+                <th>采购订单</th>
+                <th>参照号</th>
+                <th>开票数量</th>
+                <th>原始行号</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1037000000</td>
+                <td>2026-02-04</td>
+                <td>000000000004134927</td>
+                <td>内部客户收货确认</td>
+                <td>256</td>
+                <td>0261759202</td>
+                <td>-</td>
+                <td>4134927</td>
+                <td>256</td>
+                <td>2</td>
+              </tr>
+              <tr>
+                <td>1037000000</td>
+                <td>2026-02-04</td>
+                <td>2259243X</td>
+                <td>内部客户收货确认</td>
+                <td>900</td>
+                <td>0261759202</td>
+                <td>-</td>
+                <td>4134927</td>
+                <td>0</td>
+                <td>3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="receiptEditSheet">
+    <div class="sheet">
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="pencil"></i>编辑收货记录</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <div class="card">
+          <p class="mini-title">来源</p>
+          <p class="item-title">内部客户对账单.xlsx / 第 2 行</p>
+          <p class="item-meta">修改会保留原始 Excel 行，只更新 ReceiptLine 标准业务字段。</p>
+        </div>
+        <div class="split-card">
+          <label class="filter-field">
+            <span class="filter-label">客户</span>
+            <input class="selector-search" value="1037000000">
+          </label>
+          <label class="filter-field">
+            <span class="filter-label">收货日期</span>
+            <input class="selector-search" value="2026-02-04">
+          </label>
+        </div>
+        <div class="split-card">
+          <label class="filter-field">
+            <span class="filter-label">物料</span>
+            <input class="selector-search" value="000000000004134927">
+          </label>
+          <label class="filter-field">
+            <span class="filter-label">数量</span>
+            <input class="selector-search" value="256">
+          </label>
+        </div>
+        <div class="split-card">
+          <label class="filter-field">
+            <span class="filter-label">要货令</span>
+            <input class="selector-search" value="0261759202">
+          </label>
+          <label class="filter-field">
+            <span class="filter-label">参照号</span>
+            <input class="selector-search" value="4134927">
+          </label>
+        </div>
+        <textarea class="textarea compact-textarea" aria-label="修改备注">修正标准业务字段，原始 Excel 不变。</textarea>
+        <button class="btn primary"><i data-lucide="save"></i>保存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="receiptIssueSheet">
+    <div class="sheet">
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="panel-right-open"></i>收货复核</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <div class="card">
+          <p class="mini-title">待确认条目</p>
+          <p class="item-title">BAQST · 6801702WKU00A · 1,000</p>
+          <p class="item-meta">确认前保持在 staging 层，不写入正式收货记录。</p>
+        </div>
+        <div class="card">
+          <p class="mini-title">Overlap</p>
+          <div class="stack">
+            <div class="overlap-row">
+              <span class="badge amber">周期</span>
+              <div>
+                <p class="item-title">客户收货日期不在当前上传周期</p>
+                <p class="item-meta">上传选择周期为 2026-02，原始行收货日期为 2026-05-11。</p>
+              </div>
+            </div>
+            <div class="overlap-row">
+              <span class="badge amber">要货令</span>
+              <div>
+                <p class="item-title">外部客户要货令为空</p>
+                <p class="item-meta">允许为空，但对账时需要通过物料、数量、日期窗口和 PO/参照号生成候选。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <label class="filter-field">
+          <span class="filter-label">处理结果</span>
+          <div class="filter-value">保留为有效收货记录 <i data-lucide="chevron-down"></i></div>
+        </label>
+        <textarea class="textarea compact-textarea" aria-label="确认备注">确认该行属于 TJ 客户 2026-05 收货周期，保留进入业务表。</textarea>
+        <button class="btn primary"><i data-lucide="database-zap"></i>保存复核结果</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="shipmentIssueSheet">
+    <div class="sheet">
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="panel-right-open"></i>发运确认</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <div class="card">
+          <p class="mini-title">待确认条目</p>
+          <p class="item-title">46386024 · 0255802956 · 1651629X · 5,120</p>
+          <p class="item-meta">确认前保持在 staging 层，不写入正式发运记录。</p>
+        </div>
+        <div class="card">
+          <p class="mini-title">Overlap</p>
+          <div class="stack">
+            <div class="overlap-row">
+              <span class="badge amber">业务键</span>
+              <div>
+                <p class="item-title">相同物料凭证行已存在</p>
+                <p class="item-meta">2026 / 4621493396 / 1 已在 2026-06-17 发运批次中出现。</p>
+              </div>
+            </div>
+            <div class="overlap-row">
+              <span class="badge amber">业务组合</span>
+              <div>
+                <p class="item-title">交货 + 要货令 + 物料 + 数量一致</p>
+                <p class="item-meta">可能是重复上传，也可能是同一车次拆分后再次导出。</p>
+              </div>
+            </div>
+            <div class="overlap-row">
+              <span class="badge red">对账结果</span>
+              <div>
+                <p class="item-title">完成对账后没有找到对应收货</p>
+                <p class="item-meta">确认后状态更新为未入库，保留在后续对账周期中。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <label class="filter-field">
+          <span class="filter-label">处理结果</span>
+          <div class="filter-value">确认保留并完成入库 <i data-lucide="chevron-down"></i></div>
+        </label>
+        <textarea class="textarea compact-textarea" aria-label="确认备注">确认不是误传，保留该发运记录；对账后未找到对应收货，标记未入库。</textarea>
+        <button class="btn primary"><i data-lucide="database-zap"></i>确认并完成入库</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="invoiceSheet">
+    <div class="sheet">
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="receipt-text"></i>记录对帐差异</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <div class="card">
+          <p class="mini-title">当前发运条目</p>
+          <p class="item-title">46386024 · 0255802956 · 1651629X</p>
+          <p class="item-meta">用户从左侧发运卡片进入，系统带出右侧收货候选供人工确认。</p>
+        </div>
+        <div class="card">
+          <p class="mini-title">数量差异</p>
+          <div class="match-pair">
+            <div><span>发运</span><strong>500</strong><small>2026-06-17</small></div>
+            <div><span>到货</span><strong>300</strong><small>2026-06-19</small></div>
+            <div><span>差异</span><strong>200</strong><small>结转未到货</small></div>
+          </div>
+        </div>
+        <label class="filter-field">
+          <span class="filter-label">本次记录开票数量</span>
+          <input class="selector-search" value="300">
+        </label>
+        <label class="filter-field">
+          <span class="filter-label">记录结果</span>
+          <div class="filter-value">部分开票，差异结转到下月发运侧 <i data-lucide="chevron-down"></i></div>
+        </label>
+        <textarea class="textarea compact-textarea" aria-label="差异备注">发运 500，到货 300，本次按 300 记录为部分开票；剩余 200 保留为未到货/未开票，进入下月发运侧延续处理。</textarea>
+        <button class="btn primary"><i data-lucide="save"></i>保存对帐结果</button>
       </div>
     </div>
   </div>

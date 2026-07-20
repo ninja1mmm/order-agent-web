@@ -40,13 +40,11 @@ import {
   orderCopy,
   projectRow,
   relevantHistoryCells,
-  rowMatchesStatus,
   rowUpdatedAt,
   todayKey,
   type BucketProjection,
   type CellSelection,
   type DemandColumn,
-  type StatusFilter,
 } from "./order-utils";
 
 const PAGE_SIZE = 30;
@@ -98,7 +96,6 @@ export function OrdersPage() {
   const [timeTo, setTimeTo] = useState(() => addMonths(todayKey(), 6));
   const [customerFilter, setCustomerFilter] = useState("__all__");
   const [materialFilter, setMaterialFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [visibleDemandKinds, setVisibleDemandKinds] = useState<DemandKind[]>(["forecast", "firm"]);
   const [groups, setGroups] = useState<RollingForecastRowGroup[]>([]);
   const [totalGroups, setTotalGroups] = useState(0);
@@ -109,6 +106,8 @@ export function OrdersPage() {
   const [expandedMonthKey, setExpandedMonthKey] = useState<string | null>(null);
   const [expandedWeekKey, setExpandedWeekKey] = useState<string | null>(null);
   const pageCacheRef = useRef(new Map<string, OrdersCacheEntry>());
+  const currentDateKey = useMemo(() => todayKey(), []);
+  const autoExpandedRangeRef = useRef<string | null>(null);
 
   const baseColumns = useMemo(() => buildColumns("week", timeFrom, timeTo), [timeFrom, timeTo]);
   const timeline = useMemo(
@@ -170,9 +169,16 @@ export function OrdersPage() {
     return () => window.clearTimeout(timer);
   }, [fetchPage, queryKey, reloadKey]);
 
-  const rows = useMemo(() => {
-    return groups.filter((row) => rowMatchesStatus(row, baseColumns, statusFilter));
-  }, [baseColumns, groups, statusFilter]);
+  useEffect(() => {
+    const rangeKey = `${timeFrom}:${timeTo}`;
+    if (autoExpandedRangeRef.current === rangeKey) return;
+    autoExpandedRangeRef.current = rangeKey;
+    const currentWeekPeriod = findCurrentWeekPeriod(baseColumns, currentDateKey);
+    setExpandedMonthKey(currentWeekPeriod?.monthKey ?? null);
+    setExpandedWeekKey(currentWeekPeriod?.weekKey ?? null);
+  }, [baseColumns, currentDateKey, timeFrom, timeTo]);
+
+  const rows = groups;
   const hasMore = groups.length < totalGroups;
 
   const loadMore = useCallback(() => {
@@ -248,26 +254,15 @@ export function OrdersPage() {
             materialLabel={t.filterMaterial}
             customerFilter={customerFilter}
             materialFilter={materialFilter}
-            statusFilter={statusFilter}
             timeFrom={timeFrom}
             timeTo={timeTo}
             visibleDemandKinds={visibleDemandKinds}
             customerOptions={customerOptions}
-            statusOptions={[
-              { value: "all", label: "全部" },
-              { value: "forecast", label: "只有 Forecast" },
-              { value: "firm", label: "只有 Firm" },
-              { value: "mixed", label: "Forecast + Firm" },
-              { value: "manual", label: "人工修改" },
-            ]}
             onCustomerFilterChange={(value) => {
               setCustomerFilter(value);
             }}
             onMaterialFilterChange={(value) => {
               setMaterialFilter(value);
-            }}
-            onStatusFilterChange={(value) => {
-              setStatusFilter(value);
             }}
             onDemandKindToggle={toggleDemandKind}
             onTimeFromChange={(value) => {
@@ -289,6 +284,7 @@ export function OrdersPage() {
               labels={ot}
               timeline={timeline}
               totalColumns={baseColumns}
+              currentDateKey={currentDateKey}
               visibleDemandKinds={visibleDemandKinds}
               hasMore={hasMore}
               loadingMore={loadingMore}
@@ -333,6 +329,7 @@ function RollingForecastTable({
   labels,
   timeline,
   totalColumns,
+  currentDateKey,
   visibleDemandKinds,
   hasMore,
   loadingMore,
@@ -346,6 +343,7 @@ function RollingForecastTable({
   labels: Record<string, string>;
   timeline: TimelineModel;
   totalColumns: DemandColumn[];
+  currentDateKey: string;
   visibleDemandKinds: DemandKind[];
   hasMore: boolean;
   loadingMore: boolean;
@@ -384,11 +382,11 @@ function RollingForecastTable({
               <th className="sticky-col faurecia-pn-col" rowSpan={2}>{labels.internalPN}</th>
               <th className="sticky-col updated-col" rowSpan={2}>{labels.updatedAt}</th>
               <th className="sticky-col type-col" rowSpan={2}>{labels.type}</th>
-              {timeline.segments.map((segment) => renderTopHeader(segment, onMonthToggle, onWeekToggle))}
+              {timeline.segments.map((segment) => renderTopHeader(segment, onMonthToggle, onWeekToggle, currentDateKey))}
               <th className="month-col far-zone" rowSpan={2}>{labels.total}</th>
             </tr>
             <tr>
-              {timeline.segments.flatMap((segment) => renderSecondHeader(segment, onWeekToggle))}
+              {timeline.segments.flatMap((segment) => renderSecondHeader(segment, onWeekToggle, currentDateKey))}
             </tr>
           </thead>
           <tbody>
@@ -471,6 +469,22 @@ function buildTimeline(
   return { segments, leafColumns };
 }
 
+function findCurrentWeekPeriod(baseColumns: DemandColumn[], currentDateKey: string): { monthKey: string | null; weekKey: string } | null {
+  for (const column of baseColumns) {
+    if (!columnContainsDate(column, currentDateKey)) continue;
+    if (column.granularity === "week") return { monthKey: null, weekKey: column.key };
+    if (column.granularity === "month") {
+      const weekColumn = buildWeekColumnsForMonth(column).find((week) => columnContainsDate(week, currentDateKey));
+      return weekColumn ? { monthKey: column.key, weekKey: weekColumn.key } : null;
+    }
+  }
+  return null;
+}
+
+function columnContainsDate(column: DemandColumn, dateKey: string): boolean {
+  return column.startDate <= dateKey && dateKey <= column.endDate;
+}
+
 function mergeRowGroups(
   current: RollingForecastRowGroup[],
   incoming: RollingForecastRowGroup[],
@@ -486,10 +500,11 @@ function renderTopHeader(
   segment: TimeSegment,
   onMonthToggle: (column: DemandColumn) => void,
   onWeekToggle: (column: DemandColumn, parentMonthKey?: string) => void,
+  currentDateKey: string,
 ) {
   if (segment.kind === "expanded-week") {
     return (
-      <th key={segment.column.key} className={`time-head week-col ${segment.column.zone}-zone`} colSpan={segment.leaves.length}>
+      <th key={segment.column.key} className={`time-head week-col ${segment.column.zone}-zone ${columnContainsDate(segment.column, currentDateKey) ? "current-week-head" : ""}`} colSpan={segment.leaves.length}>
         <PeriodToggle expanded onClick={() => onWeekToggle(segment.column)} label={`收起 ${segment.column.label}`} />
         <PeriodLabel column={segment.column} />
       </th>
@@ -498,7 +513,7 @@ function renderTopHeader(
 
   if (segment.kind === "expanded-month") {
     return (
-      <th key={segment.column.key} className={`time-head month-col ${segment.column.zone}-zone`} colSpan={countMonthLeaves(segment)}>
+      <th key={segment.column.key} className={`time-head month-col ${segment.column.zone}-zone ${columnContainsDate(segment.column, currentDateKey) ? "current-month-head" : ""}`} colSpan={countMonthLeaves(segment)}>
         <PeriodToggle expanded onClick={() => onMonthToggle(segment.column)} label={`收起 ${segment.column.label}`} />
         <PeriodLabel column={segment.column} />
       </th>
@@ -508,7 +523,7 @@ function renderTopHeader(
   const { column } = segment;
   const expandable = column.granularity === "week" || column.granularity === "month";
   return (
-    <th key={column.key} className={`time-head ${column.granularity}-col ${column.zone}-zone`} rowSpan={2}>
+    <th key={column.key} className={`time-head ${column.granularity}-col ${column.zone}-zone ${columnContainsDate(column, currentDateKey) ? "current-period-head" : ""}`} rowSpan={2}>
       {expandable ? (
         <PeriodToggle
           expanded={false}
@@ -524,12 +539,17 @@ function renderTopHeader(
   );
 }
 
-function renderSecondHeader(segment: TimeSegment, onWeekToggle: (column: DemandColumn, parentMonthKey?: string) => void) {
+function renderSecondHeader(
+  segment: TimeSegment,
+  onWeekToggle: (column: DemandColumn, parentMonthKey?: string) => void,
+  currentDateKey: string,
+) {
   if (segment.kind === "column") return [];
   if (segment.kind === "expanded-week") {
     return segment.leaves.map((column) => (
-      <th key={`${segment.column.key}-${column.key}`} className={`day-col ${column.zone}-zone`}>
+      <th key={`${segment.column.key}-${column.key}`} className={`day-col ${column.zone}-zone ${columnContainsDate(column, currentDateKey) ? "current-day-head" : ""}`}>
         <span className="period-day-label">{column.label}</span>
+        {columnContainsDate(column, currentDateKey) ? <span className="period-current-marker">今天</span> : null}
       </th>
     ));
   }
@@ -537,30 +557,32 @@ function renderSecondHeader(segment: TimeSegment, onWeekToggle: (column: DemandC
   return segment.leaves.flatMap((leaf) => {
     if (leaf.kind === "week") {
       return (
-        <th key={`${segment.column.key}-${leaf.column.key}`} className={`time-head week-col ${leaf.column.zone}-zone`}>
+        <th key={`${segment.column.key}-${leaf.column.key}`} className={`time-head week-col ${leaf.column.zone}-zone ${columnContainsDate(leaf.column, currentDateKey) ? "current-week-head" : ""}`}>
           <PeriodToggle expanded={false} onClick={() => onWeekToggle(leaf.column, segment.column.key)} label={`展开 ${leaf.column.label}`} />
-          <PeriodLabel column={leaf.column} />
+          <PeriodLabel column={leaf.column} showCurrentMarker={columnContainsDate(leaf.column, currentDateKey)} />
         </th>
       );
     }
 
     return leaf.leaves.map((column, index) => (
-      <th key={`${segment.column.key}-${leaf.column.key}-${column.key}`} className={`time-head day-col ${column.zone}-zone`}>
+      <th key={`${segment.column.key}-${leaf.column.key}-${column.key}`} className={`time-head day-col ${column.zone}-zone ${columnContainsDate(column, currentDateKey) ? "current-day-head" : ""}`}>
         {index === 0 ? (
           <PeriodToggle expanded onClick={() => onWeekToggle(leaf.column, segment.column.key)} label={`收起 ${leaf.column.label}`} />
         ) : null}
         <span className="period-day-label">{column.label}</span>
+        {columnContainsDate(column, currentDateKey) ? <span className="period-current-marker">今天</span> : null}
       </th>
     ));
   });
 }
 
-function PeriodLabel({ column }: { column: DemandColumn }) {
+function PeriodLabel({ column, showCurrentMarker = false }: { column: DemandColumn; showCurrentMarker?: boolean }) {
   return (
     <span className="period-label">
       {column.yearMarker ? <span className="period-year-corner">{column.yearMarker}</span> : null}
       <span className="period-main-label">{column.label}</span>
       {column.rangeLabel ? <span className="period-range-label">{column.rangeLabel}</span> : null}
+      {showCurrentMarker ? <span className="period-current-marker">今天</span> : null}
     </span>
   );
 }

@@ -12,7 +12,7 @@ This folder contains static HTML pages for reviewing the frontend structure befo
 | 智能供应链 | 订单 | `03-orders.html` |
 | 智能供应链 | 技能工坊 | `04-skill-studio.html` |
 | 客户 | 客户画像 | `05-customer-profile.html` |
-| 客户 | 财务对账 | `06-financial-reconciliation.html` |
+| 财务对账 | 发运收货对账 | `06-financial-reconciliation.html` |
 | 系统配置 | 系统配置 | `07-system-settings.html` |
 
 ## Notes
