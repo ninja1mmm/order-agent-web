@@ -97,7 +97,6 @@
                   <div class="upload-section-head">
                     <div>
                       <p class="mini-title">收货</p>
-                      <p class="item-meta">先选择客户类型，再上传对应收货单；内部客户走固定模板，外部客户进入 VLM 解析。</p>
                     </div>
                     <span class="badge blue" data-receipt-route-status>内部客户</span>
                   </div>
@@ -105,18 +104,14 @@
                   <div class="receipt-routing-options" role="radiogroup" aria-label="选择收货单客户类型">
                     <label class="receipt-routing-card selected" data-receipt-route-card data-route-label="内部客户" data-upload-meta="必填 · 当前上传到内部客户 · 固定模板 · 客户回传收货单.xlsx" data-validation="收货已选择内部客户，按固定模板解析，不进入 VLM 字段识别流程。" data-summary-meta="内部客户 · 固定模板解析 · 当前周期 95 行 · 需复核 1 行">
                       <input type="radio" name="receipt_customer_type" checked>
-                      <span class="routing-icon"><i data-lucide="building-2"></i></span>
                       <span>
                         <strong>内部客户</strong>
-                        <small>固定模板字段映射 · 不需要 VLM 解析</small>
                       </span>
                     </label>
                     <label class="receipt-routing-card" data-receipt-route-card data-route-label="外部客户" data-upload-meta="必填 · 当前上传到外部客户 · VLM 解析 · 客户回传收货单.xlsx" data-validation="收货已选择外部客户，上传后进入 VLM 字段识别与人工确认流程。" data-summary-meta="外部客户 · VLM 字段识别 · 当前周期 95 行 · 需复核 1 行">
                       <input type="radio" name="receipt_customer_type">
-                      <span class="routing-icon"><i data-lucide="scan-line"></i></span>
                       <span>
                         <strong>外部客户</strong>
-                        <small>模板不固定 · 上传后进入 VLM 解析与字段确认</small>
                       </span>
                     </label>
                   </div>
@@ -255,51 +250,43 @@
             <div class="panel-head">
               <h2 class="panel-title"><i data-lucide="table-2"></i>数据准备</h2>
               <div class="mode-strip">
-                <button class="btn small"><i data-lucide="filter"></i>筛选</button>
                 <button class="btn small primary" data-recon-tab="confirm"><i data-lucide="database-zap"></i>确认数据</button>
               </div>
             </div>
             <div class="panel-body stack">
-              <div class="prep-tabbar">
-                <button class="active" data-prep-tab="shipment"><i data-lucide="truck"></i>发运</button>
-                <button data-prep-tab="receipt"><i data-lucide="package-check"></i>收货</button>
+              <div class="prep-tabbar-row">
+                <div class="prep-tabbar">
+                  <button class="active" data-prep-tab="shipment"><i data-lucide="truck"></i>发运</button>
+                  <button data-prep-tab="receipt"><i data-lucide="package-check"></i>收货</button>
+                </div>
               </div>
 
-              <div class="filter-workbar prep-filter">
-                <div class="filter-field">
-                  <span class="filter-label">问题类型</span>
-                  <div class="filter-value">全部 <i data-lucide="chevron-down"></i></div>
+              <div class="filter-workbar prep-filter compact">
+                <div class="filter-field prep-date-filter">
+                  <span class="filter-label">时间范围</span>
+                  <div class="filter-value">2026-06-25 至 2026-07-31 <i data-lucide="calendar-range"></i></div>
                 </div>
-                <div class="filter-field">
-                  <span class="filter-label">状态</span>
-                  <div class="filter-value">全部状态 <i data-lucide="chevron-down"></i></div>
-                </div>
-                <input class="input" value="1651629X / 0255802956 / BAQST" aria-label="搜索历史记录">
-                <button class="btn"><i data-lucide="search"></i>搜索</button>
-              </div>
-
-              <div class="issue-rule-strip">
-                <span class="issue-chip none">无问题</span>
-                <span class="issue-chip out-range">日期超区间</span>
-                <span class="issue-chip duplicate">重复一致</span>
-                <span class="issue-chip conflict">重复变更</span>
-                <span class="issue-chip map">映射冲突</span>
+                <span class="filter-note">显示时间范围内数据，并保留异常命中的历史记录</span>
               </div>
 
               <div class="prep-data-panel active" data-prep-panel="shipment">
+                <div class="prep-table-toolbar">
+                  <span>发运数据合并池</span>
+                  <button class="btn small" data-open="#shipmentEditSheet"><i data-lucide="plus"></i>新增发运</button>
+                </div>
                 <div class="scroll-x">
-                  <table class="table" style="min-width:1280px">
+                  <table class="table" style="min-width:1380px">
                     <thead>
                       <tr>
                         <th>发运日期</th>
                         <th>物料</th>
-                        <th>数量</th>
+                        <th>发运数量</th>
+                        <th>已开票</th>
+                        <th>开票状态</th>
                         <th>交货</th>
                         <th>要货令</th>
-                        <th>来源</th>
-                        <th>历史对比</th>
-                        <th>问题类型</th>
-                        <th>规则说明</th>
+                        <th>合并结果</th>
+                        <th>处理建议</th>
                         <th>状态</th>
                         <th>操作</th>
                       </tr>
@@ -309,16 +296,16 @@
                         <td>2026-05-28</td>
                         <td>1651628X</td>
                         <td>2,400</td>
+                        <td>2,400</td>
+                        <td><span class="invoice-pill done">已开票</span></td>
                         <td>46385891</td>
                         <td>0255802890</td>
-                        <td>历史发运</td>
-                        <td>已合并历史池</td>
-                        <td><span class="issue-chip none">无</span></td>
-                        <td>历史有效发运，保留用于本期 open item 对帐。</td>
+                        <td><span class="merge-source">历史池</span>已存在</td>
+                        <td><span class="issue-text none">业务字段锁定</span></td>
                         <td><span class="badge green">有效</span></td>
                         <td>
                           <div class="row-actions">
-                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="查看发运"><i data-lucide="eye"></i></button>
+                            <button class="icon-link locked" disabled aria-label="已开票历史不可编辑或删除"><i data-lucide="lock"></i></button>
                           </div>
                         </td>
                       </tr>
@@ -326,16 +313,16 @@
                         <td>2026-06-03</td>
                         <td>1651629X</td>
                         <td>600</td>
+                        <td>300</td>
+                        <td><span class="invoice-pill partial">部分开票</span></td>
                         <td>46385940</td>
                         <td>0255802921</td>
-                        <td>历史发运</td>
-                        <td>未发现历史冲突</td>
-                        <td><span class="issue-chip none">无</span></td>
-                        <td>历史有效发运，保留在客户发运池。</td>
+                        <td><span class="merge-source">历史池</span>保留</td>
+                        <td><span class="issue-text warning">业务字段锁定</span></td>
                         <td><span class="badge green">有效</span></td>
                         <td>
                           <div class="row-actions">
-                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="查看发运"><i data-lucide="eye"></i></button>
+                            <button class="icon-link locked" disabled aria-label="已部分开票历史不可编辑或删除"><i data-lucide="lock"></i></button>
                           </div>
                         </td>
                       </tr>
@@ -343,16 +330,17 @@
                         <td>2026-06-12</td>
                         <td>1651631X</td>
                         <td>1,200</td>
+                        <td>0</td>
+                        <td><span class="invoice-pill open">未开票</span></td>
                         <td>46386002</td>
                         <td>0255802940</td>
-                        <td>历史发运</td>
-                        <td>已合并历史池</td>
-                        <td><span class="issue-chip none">无</span></td>
-                        <td>历史有效发运，等待后续收货对帐。</td>
+                        <td><span class="merge-source">历史池</span>open item</td>
+                        <td><span class="muted-dash">-</span></td>
                         <td><span class="badge green">有效</span></td>
                         <td>
                           <div class="row-actions">
-                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="查看发运"><i data-lucide="eye"></i></button>
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="修改发运"><i data-lucide="pencil"></i></button>
+                            <button class="icon-link danger" aria-label="删除发运"><i data-lucide="trash-2"></i></button>
                           </div>
                         </td>
                       </tr>
@@ -360,16 +348,17 @@
                         <td>2026-06-17</td>
                         <td>1651629X</td>
                         <td>5,120</td>
+                        <td>0</td>
+                        <td><span class="invoice-pill open">未开票</span></td>
                         <td>46386024</td>
                         <td>0255802956</td>
-                        <td>本任务发运</td>
-                        <td>未发现历史冲突</td>
-                        <td><span class="issue-chip none">无</span></td>
-                        <td>可进入后续结果确认。</td>
+                        <td><span class="merge-source">本次导入</span>新增</td>
+                        <td><span class="muted-dash">-</span></td>
                         <td><span class="badge green">有效</span></td>
                         <td>
                           <div class="row-actions">
                             <button class="icon-link" data-open="#shipmentEditSheet" aria-label="编辑发运"><i data-lucide="pencil"></i></button>
+                            <button class="icon-link danger" aria-label="删除发运"><i data-lucide="trash-2"></i></button>
                           </div>
                         </td>
                       </tr>
@@ -377,17 +366,17 @@
                         <td>2026-06-17</td>
                         <td>1651629X</td>
                         <td>5,120</td>
+                        <td>0</td>
+                        <td><span class="invoice-pill open">未开票</span></td>
                         <td>46386024</td>
                         <td>0255802956</td>
-                        <td>历史发运</td>
-                        <td>业务键已存在</td>
-                        <td><span class="issue-chip duplicate">重复一致</span></td>
-                        <td>同一发运业务键已存在，需选择保留历史或替换。</td>
+                        <td><span class="merge-source">本次导入</span>命中历史</td>
+                        <td><span class="issue-text warning">重复：命中历史，若历史已开票则必须保留历史。</span></td>
                         <td><span class="badge amber">待复核</span></td>
                         <td>
                           <div class="row-actions">
-                            <button class="icon-link" data-open="#shipmentIssueSheet" aria-label="处理发运重复"><i data-lucide="panel-right-open"></i></button>
-                            <button class="icon-link danger" aria-label="忽略"><i data-lucide="circle-slash"></i></button>
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="修改发运"><i data-lucide="pencil"></i></button>
+                            <button class="icon-link danger" aria-label="删除本次重复"><i data-lucide="trash-2"></i></button>
                           </div>
                         </td>
                       </tr>
@@ -395,17 +384,35 @@
                         <td>2026-06-18</td>
                         <td>1651630X</td>
                         <td>2,304</td>
+                        <td>0</td>
+                        <td><span class="invoice-pill open">未开票</span></td>
                         <td>46386025</td>
                         <td>0255802957</td>
-                        <td>本任务发运</td>
-                        <td>历史同业务键数量 2,300</td>
-                        <td><span class="issue-chip conflict">重复变更</span></td>
-                        <td>业务键相同但内容不同，必须人工确认保留哪一条。</td>
+                        <td><span class="merge-source">本次导入</span>覆盖冲突</td>
+                        <td><span class="issue-text blocked">重复：若历史已开票，不允许覆盖数量。</span></td>
                         <td><span class="badge red">阻断</span></td>
                         <td>
                           <div class="row-actions">
                             <button class="icon-link" data-open="#shipmentEditSheet" aria-label="编辑发运"><i data-lucide="pencil"></i></button>
-                            <button class="icon-link" aria-label="保留"><i data-lucide="check"></i></button>
+                            <button class="icon-link danger" aria-label="删除本次发运"><i data-lucide="trash-2"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-map">
+                        <td>2026-06-19</td>
+                        <td>1651631X</td>
+                        <td>720</td>
+                        <td>0</td>
+                        <td><span class="invoice-pill open">未开票</span></td>
+                        <td>46386037</td>
+                        <td>0255802948</td>
+                        <td><span class="merge-source">本次导入</span>映射待定</td>
+                        <td><span class="issue-text warning">映射冲突：同一交货号对应多个要货令。</span></td>
+                        <td><span class="badge amber">待复核</span></td>
+                        <td>
+                          <div class="row-actions">
+                            <button class="icon-link" data-open="#shipmentEditSheet" aria-label="修改映射"><i data-lucide="pencil"></i></button>
+                            <button class="icon-link danger" aria-label="删除发运"><i data-lucide="trash-2"></i></button>
                           </div>
                         </td>
                       </tr>
@@ -413,16 +420,17 @@
                         <td>2026-06-20</td>
                         <td>1651632X</td>
                         <td>960</td>
+                        <td>0</td>
+                        <td><span class="invoice-pill open">未开票</span></td>
                         <td>46386040</td>
                         <td>0255802960</td>
-                        <td>本任务发运</td>
-                        <td>未发现历史冲突</td>
-                        <td><span class="issue-chip none">无</span></td>
-                        <td>本次导入发运，合并进入客户发运池。</td>
+                        <td><span class="merge-source">本次导入</span>新增</td>
+                        <td><span class="muted-dash">-</span></td>
                         <td><span class="badge green">有效</span></td>
                         <td>
                           <div class="row-actions">
                             <button class="icon-link" data-open="#shipmentEditSheet" aria-label="编辑发运"><i data-lucide="pencil"></i></button>
+                            <button class="icon-link danger" aria-label="删除发运"><i data-lucide="trash-2"></i></button>
                           </div>
                         </td>
                       </tr>
@@ -430,25 +438,37 @@
                   </table>
                 </div>
                 <div class="table-footer">
-                  <span>发运数据按发运日期升序排列，展示该客户历史发运与本次导入合并后的完整数据；问题行高亮。</span>
-                  <span>1-7 / 128</span>
+                  <span>显示 1-8 / 128</span>
+                  <div class="table-pagination" aria-label="发运分页">
+                    <button disabled><i data-lucide="chevron-left"></i></button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button><i data-lucide="ellipsis"></i></button>
+                    <button>16</button>
+                    <button><i data-lucide="chevron-right"></i></button>
+                  </div>
                 </div>
               </div>
 
               <div class="prep-data-panel" data-prep-panel="receipt">
+                <div class="prep-table-toolbar">
+                  <span>收货数据合并池</span>
+                  <button class="btn small" data-open="#receiptEditSheet"><i data-lucide="plus"></i>新增收货</button>
+                </div>
                 <div class="scroll-x">
-                  <table class="table" style="min-width:1280px">
+                  <table class="table" style="min-width:1380px">
                   <thead>
                     <tr>
                       <th>收货日期</th>
                       <th>物料</th>
-                      <th>数量</th>
+                      <th>收货数量</th>
+                      <th>已开票</th>
+                      <th>开票状态</th>
                       <th>交货</th>
                       <th>要货令</th>
-                      <th>来源</th>
-                      <th>历史对比</th>
-                      <th>问题类型</th>
-                      <th>规则说明</th>
+                      <th>合并结果</th>
+                      <th>处理建议</th>
                       <th>状态</th>
                       <th>操作</th>
                     </tr>
@@ -458,16 +478,16 @@
                       <td>2026-05-06</td>
                       <td>1651628X</td>
                       <td>2,400</td>
+                      <td>2,400</td>
+                      <td><span class="invoice-pill done">已开票</span></td>
                       <td>46385891</td>
                       <td>0255802890</td>
-                      <td>历史收货</td>
-                      <td>已合并历史池</td>
-                      <td><span class="issue-chip none">无</span></td>
-                      <td>历史有效收货，保留用于本期 open item 对帐。</td>
+                      <td><span class="merge-source">历史池</span>已存在</td>
+                      <td><span class="issue-text none">业务字段锁定</span></td>
                       <td><span class="badge green">有效</span></td>
                       <td>
                         <div class="row-actions">
-                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="查看收货"><i data-lucide="eye"></i></button>
+                          <button class="icon-link locked" disabled aria-label="已开票历史不可编辑或删除"><i data-lucide="lock"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -475,17 +495,17 @@
                       <td>2026-05-11</td>
                       <td>6801702WKU00A</td>
                       <td>1,000</td>
+                      <td>0</td>
+                      <td><span class="invoice-pill open">未开票</span></td>
                       <td>-</td>
                       <td>-</td>
-                      <td>历史收货</td>
-                      <td>当前任务周期 2026-06</td>
-                      <td><span class="issue-chip out-range">日期超区间</span></td>
-                      <td>不在创建任务定义的收货周期内，本任务不写入该行。</td>
+                      <td><span class="merge-source">本次导入</span>日期越界</td>
+                      <td><span class="issue-text warning">日期超区间：改日期、移到对应周期，或删除本次行。</span></td>
                       <td><span class="badge amber">待复核</span></td>
                       <td>
                         <div class="row-actions">
-                          <button class="icon-link" data-open="#receiptIssueSheet" aria-label="处理收货日期"><i data-lucide="panel-right-open"></i></button>
-                          <button class="icon-link danger" aria-label="忽略"><i data-lucide="circle-slash"></i></button>
+                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="修改收货日期"><i data-lucide="pencil"></i></button>
+                          <button class="icon-link danger" aria-label="删除收货"><i data-lucide="trash-2"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -493,16 +513,16 @@
                       <td>2026-06-02</td>
                       <td>1651629X</td>
                       <td>500</td>
+                      <td>300</td>
+                      <td><span class="invoice-pill partial">部分开票</span></td>
                       <td>46385980</td>
                       <td>0255802938</td>
-                      <td>历史收货</td>
-                      <td>未发现历史冲突</td>
-                      <td><span class="issue-chip none">无</span></td>
-                      <td>历史有效收货，已合并进入客户收货池。</td>
+                      <td><span class="merge-source">历史池</span>保留</td>
+                      <td><span class="issue-text warning">业务字段锁定</span></td>
                       <td><span class="badge green">有效</span></td>
                       <td>
                         <div class="row-actions">
-                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="查看收货"><i data-lucide="eye"></i></button>
+                          <button class="icon-link locked" disabled aria-label="已部分开票历史不可编辑或删除"><i data-lucide="lock"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -510,17 +530,17 @@
                       <td>2026-06-05</td>
                       <td>1651630X</td>
                       <td>2,300</td>
+                      <td>0</td>
+                      <td><span class="invoice-pill open">未开票</span></td>
                       <td>-</td>
                       <td>-</td>
-                      <td>本任务收货</td>
-                      <td>历史同业务键数量 2,304</td>
-                      <td><span class="issue-chip conflict">重复变更</span></td>
-                      <td>业务键相同但内容不同，必须人工确认保留哪一条。</td>
+                      <td><span class="merge-source">本次导入</span>覆盖冲突</td>
+                      <td><span class="issue-text blocked">重复：若历史已开票，不允许覆盖数量。</span></td>
                       <td><span class="badge red">阻断</span></td>
                       <td>
                         <div class="row-actions">
                           <button class="icon-link" data-open="#receiptEditSheet" aria-label="编辑收货"><i data-lucide="pencil"></i></button>
-                          <button class="icon-link" aria-label="保留"><i data-lucide="check"></i></button>
+                          <button class="icon-link danger" aria-label="删除本次收货"><i data-lucide="trash-2"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -528,16 +548,16 @@
                       <td>2026-06-05</td>
                       <td>1651630X</td>
                       <td>2,304</td>
+                      <td>2,304</td>
+                      <td><span class="invoice-pill done">已开票</span></td>
                       <td>-</td>
                       <td>-</td>
-                      <td>历史收货</td>
-                      <td>被本次导入同业务键命中</td>
-                      <td><span class="issue-chip none">无</span></td>
-                      <td>现存历史记录，用于和本次 2,300 数量行对比。</td>
+                      <td><span class="merge-source">历史池</span>被命中</td>
+                      <td><span class="issue-text none">业务字段锁定</span></td>
                       <td><span class="badge green">有效</span></td>
                       <td>
                         <div class="row-actions">
-                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="查看历史收货"><i data-lucide="eye"></i></button>
+                          <button class="icon-link locked" disabled aria-label="已开票历史不可编辑或删除"><i data-lucide="lock"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -545,16 +565,17 @@
                       <td>2026-06-06</td>
                       <td>1651629X</td>
                       <td>300</td>
+                      <td>0</td>
+                      <td><span class="invoice-pill open">未开票</span></td>
                       <td>46386024</td>
                       <td>0255802956</td>
-                      <td>历史收货</td>
-                      <td>历史记录完全一致</td>
-                      <td><span class="issue-chip duplicate">重复一致</span></td>
-                      <td>完全重复，默认保留历史记录并忽略本次重复行。</td>
+                      <td><span class="merge-source">本次导入</span>命中历史</td>
+                      <td><span class="issue-text warning">重复：命中历史，若历史已开票则必须保留历史。</span></td>
                       <td><span class="badge slate">可忽略</span></td>
                       <td>
                         <div class="row-actions">
-                          <button class="icon-link" data-open="#receiptIssueSheet" aria-label="处理收货重复"><i data-lucide="panel-right-open"></i></button>
+                          <button class="icon-link" data-open="#receiptEditSheet" aria-label="修改收货"><i data-lucide="pencil"></i></button>
+                          <button class="icon-link danger" aria-label="删除本次重复"><i data-lucide="trash-2"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -562,16 +583,17 @@
                       <td>2026-06-09</td>
                       <td>1651632X</td>
                       <td>960</td>
+                      <td>0</td>
+                      <td><span class="invoice-pill open">未开票</span></td>
                       <td>46386040</td>
                       <td>0255802960</td>
-                      <td>本任务收货</td>
-                      <td>未发现历史冲突</td>
-                      <td><span class="issue-chip none">无</span></td>
-                      <td>本次导入收货，合并进入客户收货池。</td>
+                      <td><span class="merge-source">本次导入</span>新增</td>
+                      <td><span class="muted-dash">-</span></td>
                       <td><span class="badge green">有效</span></td>
                       <td>
                         <div class="row-actions">
                           <button class="icon-link" data-open="#receiptEditSheet" aria-label="编辑收货"><i data-lucide="pencil"></i></button>
+                          <button class="icon-link danger" aria-label="删除收货"><i data-lucide="trash-2"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -579,8 +601,16 @@
                 </table>
                 </div>
                 <div class="table-footer">
-                  <span>收货数据按收货日期升序排列，展示该客户历史收货与本次导入合并后的完整数据；问题行高亮。</span>
-                  <span>1-7 / 96</span>
+                  <span>显示 1-7 / 96</span>
+                  <div class="table-pagination" aria-label="收货分页">
+                    <button disabled><i data-lucide="chevron-left"></i></button>
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button><i data-lucide="ellipsis"></i></button>
+                    <button>14</button>
+                    <button><i data-lucide="chevron-right"></i></button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -594,11 +624,11 @@
             <h2 class="panel-title"><i data-lucide="git-compare-arrows"></i>REC-202606-014 · 结果确认</h2>
             <div class="mode-strip">
               <button class="btn small primary" data-recon-start><i data-lucide="play"></i>开始对帐</button>
-              <button class="btn small" data-open="#invoiceSheet"><i data-lucide="receipt-text"></i>记录差异</button>
+              <button class="btn small"><i data-lucide="receipt-text"></i>批量确认无差异项</button>
               <button class="btn small"><i data-lucide="archive"></i>关闭任务</button>
             </div>
           </div>
-          <div class="panel-body recon-gantt-body">
+          <div class="panel-body recon-result-body">
             <div class="recon-shared-filter">
               <div class="filter-field">
                 <span class="filter-label">客户</span>
@@ -614,185 +644,661 @@
               </div>
             </div>
 
-            <div class="recon-state-legend" aria-label="匹配状态说明">
-              <span><i class="legend-dot blue"></i>要货令匹配</span>
-              <span><i class="legend-dot amber"></i>日期数量大概率匹配</span>
-              <span><i class="legend-dot red"></i>未匹配</span>
-              <span><i class="legend-dot slate"></i>已匹配/已记录</span>
-            </div>
+            <div class="recon-result-layout" data-recon-board>
+              <aside class="recon-source-panel">
+                <section class="recon-source-block">
+                  <div class="recon-source-head">
+                    <span><i data-lucide="truck"></i>发运记录</span>
+                    <strong>128 行</strong>
+                  </div>
+                  <table class="mini-recon-table">
+                    <thead>
+                      <tr>
+                        <th>日期</th>
+                        <th>物料</th>
+                        <th>数量</th>
+                        <th>要货令</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="selected">
+                        <td>06-04</td>
+                        <td>1651629X</td>
+                        <td>500</td>
+                        <td>0255802956</td>
+                      </tr>
+                      <tr>
+                        <td>06-03</td>
+                        <td>1651630X</td>
+                        <td>2,304</td>
+                        <td>-</td>
+                      </tr>
+                      <tr>
+                        <td>06-01</td>
+                        <td>1651629X</td>
+                        <td>300</td>
+                        <td>0255702801</td>
+                      </tr>
+                      <tr>
+                        <td>06-08</td>
+                        <td>1651632X</td>
+                        <td>960</td>
+                        <td>0255802960</td>
+                      </tr>
+                      <tr>
+                        <td>06-10</td>
+                        <td>1651640X</td>
+                        <td>480</td>
+                        <td>0255802970</td>
+                      </tr>
+                      <tr>
+                        <td>05-28</td>
+                        <td>1651641X</td>
+                        <td>720</td>
+                        <td>0255702990</td>
+                      </tr>
+                      <tr>
+                        <td>06-11</td>
+                        <td>1651642X</td>
+                        <td>400</td>
+                        <td>0255802980</td>
+                      </tr>
+                      <tr>
+                        <td>06-12</td>
+                        <td>1651642X</td>
+                        <td>600</td>
+                        <td>0255802980</td>
+                      </tr>
+                      <tr>
+                        <td>06-14</td>
+                        <td>1651643X</td>
+                        <td>1,000</td>
+                        <td>0255802990</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
 
-            <div class="scroll-x recon-gantt-scroll">
-              <table class="recon-gantt-table" data-recon-board>
-                <colgroup>
-                  <col style="width: 220px">
-                  <col style="width: 76px">
-                  <col style="width: 92px">
-                  <col span="10" style="width: 88px">
-                  <col style="width: 112px">
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th class="recon-material-col" rowspan="2">物料</th>
-                    <th class="recon-lane-col" rowspan="2"></th>
-                    <th class="recon-date-label" rowspan="2">日期</th>
-                    <th class="recon-date-range" colspan="10">2026-06</th>
-                    <th class="recon-total-col" rowspan="2">合计/状态</th>
-                  </tr>
-                  <tr>
-                    <th>06-01</th>
-                    <th>06-02</th>
-                    <th>06-03</th>
-                    <th>06-04</th>
-                    <th>06-05</th>
-                    <th>06-06</th>
-                    <th>06-07</th>
-                    <th>06-08</th>
-                    <th>06-09</th>
-                    <th>06-10</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="recon-group-start">
-                    <td class="recon-material-col" rowspan="2">
-                      <span class="order-main-text">1651629X</span>
-                      <span class="order-sub-text">要货令 0255802956 · 交货 46386024</span>
-                    </td>
-                    <td class="recon-lane-col"><span class="lane-badge shipment">发运</span></td>
-                    <td class="recon-date-label">发货日</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><button class="recon-qty-cell match-blue" data-open="#invoiceSheet">500</button></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><span class="invoice-pill partial">部分开票</span></td>
-                  </tr>
-                  <tr>
-                    <td class="recon-lane-col"><span class="lane-badge receipt">收货</span></td>
-                    <td class="recon-date-label">到货日</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><button class="recon-qty-cell match-blue" data-open="#invoiceSheet">300</button></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><strong class="recon-diff-text">差异 200</strong></td>
-                  </tr>
+                <section class="recon-source-block">
+                  <div class="recon-source-head">
+                    <span><i data-lucide="package-check"></i>收货记录</span>
+                    <strong>96 行</strong>
+                  </div>
+                  <table class="mini-recon-table">
+                    <thead>
+                      <tr>
+                        <th>日期</th>
+                        <th>物料</th>
+                        <th>数量</th>
+                        <th>要货令</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="selected">
+                        <td>06-06</td>
+                        <td>1651629X</td>
+                        <td>300</td>
+                        <td>0255802956</td>
+                      </tr>
+                      <tr>
+                        <td>06-05</td>
+                        <td>1651630X</td>
+                        <td>2,300</td>
+                        <td>-</td>
+                      </tr>
+                      <tr>
+                        <td>06-02</td>
+                        <td>1651629X</td>
+                        <td>300</td>
+                        <td>0255702801</td>
+                      </tr>
+                      <tr>
+                        <td>06-07</td>
+                        <td>6801702WKU00A</td>
+                        <td>1,000</td>
+                        <td>BAQST</td>
+                      </tr>
+                      <tr>
+                        <td>06-03</td>
+                        <td>1651641X</td>
+                        <td>720</td>
+                        <td>0255702990</td>
+                      </tr>
+                      <tr>
+                        <td>06-13</td>
+                        <td>1651642X</td>
+                        <td>1,000</td>
+                        <td>0255802980</td>
+                      </tr>
+                      <tr>
+                        <td>06-15</td>
+                        <td>1651643X</td>
+                        <td>400</td>
+                        <td>0255802990</td>
+                      </tr>
+                      <tr>
+                        <td>06-16</td>
+                        <td>1651643X</td>
+                        <td>600</td>
+                        <td>0255802990</td>
+                      </tr>
+                      <tr>
+                        <td>06-18</td>
+                        <td>1651644X</td>
+                        <td>260</td>
+                        <td>0255803000</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
+              </aside>
 
-                  <tr class="recon-group-start">
-                    <td class="recon-material-col" rowspan="2">
-                      <span class="order-main-text">1651630X</span>
-                      <span class="order-sub-text">无稳定要货令 · 日期数量候选</span>
-                    </td>
-                    <td class="recon-lane-col"><span class="lane-badge shipment">发运</span></td>
-                    <td class="recon-date-label">发货日</td>
-                    <td></td>
-                    <td></td>
-                    <td><button class="recon-qty-cell match-amber" data-open="#manualIssueSheet">2,304</button></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><span class="badge amber">待确认</span></td>
-                  </tr>
-                  <tr>
-                    <td class="recon-lane-col"><span class="lane-badge receipt">收货</span></td>
-                    <td class="recon-date-label">到货日</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><button class="recon-qty-cell match-amber" data-open="#manualIssueSheet">2,300</button></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><strong class="recon-diff-text">偏差 4</strong></td>
-                  </tr>
+              <section class="recon-after-panel">
+                <div class="recon-empty-state">
+                  <i data-lucide="git-compare-arrows"></i>
+                  <strong>等待生成按物料对帐结果</strong>
+                  <span>点击“开始对帐”后，系统会按物料聚合本月发运与收货总量。</span>
+                  <button class="btn primary" data-recon-start><i data-lucide="play"></i>开始对帐</button>
+                </div>
 
-                  <tr class="recon-group-start">
-                    <td class="recon-material-col" rowspan="2">
-                      <span class="order-main-text">1651629X</span>
-                      <span class="order-sub-text">上月发运结转 · 0255702801</span>
-                    </td>
-                    <td class="recon-lane-col"><span class="lane-badge shipment">发运</span></td>
-                    <td class="recon-date-label">上月发货</td>
-                    <td><button class="recon-qty-cell match-slate" data-open="#invoiceSheet">300</button></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><span class="badge slate">已记录</span></td>
-                  </tr>
-                  <tr>
-                    <td class="recon-lane-col"><span class="lane-badge receipt">收货</span></td>
-                    <td class="recon-date-label">本月到货</td>
-                    <td></td>
-                    <td><button class="recon-qty-cell match-slate" data-open="#invoiceSheet">300</button></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><span class="invoice-pill open">待本月开票</span></td>
-                  </tr>
+                <div class="recon-after-results">
+                  <div class="recon-after-head">
+                    <div>
+                      <p class="mini-title">按物料对帐结果</p>
+                    </div>
+                    <div class="recon-state-legend compact" aria-label="匹配状态说明">
+                      <span><i class="legend-dot blue"></i>要货令匹配</span>
+                      <span><i class="legend-dot amber"></i>日期数量匹配</span>
+                      <span><i class="legend-dot red"></i>有差异</span>
+                      <span><i class="legend-dot slate"></i>已记录</span>
+                    </div>
+                  </div>
 
-                  <tr class="recon-group-start">
-                    <td class="recon-material-col" rowspan="2">
-                      <span class="order-main-text">6801702WKU00A</span>
-                      <span class="order-sub-text">BAQST · 未找到同物料发运</span>
-                    </td>
-                    <td class="recon-lane-col"><span class="lane-badge shipment">发运</span></td>
-                    <td class="recon-date-label">发货日</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><span class="badge red">缺发运</span></td>
-                  </tr>
-                  <tr>
-                    <td class="recon-lane-col"><span class="lane-badge receipt">收货</span></td>
-                    <td class="recon-date-label">到货日</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><button class="recon-qty-cell match-red" data-open="#receiptIssueSheet">1,000</button></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td><span class="badge red">未匹配</span></td>
-                  </tr>
-                </tbody>
-              </table>
+                  <details class="material-match-card selected">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651629X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>800</strong></span>
+                        <span>收货 <strong>600</strong></span>
+                        <span class="diff">差异 200</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="demand-match-row">
+                          <td>0255802956</td>
+                          <td>06-04</td>
+                          <td>500</td>
+                          <td>06-06</td>
+                          <td>300</td>
+                          <td><span class="badge red">在途 200</span></td>
+                        </tr>
+                        <tr class="demand-match-row">
+                          <td>0255702801</td>
+                          <td>06-01</td>
+                          <td>300</td>
+                          <td>06-02</td>
+                          <td>300</td>
+                          <td><span class="badge slate">可开票</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651630X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>2,304</strong></span>
+                        <span>收货 <strong>2,300</strong></span>
+                        <span class="diff">差异 4</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="date-match-row">
+                          <td>-</td>
+                          <td>06-03</td>
+                          <td>2,304</td>
+                          <td>06-05</td>
+                          <td>2,300</td>
+                          <td><span class="badge red">数量差异</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651632X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>960</strong></span>
+                        <span>收货 <strong>960</strong></span>
+                        <span class="ok">一致</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="demand-match-row">
+                          <td>0255802960</td>
+                          <td>06-08</td>
+                          <td>960</td>
+                          <td>06-09</td>
+                          <td>960</td>
+                          <td><span class="badge slate">可开票</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651640X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>480</strong></span>
+                        <span>收货 <strong>0</strong></span>
+                        <span class="diff">在途 480</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>0255802970</td>
+                          <td>06-10</td>
+                          <td>480</td>
+                          <td>-</td>
+                          <td>-</td>
+                          <td><span class="badge amber">在途</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651641X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>720</strong></span>
+                        <span>收货 <strong>720</strong></span>
+                        <span class="ok">结转匹配</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="demand-match-row">
+                          <td>0255702990</td>
+                          <td>05-28</td>
+                          <td>720</td>
+                          <td>06-03</td>
+                          <td>720</td>
+                          <td><span class="match-result-note">上月部分开票，优先对应本月第一笔收货</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651642X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>1,000</strong></span>
+                        <span>收货 <strong>1,000</strong></span>
+                        <span class="ok">一致</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="demand-match-row">
+                          <td>0255802980</td>
+                          <td>06-11、06-12</td>
+                          <td>400 + 600</td>
+                          <td>06-13</td>
+                          <td>1,000</td>
+                          <td><span class="badge slate">合并匹配</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651643X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>1,000</strong></span>
+                        <span>收货 <strong>1,000</strong></span>
+                        <span class="ok">一致</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="demand-match-row">
+                          <td>0255802990</td>
+                          <td>06-14</td>
+                          <td>1,000</td>
+                          <td>06-15、06-16</td>
+                          <td>400 + 600</td>
+                          <td><span class="badge slate">拆分匹配</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651645X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>520</strong></span>
+                        <span>收货 <strong>520</strong></span>
+                        <span class="recorded">已开票</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="demand-match-row">
+                          <td>0255803010</td>
+                          <td>06-20</td>
+                          <td>520</td>
+                          <td>06-21</td>
+                          <td>520</td>
+                          <td><span class="match-result-note">历史已记录，不重复开票</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>6801702WKU00A</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>0</strong></span>
+                        <span>收货 <strong>1,000</strong></span>
+                        <span class="diff">缺发运</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>BAQST</td>
+                          <td>-</td>
+                          <td>-</td>
+                          <td>06-07</td>
+                          <td>1,000</td>
+                          <td><span class="badge red">未匹配</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+
+                  <details class="material-match-card">
+                    <summary class="material-match-head">
+                      <div>
+                        <strong>1651644X</strong>
+                      </div>
+                      <div class="material-totals">
+                        <span>发运 <strong>0</strong></span>
+                        <span>收货 <strong>260</strong></span>
+                        <span class="diff">缺发运</span>
+                        <i data-lucide="chevron-down"></i>
+                      </div>
+                    </summary>
+                    <table class="match-detail-table">
+                      <thead>
+                        <tr>
+                          <th>要货令</th>
+                          <th>发运日期</th>
+                          <th>发运数量</th>
+                          <th>收货日期</th>
+                          <th>收货数量</th>
+                          <th>结果</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>0255803000</td>
+                          <td>-</td>
+                          <td>-</td>
+                          <td>06-18</td>
+                          <td>260</td>
+                          <td><span class="badge red">收货无发运</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
+                </div>
+              </section>
+
+              <aside class="invoice-side-panel">
+                <div class="invoice-side-head">
+                  <p class="mini-title">开票建议</p>
+                  <span class="badge amber">待确认</span>
+                </div>
+                <section class="invoice-suggestion-section">
+                  <div class="invoice-suggestion-head">
+                    <span>收发一致</span>
+                    <strong>5 项</strong>
+                  </div>
+                  <div class="invoice-suggestion-item ok">
+                    <div>
+                      <strong>1651632X</strong>
+                      <small>0255802960</small>
+                    </div>
+                    <span>960</span>
+                  </div>
+                  <div class="invoice-suggestion-item ok">
+                    <div>
+                      <strong>1651629X</strong>
+                      <small>0255702801</small>
+                    </div>
+                    <span>300</span>
+                  </div>
+                  <div class="invoice-suggestion-item ok">
+                    <div>
+                      <strong>1651641X</strong>
+                      <small>上月结转 · 0255702990</small>
+                    </div>
+                    <span>720</span>
+                  </div>
+                  <div class="invoice-suggestion-item ok">
+                    <div>
+                      <strong>1651642X</strong>
+                      <small>多发运合并 · 0255802980</small>
+                    </div>
+                    <span>1,000</span>
+                  </div>
+                  <div class="invoice-suggestion-item ok">
+                    <div>
+                      <strong>1651643X</strong>
+                      <small>拆分收货 · 0255802990</small>
+                    </div>
+                    <span>1,000</span>
+                  </div>
+                  <button class="btn primary"><i data-lucide="layers-3"></i>批量确认无差异项</button>
+                </section>
+
+                <section class="invoice-suggestion-section">
+                  <div class="invoice-suggestion-head">
+                    <span>异常条目</span>
+                    <strong>5 项</strong>
+                  </div>
+                  <div class="invoice-exception-item">
+                    <div class="invoice-exception-title">
+                      <strong>1651629X</strong>
+                      <span class="badge red">差异 200</span>
+                    </div>
+                    <small>0255802956 · 已匹配 300</small>
+                    <label class="filter-field">
+                      <span class="filter-label">本次开票数量</span>
+                      <input class="selector-search" value="300" aria-label="1651629X 本次开票数量">
+                    </label>
+                  </div>
+                  <div class="invoice-exception-item">
+                    <div class="invoice-exception-title">
+                      <strong>1651630X</strong>
+                      <span class="badge red">差异 4</span>
+                    </div>
+                    <small>发运 2,304 · 收货 2,300</small>
+                    <label class="filter-field">
+                      <span class="filter-label">本次开票数量</span>
+                      <input class="selector-search" value="2300" aria-label="1651630X 本次开票数量">
+                    </label>
+                  </div>
+                  <div class="invoice-exception-item">
+                    <div class="invoice-exception-title">
+                      <strong>6801702WKU00A</strong>
+                      <span class="badge red">缺发运</span>
+                    </div>
+                    <small>收货 1,000 · 不允许开票</small>
+                    <label class="filter-field">
+                      <span class="filter-label">本次开票数量</span>
+                      <input class="selector-search" value="0" aria-label="6801702WKU00A 本次开票数量" disabled>
+                    </label>
+                  </div>
+                  <div class="invoice-exception-item">
+                    <div class="invoice-exception-title">
+                      <strong>1651640X</strong>
+                      <span class="badge amber">在途 480</span>
+                    </div>
+                    <small>有发运，未收货 · 不允许开票</small>
+                    <label class="filter-field">
+                      <span class="filter-label">本次开票数量</span>
+                      <input class="selector-search" value="0" aria-label="1651640X 本次开票数量" disabled>
+                    </label>
+                  </div>
+                  <div class="invoice-exception-item">
+                    <div class="invoice-exception-title">
+                      <strong>1651644X</strong>
+                      <span class="badge red">收货无发运</span>
+                    </div>
+                    <small>收货 260 · 不允许开票</small>
+                    <label class="filter-field">
+                      <span class="filter-label">本次开票数量</span>
+                      <input class="selector-search" value="0" aria-label="1651644X 本次开票数量" disabled>
+                    </label>
+                  </div>
+                  <div class="invoice-validation-list">
+                    <span class="success"><i data-lucide="check-circle-2"></i>手工开票数量不能超过已匹配数量</span>
+                    <span class="warning"><i data-lucide="triangle-alert"></i>异常条目需逐项确认，不能进入批量开票</span>
+                  </div>
+                  <button class="btn"><i data-lucide="receipt-text"></i>确认异常开票数量</button>
+                </section>
+              </aside>
             </div>
           </div>
         </div>

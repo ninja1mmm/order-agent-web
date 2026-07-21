@@ -111,9 +111,13 @@ function initPrototype() {
   document.querySelectorAll("[data-recon-start]").forEach((trigger) => {
     trigger.addEventListener("click", () => {
       const board = document.querySelector("[data-recon-board]");
-      if (board) board.classList.add("matching-active");
-      trigger.classList.add("primary");
-      trigger.innerHTML = '<i data-lucide="check-circle-2"></i>对帐高亮已生成';
+      if (board) {
+        board.classList.add("matching-active", "reconciled");
+      }
+      document.querySelectorAll("[data-recon-start]").forEach((button) => {
+        button.classList.add("primary");
+        button.innerHTML = '<i data-lucide="check-circle-2"></i>对帐结果已生成';
+      });
       if (window.lucide) {
         window.lucide.createIcons();
       }
