@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   editRollingForecastCell,
+  exportOrders,
   getRollingForecast,
   getRowDetail,
   kindToClassification,
@@ -102,6 +103,7 @@ export function OrdersPage() {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selection, setSelection] = useState<CellSelection | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [expandedMonthKey, setExpandedMonthKey] = useState<string | null>(null);
   const [expandedWeekKey, setExpandedWeekKey] = useState<string | null>(null);
@@ -217,6 +219,31 @@ export function OrdersPage() {
     });
   }, []);
 
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      const blob = await exportOrders({
+        timeFrom,
+        timeTo,
+        customerId: customerFilter === "__all__" ? undefined : customerFilter,
+        internalPartNumber: materialFilter.trim() || undefined,
+        kinds: visibleDemandKinds,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orders-export-${timeFrom}-to-${timeTo}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("导出失败，请稍后重试");
+    } finally {
+      setExporting(false);
+    }
+  }, [customerFilter, materialFilter, timeFrom, timeTo, visibleDemandKinds]);
+
   const customerOptions = useMemo(() => {
     return [
       { value: "__all__", label: "全部客户" },
@@ -243,8 +270,8 @@ export function OrdersPage() {
             <Button variant="default" size="sm" disabled>
               当前窗口：{timeFrom} - {timeTo}
             </Button>
-            <Button variant="primary" size="sm" disabled>
-              <Download className="h-3.5 w-3.5" /> {t.export}
+            <Button variant="primary" size="sm" disabled={exporting} onClick={handleExport}>
+              {exporting ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} {t.export}
             </Button>
           </div>
         </div>

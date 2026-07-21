@@ -1,4 +1,4 @@
-import { apiRequest } from "../api/client";
+import { apiBlobRequest, apiRequest } from "../api/client";
 
 export type DemandClassification = "confirmed" | "forecast";
 export type DemandKind = "firm" | "forecast";
@@ -109,6 +109,22 @@ export function getRowDetail(params: {
 
 export function getCellHistory(cellId: string): Promise<CellHistoryResponse> {
   return apiRequest<CellHistoryResponse>(`/api/orders/rolling-forecast/cells/${cellId}/history`);
+}
+
+export function exportOrders(params: {
+  timeFrom: string;
+  timeTo: string;
+  customerId?: string;
+  internalPartNumber?: string;
+  kinds: DemandKind[];
+}): Promise<Blob> {
+  const qs = new URLSearchParams();
+  qs.set("timeFrom", params.timeFrom);
+  qs.set("timeTo", params.timeTo);
+  if (params.customerId) qs.set("customerId", params.customerId);
+  if (params.internalPartNumber) qs.set("internalPartNumber", params.internalPartNumber);
+  qs.set("kinds", params.kinds.map((k) => kindToClassification(k)).join(","));
+  return apiBlobRequest(`/api/orders/rolling-forecast/export?${qs.toString()}`);
 }
 
 export function editRollingForecastCell(params: {

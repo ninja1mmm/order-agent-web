@@ -96,10 +96,10 @@ export function setOnUnauthorized(cb: OnUnauthorized): void {
   onUnauthorized = cb;
 }
 
-export async function apiRequest<T>(
+async function authenticatedFetch(
   path: string,
   init?: RequestInit,
-): Promise<T> {
+): Promise<Response> {
   const token = await ensureValidToken();
   const isFormData = init?.body instanceof FormData;
   const url = `${BACKEND_URL}${path}`;
@@ -142,10 +142,7 @@ export async function apiRequest<T>(
           `Network request failed: ${method} ${url}${err instanceof Error ? ` - ${err.message}` : ""}`,
         );
       }
-      if (retry.ok) {
-        if (retry.status === 204) return undefined as T;
-        return retry.json() as Promise<T>;
-      }
+      if (retry.ok) return retry;
     }
     clearTokens();
     onUnauthorized?.();
@@ -159,8 +156,22 @@ export async function apiRequest<T>(
     );
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+  return response;
+}
+
+export async function apiRequest<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  const response = await authenticatedFetch(path, init);
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+export async function apiBlobRequest(
+  path: string,
+  init?: RequestInit,
+): Promise<Blob> {
+  const response = await authenticatedFetch(path, init);
+  return response.blob();
 }
