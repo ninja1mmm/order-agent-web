@@ -116,14 +116,14 @@ export function exportOrders(params: {
   timeTo: string;
   customerId?: string;
   internalPartNumber?: string;
-  kinds: DemandKind[];
+  kind: DemandKind;
 }): Promise<Blob> {
   const qs = new URLSearchParams();
   qs.set("timeFrom", params.timeFrom);
   qs.set("timeTo", params.timeTo);
   if (params.customerId) qs.set("customerId", params.customerId);
   if (params.internalPartNumber) qs.set("internalPartNumber", params.internalPartNumber);
-  qs.set("kinds", params.kinds.map((k) => kindToClassification(k)).join(","));
+  qs.set("kind", kindToClassification(params.kind));
   return apiBlobRequest(`/api/orders/rolling-forecast/export?${qs.toString()}`);
 }
 

@@ -222,21 +222,24 @@ export function OrdersPage() {
   const handleExport = useCallback(async () => {
     setExporting(true);
     try {
-      const blob = await exportOrders({
-        timeFrom,
-        timeTo,
-        customerId: customerFilter === "__all__" ? undefined : customerFilter,
-        internalPartNumber: materialFilter.trim() || undefined,
-        kinds: visibleDemandKinds,
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `orders-export-${timeFrom}-to-${timeTo}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const kindLabels: Record<DemandKind, string> = { forecast: "forecast", firm: "firm" };
+      for (const kind of visibleDemandKinds) {
+        const blob = await exportOrders({
+          timeFrom,
+          timeTo,
+          customerId: customerFilter === "__all__" ? undefined : customerFilter,
+          internalPartNumber: materialFilter.trim() || undefined,
+          kind,
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `orders-${kindLabels[kind]}-${timeFrom}-to-${timeTo}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
     } catch {
       toast.error("导出失败，请稍后重试");
     } finally {
