@@ -1448,9 +1448,17 @@
                 </table>
               </div>
 
-              <div class="table-footer">
-                <span>已关闭任务按关闭时 snapshot / export version 复查，后续导入不会改写当时结果。</span>
-                <span>1-4 / 28</span>
+              <div class="table-footer pagination-only">
+                <div class="table-pagination" aria-label="任务记录分页">
+                  <span class="pagination-range">1-4 / 28</span>
+                  <button disabled><i data-lucide="chevron-left"></i></button>
+                  <button class="active">1</button>
+                  <button>2</button>
+                  <button>3</button>
+                  <button><i data-lucide="ellipsis"></i></button>
+                  <button>7</button>
+                  <button><i data-lucide="chevron-right"></i></button>
+                </div>
               </div>
             </div>
           </section>

@@ -448,6 +448,13 @@ h1 {
   font-weight: 900;
 }
 
+.filter-value svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.35;
+}
+
 .editable-value {
   cursor: pointer;
   border-bottom: 1px dashed var(--muted);
