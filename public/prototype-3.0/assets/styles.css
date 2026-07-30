@@ -2148,6 +2148,17 @@ button.heat-cell {
   font-weight: 950;
 }
 
+.import-context-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px);
+  gap: 10px;
+}
+
+.import-context-row .filter-field {
+  min-height: 52px;
+  background: #fff;
+}
+
 .import-file-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

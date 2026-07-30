@@ -392,12 +392,17 @@ function initPrototype() {
       const badge = scope.querySelector("[data-analysis-badge]");
       const confirmButton = scope.querySelector("[data-confirm-create]");
       const steps = scope.querySelectorAll("[data-analysis-step]");
+      const isReceiptImport = scope.closest("#receiptImportDialog") || scope.id === "receiptImportDialog";
 
       window.clearTimeout(parseTimer);
       panel?.classList.remove("is-complete");
       panel?.classList.add("is-running");
       steps.forEach((step) => step.classList.remove("done"));
-      if (status) status.textContent = "正在解析当前上传文件，校验模板字段、客户范围、日期窗口和业务键。";
+      if (status) {
+        status.textContent = isReceiptImport
+          ? "正在解析当前上传文件，按所选客户校验模板字段、收货日期窗口和业务键。"
+          : "正在解析当前上传文件，校验模板字段、客户范围、日期窗口和业务键。";
+      }
       if (badge) {
         badge.textContent = "解析中";
         badge.className = "badge blue";
@@ -415,7 +420,11 @@ function initPrototype() {
         panel?.classList.remove("is-running");
         panel?.classList.add("is-complete");
         steps.forEach((step) => step.classList.add("done"));
-        if (status) status.textContent = "解析完成。冲突数据仍停留在入池前结果，处理后可提交到正式业务池。";
+        if (status) {
+          status.textContent = isReceiptImport
+            ? "解析完成。客户归属已校验，冲突数据仍停留在入池前结果，处理后可提交到正式收货池。"
+            : "解析完成。冲突数据仍停留在入池前结果，处理后可提交到正式业务池。";
+        }
         if (badge) {
           badge.textContent = "已解析";
           badge.className = "badge green";

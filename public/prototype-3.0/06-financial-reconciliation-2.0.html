@@ -1741,9 +1741,15 @@
           <div class="import-step-head">
             <div>
               <span class="filter-label">1. 上传文件</span>
-              <p class="item-title">本次批次先进入入池前结果</p>
+              <p class="item-title">先选择客户，再上传本次收货批次</p>
             </div>
             <button class="btn small" data-parse-upload><i data-lucide="scan-search"></i>解析文件</button>
+          </div>
+          <div class="import-context-row">
+            <label class="filter-field">
+              <span class="filter-label">客户</span>
+              <div class="filter-value">FAURECIA SISTEMAS · 1464000000 <i data-lucide="chevron-down"></i></div>
+            </label>
           </div>
           <div class="import-file-row single">
             <div class="import-file-item required">
@@ -1762,7 +1768,7 @@
             <div class="row compact-row">
               <div>
                 <p class="mini-title">解析结果</p>
-                <p class="item-meta" data-analysis-status>等待解析。解析后在弹窗内完成去重和冲突确认。</p>
+                <p class="item-meta" data-analysis-status>等待解析。系统会按所选客户校验收货单归属，并在弹窗内完成去重和冲突确认。</p>
               </div>
               <span class="badge slate" data-analysis-badge>待解析</span>
             </div>

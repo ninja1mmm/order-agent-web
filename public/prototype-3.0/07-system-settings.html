@@ -69,47 +69,17 @@
                     <button class="btn small">停用客户</button>
                   </div>
                   <div class="tabs settings-tabs">
-                    <span class="active" data-customer-config-tab="basic">基础信息</span>
-                    <span data-customer-config-tab="recognition">发件人识别</span>
-                    <span data-customer-config-tab="schedule">催发周期</span>
+                    <span class="active" data-customer-config-tab="basic">客户信息</span>
                     <span data-customer-config-tab="materials">物料映射</span>
                   </div>
 
                   <div class="tab-panel active" data-customer-config-panel="basic">
                     <div class="grid-2">
-                      <label class="filter-field"><span class="filter-label">客户名称</span><span class="filter-value">天津旭阳 / VW</span></label>
+                      <label class="filter-field"><span class="filter-label">客户</span><span class="filter-value">天津旭阳 / VW</span></label>
                       <label class="filter-field"><span class="filter-label">客户编码</span><span class="filter-value">1032000000</span></label>
-                      <label class="filter-field"><span class="filter-label">OEM</span><span class="filter-value">VW</span></label>
-                      <label class="filter-field"><span class="filter-label">Program</span><span class="filter-value">当前未选择</span></label>
-                      <label class="filter-field"><span class="filter-label">默认客服负责人</span><span class="filter-value">Cathy Zhang</span></label>
-                      <label class="filter-field"><span class="filter-label">状态</span><span class="filter-value">active</span></label>
-                    </div>
-                  </div>
-
-                  <div class="tab-panel" data-customer-config-panel="recognition">
-                    <div class="row"><p class="mini-title" style="margin-bottom:0">识别规则</p><button class="btn small"><i data-lucide="plus"></i>新增规则</button></div>
-                    <div class="scroll-x">
-                      <table class="table">
-                        <thead><tr><th>类型</th><th>值</th><th>优先级</th><th>状态</th><th></th></tr></thead>
-                        <tbody>
-                          <tr><td>sender email</td><td>forecast@vw.example.com</td><td>100</td><td>active</td><td><button class="icon-link"><i data-lucide="ban"></i></button></td></tr>
-                          <tr><td>sender domain</td><td>vw-group.example.com</td><td>80</td><td>active</td><td><button class="icon-link"><i data-lucide="ban"></i></button></td></tr>
-                          <tr><td>subject keyword</td><td>Shipping Plan</td><td>60</td><td>active</td><td><button class="icon-link"><i data-lucide="ban"></i></button></td></tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  <div class="tab-panel" data-customer-config-panel="schedule">
-                    <div class="grid-2">
-                      <label class="filter-field"><span class="filter-label">期望提交频率</span><span class="filter-value">weekly</span></label>
-                      <label class="filter-field"><span class="filter-label">期望提交时间</span><span class="filter-value">周一 10:00</span></label>
-                      <label class="filter-field"><span class="filter-label">Grace Hours</span><span class="filter-value">4</span></label>
-                      <label class="filter-field"><span class="filter-label">Reminder</span><span class="filter-value">enabled</span></label>
-                    </div>
-                    <div class="card">
-                      <p class="item-title">提醒只生成内部任务</p>
-                      <p class="item-meta">客户跟进邮件仍需要人工确认后发送。</p>
+                      <label class="filter-field"><span class="filter-label">客服</span><span class="filter-value">Cathy Zhang</span></label>
+                      <label class="filter-field"><span class="filter-label">客户姓名</span><span class="filter-value">Pan Dandan</span></label>
+                      <label class="filter-field"><span class="filter-label">客户邮箱</span><span class="filter-value">forecast@vw.example.com</span></label>
                     </div>
                   </div>
 
@@ -119,12 +89,12 @@
                       <div class="list-actions"><button class="btn small"><i data-lucide="upload"></i>导入 Excel</button><button class="btn small primary">确认导入</button></div>
                     </div>
                     <div class="scroll-x">
-                      <table class="table" style="min-width:900px">
-                        <thead><tr><th>Customer P/N</th><th>Faurecia P/N</th><th>SA</th><th>Product Type</th><th>Production Line</th><th>OEM</th><th>Program</th><th>Product</th><th>Status</th></tr></thead>
+                      <table class="table" style="min-width:980px">
+                        <thead><tr><th>Customer P/N</th><th>Faurecia P/N</th><th>Product</th><th>SA 号</th><th>Type</th><th>OEM</th><th>Program</th><th>提货地点</th></tr></thead>
                         <tbody>
-                          <tr><td>2777977X</td><td>2777977XN</td><td>30478671</td><td>E-pump</td><td>Line A</td><td>VW</td><td>-</td><td>E-pump 2.0</td><td>active</td></tr>
-                          <tr><td>1191923XB</td><td>1191923XB</td><td>30478888</td><td>E-pump</td><td>Line B</td><td>VW</td><td>-</td><td>E-pump 1.0</td><td>active</td></tr>
-                          <tr><td>2372846XL</td><td>2372846XL</td><td>30478120</td><td>Actuator</td><td>Line C</td><td>VW</td><td>-</td><td>Linear Actuator</td><td>active</td></tr>
+                          <tr><td>2777977X</td><td>2777977XN</td><td>E-pump 2.0</td><td>30478671</td><td>E-pump</td><td>VW</td><td>VW Tayron</td><td>天津旭阳仓库</td></tr>
+                          <tr><td>1191923XB</td><td>1191923XB</td><td>E-pump 1.0</td><td>30478888</td><td>E-pump</td><td>VW</td><td>VW Sagitar</td><td>天津旭阳仓库</td></tr>
+                          <tr><td>2372846XL</td><td>2372846XL</td><td>Linear Actuator</td><td>30478120</td><td>Actuator</td><td>VW</td><td>VW Magotan</td><td>长春 RDC</td></tr>
                         </tbody>
                       </table>
                     </div>
