@@ -2481,6 +2481,43 @@ button.week-block:disabled {
   min-height: 180px;
 }
 
+.customer-chart-tooltip {
+  min-width: 176px;
+  max-width: 260px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  color: var(--ink);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.customer-chart-tooltip-title {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.customer-chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.customer-chart-tooltip-row strong {
+  color: var(--ink);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
 .panel.scroll-panel > .panel-body.customer-profile-middle,
 .customer-profile-middle {
   display: grid;
@@ -2504,10 +2541,11 @@ button.week-block:disabled {
 }
 
 .material-analysis-pane {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 14px;
-  overflow: hidden;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .material-list-scroll {
@@ -2558,6 +2596,7 @@ button.week-block:disabled {
 }
 
 .material-combo-card {
+  flex: 0 0 auto;
   min-height: 0;
   overflow: hidden;
 }
@@ -2605,12 +2644,13 @@ button.week-block:disabled {
   width: 8px;
   height: 8px;
   border-radius: 2px;
-  background: #06b6d4;
+  background: #78a6bb;
 }
 
 .panel.scroll-panel > .panel-body.scorecard-body {
   gap: 10px;
-  overflow: hidden;
+  overflow: auto;
+  padding-right: 12px;
 }
 
 .scorecard-radar-card {
@@ -2660,15 +2700,18 @@ button.week-block:disabled {
 }
 
 .scorecard-trend-card {
+  flex: 0 0 auto;
   min-height: 0;
   overflow: hidden;
   padding-bottom: 10px;
 }
 
 .scorecard-trend-card .scorecard-timeline-chart {
-  min-height: 112px;
-  padding: 8px 10px 6px;
+  height: 188px;
+  min-height: 0;
+  padding: 8px 10px 4px;
   border-radius: 12px;
+  background: white;
 }
 
 .scorecard-detail-table-card {
@@ -2836,10 +2879,77 @@ button.week-block:disabled {
 .rolling-strip {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(86px, 1fr);
+  grid-auto-columns: minmax(96px, 112px);
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 8px;
+  scrollbar-gutter: stable;
+}
+
+.profile-week-strip {
+  margin-inline: -2px;
+  padding-inline: 2px;
+}
+
+.rolling-strip::-webkit-scrollbar,
+.panel.scroll-panel > .panel-body.scorecard-body::-webkit-scrollbar,
+.material-analysis-pane::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.rolling-strip::-webkit-scrollbar-thumb,
+.panel.scroll-panel > .panel-body.scorecard-body::-webkit-scrollbar-thumb,
+.material-analysis-pane::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.rolling-strip::-webkit-scrollbar-track,
+.panel.scroll-panel > .panel-body.scorecard-body::-webkit-scrollbar-track,
+.material-analysis-pane::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.8);
+  border-radius: 999px;
+}
+
+.rolling-week-shell {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
+}
+
+.rolling-scroll-button {
+  border-color: var(--line);
+  background: #fff;
+  color: #475569;
+  box-shadow: none;
+}
+
+.rolling-scroll-button:hover {
+  border-color: var(--forvia-blue-border);
+  background: var(--forvia-blue-soft);
+  color: var(--forvia-blue);
+}
+
+.grid-3.screen-fill > .panel.scroll-panel > .customer-profile-middle {
+  overflow: hidden;
+}
+
+.grid-3.screen-fill .material-analysis-pane {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.grid-3.screen-fill .scorecard-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.grid-3.screen-fill .profile-week-strip {
+  overflow-x: scroll;
+  overflow-y: hidden;
 }
 
 .rolling-week {

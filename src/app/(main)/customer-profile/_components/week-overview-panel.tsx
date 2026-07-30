@@ -1,7 +1,7 @@
 "use client";
 
-import { Boxes } from "lucide-react";
-import { useMemo } from "react";
+import { Boxes, ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useRef } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -59,6 +59,8 @@ export function WeekOverviewPanel({
   onYearChange,
   onMaterialSelect,
 }: WeekOverviewPanelProps) {
+  const rollingStripRef = useRef<HTMLDivElement | null>(null);
+
   const weekMap = useMemo(() => {
     return new Map((weeklyProfile?.weeks ?? []).map((week) => [week.weekKey, week]));
   }, [weeklyProfile]);
@@ -89,6 +91,15 @@ export function WeekOverviewPanel({
     diffRate: week.diffRate,
     lastForecastReceivedAt: week.lastForecastReceivedAt,
   }));
+
+  function scrollRollingWeeks(direction: "left" | "right") {
+    const strip = rollingStripRef.current;
+    if (!strip) return;
+    strip.scrollBy({
+      left: direction === "left" ? -320 : 320,
+      behavior: "smooth",
+    });
+  }
 
   return (
     <section className="panel scroll-panel">
@@ -182,19 +193,39 @@ export function WeekOverviewPanel({
                 ))}
               </div>
             ) : (
-              <div className="rolling-strip" data-profile-heatmap>
-                {displayWeeks.map((week) => (
-                  <button
-                    key={week.weekKey}
-                    type="button"
-                    className={`rolling-week ${shippingHeatLevel(week.shippingQty)}`}
-                    disabled={week.shippingQty <= 0}
-                    title={`${week.weekKey} shipping ${formatQuantity(week.shippingQty)}`}
-                  >
-                    <span>{week.weekKey}</span>
-                    <span className="week-count">{formatQuantity(week.shippingQty)}</span>
-                  </button>
-                ))}
+              <div className="rolling-week-shell">
+                <Button
+                  aria-label="向左滚动物料发运周"
+                  title="向左滚动物料发运周"
+                  className="rolling-scroll-button"
+                  size="icon-sm"
+                  onClick={() => scrollRollingWeeks("left")}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
+                <div ref={rollingStripRef} className="rolling-strip profile-week-strip" data-profile-heatmap>
+                  {displayWeeks.map((week) => (
+                    <button
+                      key={week.weekKey}
+                      type="button"
+                      className={`rolling-week ${shippingHeatLevel(week.shippingQty)}`}
+                      disabled={week.shippingQty <= 0}
+                      title={`${week.weekKey} shipping ${formatQuantity(week.shippingQty)}`}
+                    >
+                      <span>{week.weekKey}</span>
+                      <span className="week-count">{formatQuantity(week.shippingQty)}</span>
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  aria-label="向右滚动物料发运周"
+                  title="向右滚动物料发运周"
+                  className="rolling-scroll-button"
+                  size="icon-sm"
+                  onClick={() => scrollRollingWeeks("right")}
+                >
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
               </div>
             )}
           </div>
@@ -214,33 +245,21 @@ export function WeekOverviewPanel({
             ) : (
               <div className="chart customer-profile-chart">
                 <ResponsiveContainer width="100%" height={230}>
-                  <ComposedChart data={chartData} margin={{ top: 8, right: 10, left: -8, bottom: 0 }}>
+                  <ComposedChart data={chartData} margin={{ top: 8, right: 14, left: 0, bottom: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.25)" />
-                      <XAxis dataKey="weekKey" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
+                      <XAxis dataKey="weekKey" tick={{ fontSize: 11, fill: "#667085" }} tickMargin={8} />
+                      <YAxis tick={{ fontSize: 11, fill: "#667085" }} width={48} />
                       <Tooltip
-                        formatter={(value, name, props) => {
-                          const payload = props.payload as (typeof chartData)[number];
-                          if (name === "forecastQty" && !payload.hasForecast) {
-                            return ["0 (无预测)", "最后预测"];
-                          }
-                          return [
-                            formatQuantity(typeof value === "number" ? value : Number(value ?? 0)),
-                            name === "shippingQty" ? "实际发运" : "最后预测",
-                          ];
-                        }}
-                        labelFormatter={(label, payload) => {
-                          const item = payload[0]?.payload as (typeof chartData)[number] | undefined;
-                          return `${label}${item?.dateRange ? ` · ${item.dateRange}` : ""}`;
-                        }}
+                        cursor={{ fill: "rgba(91, 108, 255, 0.06)" }}
+                        content={<WeekChartTooltip />}
                       />
-                      <Bar dataKey="shippingQty" fill="#06b6d4" radius={[6, 6, 0, 0]} name="shippingQty" />
+                      <Bar dataKey="shippingQty" fill="#78a6bb" radius={[5, 5, 0, 0]} name="shippingQty" maxBarSize={72} />
                       <Line
                         type="monotone"
                         dataKey="forecastQty"
                         stroke="#5b6cff"
                         strokeWidth={2}
-                        dot={{ r: 3 }}
+                        dot={{ r: 3, strokeWidth: 2, fill: "#fff" }}
                         name="forecastQty"
                       />
                   </ComposedChart>
@@ -251,5 +270,37 @@ export function WeekOverviewPanel({
         </section>
       </div>
     </section>
+  );
+}
+
+function WeekChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ dataKey?: string | number; value?: number; payload?: { dateRange?: string; hasForecast?: boolean } }>;
+  label?: string | number;
+}) {
+  if (!active || !payload?.length) return null;
+
+  const point = payload[0]?.payload;
+  const shipping = payload.find((item) => item.dataKey === "shippingQty");
+  const forecast = payload.find((item) => item.dataKey === "forecastQty");
+
+  return (
+    <div className="customer-chart-tooltip">
+      <p className="customer-chart-tooltip-title">
+        {label}{point?.dateRange ? ` · ${point.dateRange}` : ""}
+      </p>
+      <div className="customer-chart-tooltip-row">
+        <span>最后预测</span>
+        <strong>{point?.hasForecast ? formatQuantity(Number(forecast?.value ?? 0)) : "0 (无预测)"}</strong>
+      </div>
+      <div className="customer-chart-tooltip-row">
+        <span>实际发运</span>
+        <strong>{formatQuantity(Number(shipping?.value ?? 0))}</strong>
+      </div>
+    </div>
   );
 }

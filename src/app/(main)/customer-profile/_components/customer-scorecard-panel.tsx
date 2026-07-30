@@ -25,6 +25,7 @@ import {
   type CustomerScorecardResponse,
 } from "@/services/customer-profile";
 import {
+  formatDisplayDate,
   formatDisplayDateTime,
   formatPercent,
   SCORE_METRIC_LABELS,
@@ -92,6 +93,7 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
   const timelineData = (data?.timeline ?? []).map((point) => ({
     receivedAt: point.receivedAt,
     label: formatDisplayDateTime(point.receivedAt),
+    shortLabel: formatDisplayDate(point.receivedAt),
     score: point[activeMetric],
     details: point.details,
   }));
@@ -156,8 +158,15 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
               <ResponsiveContainer width="100%" height={155}>
                 <RadarChart data={radarData} outerRadius="68%">
                   <PolarGrid stroke="rgba(148, 163, 184, 0.35)" />
-                  <PolarAngleAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                  <PolarAngleAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "#667085", fontWeight: 700 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={90}
+                    domain={[0, 100]}
+                    tick={{ fontSize: 10, fill: "#98a2b3" }}
+                  />
                   <RadarShape
                     name="Score"
                     dataKey="score"
@@ -166,7 +175,20 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
                     fillOpacity={0.18}
                     strokeWidth={2}
                   />
-                  <Tooltip formatter={(value) => [formatPercent(Number(value)), "得分"]} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <div className="customer-chart-tooltip">
+                          <p className="customer-chart-tooltip-title">{label}</p>
+                          <div className="customer-chart-tooltip-row">
+                            <span>得分</span>
+                            <strong>{formatPercent(Number(payload[0]?.value ?? 0))}</strong>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
                 </RadarChart>
               </ResponsiveContainer>
               <div className="scorecard-metric-grid">
@@ -194,17 +216,32 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
                 <p className="item-meta">暂无邮件时间趋势</p>
               ) : (
                 <div className="chart customer-profile-chart scorecard-timeline-chart">
-                  <ResponsiveContainer width="100%" height={108}>
-                    <LineChart data={timelineData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+                  <ResponsiveContainer width="100%" height={152}>
+                    <LineChart data={timelineData} margin={{ top: 10, right: 14, left: 0, bottom: 12 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.25)" />
-                      <XAxis dataKey="label" hide />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                      <XAxis
+                        dataKey="shortLabel"
+                        tick={{ fontSize: 10, fill: "#667085" }}
+                        tickMargin={8}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#667085" }} width={42} />
                       <Tooltip
-                        labelFormatter={(label, payload) => {
-                          const point = payload[0]?.payload as { receivedAt?: string } | undefined;
-                          return point?.receivedAt ? formatDisplayDateTime(point.receivedAt) : String(label);
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const point = payload[0]?.payload as { receivedAt?: string; score?: number | null } | undefined;
+                          return (
+                            <div className="customer-chart-tooltip">
+                              <p className="customer-chart-tooltip-title">
+                                {point?.receivedAt ? formatDisplayDateTime(point.receivedAt) : ""}
+                              </p>
+                              <div className="customer-chart-tooltip-row">
+                                <span>{SCORE_METRIC_LABELS[activeMetric]}</span>
+                                <strong>{formatPercent(point?.score)}</strong>
+                              </div>
+                            </div>
+                          );
                         }}
-                        formatter={(value) => [formatPercent(value == null ? null : Number(value)), SCORE_METRIC_LABELS[activeMetric]]}
                       />
                       <Line
                         type="monotone"

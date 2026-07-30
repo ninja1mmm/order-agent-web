@@ -1,19 +1,17 @@
-import { apiRequest } from "../api/client";
+import { createManualMailSchema, processMailSchema } from "@/api/mail";
+import { transformProcessMailResponseToModel } from "@/lib/transforms/mail";
+import type { ProcessMailResponse } from "@/types/models/mail";
 
-type ProcessMailResponse = {
-  tasks: Array<{ taskId: string; status: string; taskType: string }>;
-};
+export type { ProcessMailResponse } from "@/types/models/mail";
 
-export async function processMail(mailId: string, attachmentIds?: string[]): Promise<ProcessMailResponse> {
-  return apiRequest<ProcessMailResponse>(`/api/mail-messages/${mailId}/process`, {
-    method: "POST",
-    body: JSON.stringify(attachmentIds ? { attachmentIds } : {}),
-  });
+export async function processMail(
+  mailId: string,
+  attachmentIds?: string[],
+): Promise<ProcessMailResponse> {
+  const response = await processMailSchema(mailId, attachmentIds);
+  return transformProcessMailResponseToModel(response);
 }
 
-export async function createManualMail(formData: FormData): Promise<unknown> {
-  return apiRequest("/api/mail-messages/manual", {
-    method: "POST",
-    body: formData,
-  });
+export function createManualMail(formData: FormData): Promise<unknown> {
+  return createManualMailSchema(formData);
 }

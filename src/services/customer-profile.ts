@@ -1,265 +1,127 @@
-import { apiRequest } from "../api/client";
+import {
+  getCustomerProfileCustomersSchema,
+  getCustomerProfileMaterialDetailSchema,
+  getCustomerProfileMaterialsSchema,
+  getCustomerProfileScorecardSchema,
+  getCustomerProfileWeekDetailSchema,
+  getCustomerProfileWeeksSchema,
+  getMaterialShippingForecastSchema,
+  getMaterialWeeklyProfileSchema,
+} from "@/api/customer-profile";
+import {
+  transformCustomerProfileCustomersToModel,
+  transformCustomerProfileMaterialsToModel,
+  transformCustomerProfileWeekDetailToModel,
+  transformCustomerProfileWeeksToModel,
+  transformCustomerScorecardToModel,
+  transformMaterialDetailToModel,
+  transformMaterialShippingForecastToModel,
+  transformMaterialWeeklyProfileToModel,
+} from "@/lib/transforms/customer-profile";
+import type {
+  CustomerProfileCustomersResponse,
+  CustomerProfileMaterialsResponse,
+  CustomerProfileWeekDetailResponse,
+  CustomerProfileWeeksResponse,
+  CustomerScorecardResponse,
+  MaterialDetailResponse,
+  MaterialShippingForecastResponse,
+  MaterialWeeklyProfileResponse,
+} from "@/types/models/customer-profile";
 
-export type CustomerProfileCustomer = {
-  id: string;
-  code: string;
-  name: string;
-  lastShippingDate: string | null;
-  totalShippingWeeks: number;
-};
+export type {
+  CustomerProfileCustomer,
+  CustomerProfileCustomersResponse,
+  CustomerProfileMaterial,
+  CustomerProfileMaterialsResponse,
+  CustomerProfileViewMode,
+  CustomerProfileWeek,
+  CustomerProfileWeekDetailResponse,
+  CustomerProfileWeeksResponse,
+  CustomerScoreBiasDirection,
+  CustomerScoreMetricDetail,
+  CustomerScoreMetricKey,
+  CustomerScorecardCurrent,
+  CustomerScorecardExplanation,
+  CustomerScorecardResponse,
+  CustomerScorecardTimelinePoint,
+  ForecastTrend,
+  ForecastVersionColumn,
+  MaterialChartPoint,
+  MaterialDetailResponse,
+  MaterialForecastVersion,
+  MaterialShippingForecastResponse,
+  MaterialWeeklyProfilePoint,
+  MaterialWeeklyProfileResponse,
+  ShippingForecastPoint,
+  WeekForecastComparisonRow,
+  WeekShippingRow,
+} from "@/types/models/customer-profile";
 
-export type CustomerProfileCustomersResponse = {
-  customers: CustomerProfileCustomer[];
-};
-
-export type CustomerProfileWeek = {
-  weekKey: string;
-  shippingCount: number;
-  dateRange: string;
-};
-
-export type CustomerProfileWeeksResponse = {
-  weeks: CustomerProfileWeek[];
-  year: number | null;
-  days: number | null;
-};
-
-export type WeekShippingRow = {
-  shippingDate: string;
-  internalPartNumber: string;
-  customerPartNumber: string | null;
-  designation: string | null;
-  quantity: number;
-  deliveryNote: string | null;
-  sourceFile: string | null;
-};
-
-export type ForecastVersionColumn = {
-  receivedAt: string;
-  label: string;
-  quantity: number;
-};
-
-export type ForecastTrend = "stable" | "converging" | "diverging" | "volatile" | "no_forecast";
-
-export type WeekForecastComparisonRow = {
-  internalPartNumber: string;
-  customerPartNumber: string | null;
-  designation: string | null;
-  finalShippingQty: number;
-  forecasts: ForecastVersionColumn[];
-  trend: ForecastTrend;
-};
-
-export type CustomerProfileWeekDetailResponse = {
-  weekKey: string;
-  dateRange: string;
-  shippingRows: WeekShippingRow[];
-  forecastComparisons: WeekForecastComparisonRow[];
-};
-
-export type MaterialForecastVersion = {
-  receivedAt: string;
-  forecastQty: number;
-  diff: number;
-  sourceFile: string | null;
-  changed: boolean;
-};
-
-export type MaterialChartPoint = {
-  label: string;
-  forecastQty: number;
-};
-
-export type MaterialDetailResponse = {
-  internalPartNumber: string;
-  customerPartNumber: string | null;
-  designation: string | null;
-  weekKey: string;
-  finalShippingQty: number;
-  forecastVersions: MaterialForecastVersion[];
-  chartData: MaterialChartPoint[];
-};
-
-export type ShippingForecastPoint = {
-  shippingDate: string;
-  weekKey: string;
-  shippingQty: number;
-  lastForecastQty: number | null;
-  lastForecastReceivedAt: string | null;
-};
-
-export type MaterialShippingForecastResponse = {
-  internalPartNumber: string;
-  customerPartNumber: string | null;
-  designation: string | null;
-  days: number;
-  dateFrom: string;
-  dateTo: string;
-  dataPoints: ShippingForecastPoint[];
-};
-
-export type CustomerProfileMaterial = {
-  internalPartNumber: string;
-  customerPartNumber: string | null;
-  designation: string | null;
-  totalShippingQty: number;
-  shippingWeekCount: number;
-  lastShippingDate: string | null;
-};
-
-export type CustomerProfileMaterialsResponse = {
-  materials: CustomerProfileMaterial[];
-  year: number | null;
-  days: number | null;
-};
-
-export type MaterialWeeklyProfilePoint = {
-  weekKey: string;
-  dateRange: string;
-  shippingQty: number;
-  shippingCount: number;
-  lastForecastQty: number;
-  hasForecast: boolean;
-  lastForecastReceivedAt: string | null;
-  lastForecastSourceFile: string | null;
-  diff: number;
-  diffRate: number | null;
-};
-
-export type MaterialWeeklyProfileResponse = {
-  material: CustomerProfileMaterial;
-  weeks: MaterialWeeklyProfilePoint[];
-  year: number | null;
-  days: number | null;
-};
-
-export type CustomerScoreMetricKey =
-  | "coverageScore"
-  | "accuracyScore"
-  | "biasHealthScore"
-  | "convergenceScore"
-  | "timelinessScore";
-
-export type CustomerScoreBiasDirection = "over" | "under" | "balanced";
-
-export type CustomerScoreMetricDetail = {
-  key: CustomerScoreMetricKey;
-  label: string;
-  numeratorLabel: string;
-  denominatorLabel: string;
-  numerator: number | null;
-  denominator: number | null;
-  score: number | null;
-  biasRate: number | null;
-  biasDirection: CustomerScoreBiasDirection | null;
-};
-
-export type CustomerScorecardCurrent = Record<CustomerScoreMetricKey, number | null> & {
-  details: CustomerScoreMetricDetail[];
-};
-
-export type CustomerScorecardTimelinePoint = CustomerScorecardCurrent & {
-  receivedAt: string;
-};
-
-export type CustomerScorecardExplanation = {
-  key: CustomerScoreMetricKey;
-  label: string;
-  description: string;
-  formula: string;
-};
-
-export type CustomerScorecardResponse = {
-  current: CustomerScorecardCurrent;
-  timeline: CustomerScorecardTimelinePoint[];
-  explanations: CustomerScorecardExplanation[];
-  days: number;
-};
-
-export type CustomerProfileViewMode = "year" | "30" | "60" | "90";
-
-export function getCustomerProfileCustomers(): Promise<CustomerProfileCustomersResponse> {
-  return apiRequest<CustomerProfileCustomersResponse>("/api/customer-profile/");
+export async function getCustomerProfileCustomers(): Promise<CustomerProfileCustomersResponse> {
+  const response = await getCustomerProfileCustomersSchema();
+  return transformCustomerProfileCustomersToModel(response);
 }
 
-export function getCustomerProfileWeeks(
+export async function getCustomerProfileWeeks(
   customerId: string,
   params?: { year?: number; days?: number },
 ): Promise<CustomerProfileWeeksResponse> {
-  const qs = new URLSearchParams();
-  if (params?.year != null) qs.set("year", String(params.year));
-  if (params?.days != null) qs.set("days", String(params.days));
-  const query = qs.toString();
-  return apiRequest<CustomerProfileWeeksResponse>(
-    `/api/customer-profile/${encodeURIComponent(customerId)}/weeks${query ? `?${query}` : ""}`,
-  );
+  const response = await getCustomerProfileWeeksSchema(customerId, params);
+  return transformCustomerProfileWeeksToModel(response);
 }
 
-export function getCustomerProfileWeekDetail(
+export async function getCustomerProfileWeekDetail(
   customerId: string,
   weekKey: string,
 ): Promise<CustomerProfileWeekDetailResponse> {
-  return apiRequest<CustomerProfileWeekDetailResponse>(
-    `/api/customer-profile/${encodeURIComponent(customerId)}/weeks/${encodeURIComponent(weekKey)}`,
-  );
+  const response = await getCustomerProfileWeekDetailSchema(customerId, weekKey);
+  return transformCustomerProfileWeekDetailToModel(response);
 }
 
-export function getCustomerProfileMaterialDetail(
+export async function getCustomerProfileMaterialDetail(
   customerId: string,
   weekKey: string,
   internalPartNumber: string,
 ): Promise<MaterialDetailResponse> {
-  return apiRequest<MaterialDetailResponse>(
-    `/api/customer-profile/${encodeURIComponent(customerId)}/weeks/${encodeURIComponent(weekKey)}/materials/${encodeURIComponent(internalPartNumber)}`,
+  const response = await getCustomerProfileMaterialDetailSchema(
+    customerId,
+    weekKey,
+    internalPartNumber,
   );
+  return transformMaterialDetailToModel(response);
 }
 
-export function getCustomerProfileMaterials(
+export async function getCustomerProfileMaterials(
   customerId: string,
   params?: { year?: number; days?: number },
 ): Promise<CustomerProfileMaterialsResponse> {
-  const qs = new URLSearchParams();
-  if (params?.year != null) qs.set("year", String(params.year));
-  if (params?.days != null) qs.set("days", String(params.days));
-  const query = qs.toString();
-  return apiRequest<CustomerProfileMaterialsResponse>(
-    `/api/customer-profile/${encodeURIComponent(customerId)}/materials${query ? `?${query}` : ""}`,
-  );
+  const response = await getCustomerProfileMaterialsSchema(customerId, params);
+  return transformCustomerProfileMaterialsToModel(response);
 }
 
-export function getMaterialWeeklyProfile(
+export async function getMaterialWeeklyProfile(
   customerId: string,
   internalPartNumber: string,
   params?: { year?: number; days?: number },
 ): Promise<MaterialWeeklyProfileResponse> {
-  const qs = new URLSearchParams();
-  if (params?.year != null) qs.set("year", String(params.year));
-  if (params?.days != null) qs.set("days", String(params.days));
-  const query = qs.toString();
-  return apiRequest<MaterialWeeklyProfileResponse>(
-    `/api/customer-profile/${encodeURIComponent(customerId)}/materials/${encodeURIComponent(internalPartNumber)}/weekly-profile${query ? `?${query}` : ""}`,
-  );
+  const response = await getMaterialWeeklyProfileSchema(customerId, internalPartNumber, params);
+  return transformMaterialWeeklyProfileToModel(response);
 }
 
-export function getCustomerProfileScorecard(
+export async function getCustomerProfileScorecard(
   customerId: string,
   params?: { days?: number },
 ): Promise<CustomerScorecardResponse> {
-  const qs = new URLSearchParams();
-  if (params?.days != null) qs.set("days", String(params.days));
-  const query = qs.toString();
-  return apiRequest<CustomerScorecardResponse>(
-    `/api/customer-profile/${encodeURIComponent(customerId)}/scorecard${query ? `?${query}` : ""}`,
-  );
+  const response = await getCustomerProfileScorecardSchema(customerId, params);
+  return transformCustomerScorecardToModel(response);
 }
 
-export function getMaterialShippingForecast(
+export async function getMaterialShippingForecast(
   customerId: string,
   internalPartNumber: string,
-  days: number = 90,
+  days = 90,
 ): Promise<MaterialShippingForecastResponse> {
-  return apiRequest<MaterialShippingForecastResponse>(
-    `/api/customer-profile/${encodeURIComponent(customerId)}/materials/${encodeURIComponent(internalPartNumber)}/shipping-forecast?days=${days}`,
-  );
+  const response = await getMaterialShippingForecastSchema(customerId, internalPartNumber, days);
+  return transformMaterialShippingForecastToModel(response);
 }
