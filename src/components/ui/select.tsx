@@ -15,6 +15,9 @@ interface FilterSelectProps {
   options: FilterSelectOption[];
   onChange: (value: string) => void;
   className?: string;
+  disabled?: boolean;
+  placeholder?: string;
+  showLabelInTrigger?: boolean;
 }
 
 function optionValue(option: FilterSelectOption) {
@@ -25,10 +28,22 @@ function optionLabel(option: FilterSelectOption) {
   return typeof option === "string" ? option : option.label;
 }
 
-function FilterSelect({ label, value, options, onChange, className }: FilterSelectProps) {
+function FilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+  className,
+  disabled = false,
+  placeholder,
+  showLabelInTrigger = true,
+}: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   const selectedLabel = optionLabel(options.find((option) => optionValue(option) === value) ?? value);
+  const triggerLabel = showLabelInTrigger
+    ? `${label}：${selectedLabel}`
+    : selectedLabel || placeholder || `请选择${label}`;
 
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -42,10 +57,11 @@ function FilterSelect({ label, value, options, onChange, className }: FilterSele
     <div ref={ref} className={cn("relative", className)}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full min-h-[38px] border border-[var(--line)] rounded-xl bg-white px-2.5 py-2 text-xs font-black text-[var(--ink)] cursor-pointer hover:border-[var(--forvia-blue-border)]"
+        disabled={disabled}
+        onClick={() => { if (!disabled) setOpen(!open); }}
+        className="flex items-center justify-between w-full min-h-[38px] border border-[var(--line)] rounded-xl bg-white px-2.5 py-2 text-xs font-black text-[var(--ink)] cursor-pointer hover:border-[var(--forvia-blue-border)] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
       >
-        <span className="truncate">{label}：{selectedLabel}</span>
+        <span className="truncate">{triggerLabel}</span>
         <ChevronDown className="ml-1 h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
       </button>
       {open && (
@@ -82,14 +98,28 @@ interface SearchableFilterSelectProps {
   onChange: (value: string) => void;
   className?: string;
   placeholder?: string;
+  disabled?: boolean;
+  showLabelInTrigger?: boolean;
 }
 
-function SearchableFilterSelect({ label, value, options, onChange, className, placeholder }: SearchableFilterSelectProps) {
+function SearchableFilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+  className,
+  placeholder,
+  disabled = false,
+  showLabelInTrigger = true,
+}: SearchableFilterSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const ref = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const selectedLabel = optionLabel(options.find((option) => optionValue(option) === value) ?? value);
+  const triggerLabel = showLabelInTrigger
+    ? `${label}：${selectedLabel}`
+    : selectedLabel || placeholder || `请选择${label}`;
 
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -118,10 +148,11 @@ function SearchableFilterSelect({ label, value, options, onChange, className, pl
     <div ref={ref} className={cn("relative", className)}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full min-h-[38px] border border-[var(--line)] rounded-xl bg-white px-2.5 py-2 text-xs font-black text-[var(--ink)] cursor-pointer hover:border-[var(--forvia-blue-border)]"
+        disabled={disabled}
+        onClick={() => { if (!disabled) setOpen(!open); }}
+        className="flex items-center justify-between w-full min-h-[38px] border border-[var(--line)] rounded-xl bg-white px-2.5 py-2 text-xs font-black text-[var(--ink)] cursor-pointer hover:border-[var(--forvia-blue-border)] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
       >
-        <span className="truncate">{label}：{selectedLabel}</span>
+        <span className="truncate">{triggerLabel}</span>
         <ChevronDown className="ml-1 h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
       </button>
       {open && (

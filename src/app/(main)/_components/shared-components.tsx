@@ -8,7 +8,7 @@ import type { WorkspaceMail } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { FilterSelect } from "@/components/ui/select";
+import { SearchableFilterSelect } from "@/components/ui/select";
 import { DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogBody } from "@/components/ui/dialog";
 import { type Locale, beijingDateKey, copy, customerLabel, customerLabelFromId, formatShortDate } from "./shared";
 
@@ -327,7 +327,7 @@ export function NewMailModal({
         </DialogHeader>
         <DialogBody>
           <form className="flex flex-col gap-3" onSubmit={onSubmit}>
-            <FilterSelect
+            <SearchableFilterSelect
               label={t.filterCustomer}
               value={effectiveCustomerId}
               options={customerOptions}

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -152,12 +151,6 @@ export function CustomerProfilePage() {
 
   return (
     <>
-      <div className="subnav">
-        <Link className="active" href="/customer-profile">
-          客户画像
-        </Link>
-        <span className="subnav-disabled">财务对账</span>
-      </div>
       <div className="grid-3 screen-fill">
         <CustomerListPanel
           customers={customers}

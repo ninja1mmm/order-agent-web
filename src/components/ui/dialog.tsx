@@ -16,7 +16,7 @@ function DialogContent({ className, children, ...props }: React.HTMLAttributes<H
   return (
     <div
       className={cn(
-        "w-[min(980px,calc(100vw-40px))] max-h-[calc(100vh-60px)] overflow-auto bg-white rounded-3xl border border-[var(--line)] shadow-2xl",
+        "w-[min(980px,calc(100vw-40px))] max-h-[calc(100vh-60px)] overflow-hidden bg-white rounded-3xl border border-[var(--line)] shadow-2xl flex flex-col",
         className,
       )}
       onClick={(e) => e.stopPropagation()}
@@ -28,7 +28,7 @@ function DialogContent({ className, children, ...props }: React.HTMLAttributes<H
 }
 
 function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex items-center justify-between gap-3 px-5 py-4 border-b border-[var(--line)]", className)} {...props} />;
+  return <div className={cn("flex shrink-0 items-center justify-between gap-3 px-5 py-4 border-b border-[var(--line)]", className)} {...props} />;
 }
 
 function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
@@ -36,7 +36,7 @@ function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingEl
 }
 
 function DialogBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("px-5 py-4", className)} {...props} />;
+  return <div className={cn("min-h-0 flex-1 overflow-auto px-5 py-4", className)} {...props} />;
 }
 
 export { DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogBody };

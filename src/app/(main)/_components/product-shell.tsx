@@ -8,12 +8,14 @@ import { useAuth } from "@/context/auth-provider";
 const mainNav = [
   { key: "intelligent-service", title: "智能客服", href: "/intelligent-service" },
   { key: "task-workbench", title: "智能供应链", href: "/task-workbench" },
-  { key: "customer-profile", title: "客户", href: "/customer-profile" },
+  { key: "customer-profile", title: "客户画像", href: "/customer-profile" },
+  { key: "financial-reconciliation", title: "财务对账", href: "/financial-reconciliation/tasks" },
   { key: "system-settings", title: "系统配置", href: "/system-settings" },
 ];
 
 const supplyChainSections = ["/task-workbench", "/parse-review", "/orders"];
 const customerSections = ["/customer-profile"];
+const reconciliationSections = ["/financial-reconciliation"];
 
 function UserMenu() {
   const { user, logout } = useAuth();
@@ -124,11 +126,14 @@ function UserMenu() {
 export function TopNav({ active }: { active: string }) {
   const isSupplyChain = supplyChainSections.includes(active);
   const isCustomer = customerSections.includes(active);
+  const isReconciliation = reconciliationSections.some((section) => active.startsWith(section));
   const mainActive = isSupplyChain
     ? "task-workbench"
     : isCustomer
       ? "customer-profile"
-      : mainNav.find((n) => active === n.href)?.key ?? "";
+      : isReconciliation
+        ? "financial-reconciliation"
+        : mainNav.find((n) => active === n.href)?.key ?? "";
 
   return (
     <header className="topbar">

@@ -2,7 +2,7 @@
 
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FilterSelect } from "@/components/ui/select";
+import { FilterSelect, SearchableFilterSelect } from "@/components/ui/select";
 import type { WorkspaceTask } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
 import {
@@ -61,7 +61,7 @@ export function TaskListPanel({
       </div>
       <div className="panel-body stack">
         <div className="filter-bar" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-          <FilterSelect label={t.filterCustomer} value={customerFilter} options={customerOptions} onChange={onCustomerFilterChange} />
+          <SearchableFilterSelect label={t.filterCustomer} value={customerFilter} options={customerOptions} onChange={onCustomerFilterChange} />
           <FilterSelect
             label={t.filterStatus}
             value={statusFilter}

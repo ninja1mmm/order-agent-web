@@ -1,6 +1,6 @@
 "use client";
 
-import { FilterSelect } from "@/components/ui/select";
+import { SearchableFilterSelect } from "@/components/ui/select";
 import type { DemandKind } from "@/services/orders";
 
 type FilterOption = string | { value: string; label: string };
@@ -39,7 +39,7 @@ export function OrdersFilters({
   return (
     <div className="orders-filter-stack">
       <div className="orders-filter-grid">
-        <FilterSelect
+        <SearchableFilterSelect
           label={customerLabel}
           value={customerFilter}
           options={customerOptions}

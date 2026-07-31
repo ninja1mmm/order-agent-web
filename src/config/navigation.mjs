@@ -35,6 +35,13 @@ export const phaseOnePages = [
     prototypePath: "/prototype-3.0/05-customer-profile.html",
   },
   {
+    key: "financial-reconciliation",
+    title: "财务对账",
+    description: "管理客户对账计划、发运池、收货池和任务确认。",
+    productionPath: "/financial-reconciliation/tasks",
+    prototypePath: "/prototype-3.0/06-financial-reconciliation-2.0.html",
+  },
+  {
     key: "system-settings",
     title: "系统配置",
     description: "配置客户、物料映射、用户和统一邮箱。",

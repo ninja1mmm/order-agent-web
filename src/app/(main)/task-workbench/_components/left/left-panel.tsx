@@ -2,7 +2,7 @@
 
 import { Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FilterSelect } from "@/components/ui/select";
+import { FilterSelect, SearchableFilterSelect } from "@/components/ui/select";
 import type { WorkspaceMail } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
 import {
@@ -68,7 +68,7 @@ export function LeftPanel({
       </div>
       <div className="panel-body stack">
         <div className="filter-bar">
-          <FilterSelect label={t.filterCustomer} value={customerFilter} options={customerOptions} onChange={onCustomerFilterChange} />
+          <SearchableFilterSelect label={t.filterCustomer} value={customerFilter} options={customerOptions} onChange={onCustomerFilterChange} />
           <FilterSelect
             label={t.filterTime}
             value={timeFilter}
