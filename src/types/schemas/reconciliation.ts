@@ -1,7 +1,10 @@
 export type ReconciliationTaskStatusSchema =
   | "draft"
   | "in_progress"
+  | "closing"
   | "closed"
+  | "reopening"
+  | "voiding"
   | "voided"
   | "cancelled"
   | string;
@@ -9,8 +12,8 @@ export type ReconciliationTaskStatusSchema =
 export type ReconciliationRecordStatusSchema =
   | "unmatched"
   | "partial"
-  | "partially_matched"
   | "fully_matched"
+  | "in_transit"
   | "closed"
   | string;
 
@@ -110,6 +113,10 @@ export type ShipmentImportReviewRowSchema = {
   issueLabel: string;
   issueSeverity: "slate" | "amber" | "red" | string;
   importable: boolean;
+  sapCustomerCode: string | null;
+  sapCustomerName: string | null;
+  resolvedCustomerId: string | null;
+  resolvedCustomerName: string | null;
   shipmentDate: string | null;
   internalPartNumber: string | null;
   materialName: string | null;
@@ -150,6 +157,35 @@ export type ShipmentImportReviewResponseSchema = {
   rows: ShipmentImportReviewRowSchema[];
 };
 
+export type ReceiptImportReviewRowSchema = {
+  parsedRecordId: string;
+  sourceRowNumber: number;
+  issueCode: string;
+  issueLabel: string;
+  issueSeverity: "slate" | "amber" | "red" | string;
+  importable: boolean;
+  receiptDate: string | null;
+  internalPartNumber: string | null;
+  customerPartNumber: string | null;
+  materialName: string | null;
+  qty: number | null;
+  demandOrderNo: string | null;
+  validationStatus: string;
+  resolution: string | null;
+  issueText: string | null;
+};
+
+export type ReceiptImportReviewResponseSchema = {
+  fileId: string;
+  customerId: string | null;
+  customerName: string | null;
+  totalRows: number;
+  validCount: number;
+  blockedCount: number;
+  ignoredCount: number;
+  rows: ReceiptImportReviewRowSchema[];
+};
+
 export type ShipmentRecordCreateSchema = {
   customerId: string;
   sapCustomerCode: string;
@@ -177,6 +213,8 @@ export type ShipmentRecordResponseSchema = {
   materialDocNo: string | null;
   adjustmentSeq: number;
   matchedReceiptQty: number;
+  pendingMatchedReceiptQty: number;
+  activeConfirmedMatchCount: number;
   reconciliationStatus: ReconciliationRecordStatusSchema;
   lastReconciledTaskId: string | null;
   remark: string | null;
@@ -217,6 +255,8 @@ export type ReceiptRecordResponseSchema = {
   demandOrderNo: string | null;
   adjustmentSeq: number;
   matchedShipmentQty: number;
+  pendingMatchedShipmentQty: number;
+  activeConfirmedMatchCount: number;
   reconciliationStatus: ReconciliationRecordStatusSchema;
   lastReconciledTaskId: string | null;
   remark: string | null;
@@ -264,6 +304,12 @@ export type MatchConfirmRequestSchema = {
   remark?: string | null;
 };
 
+export type MatchReceiptRemapRequestSchema = {
+  receiptRecordId?: string | null;
+  matchedQty?: number | null;
+  remark?: string | null;
+};
+
 export type ManualMatchCreateSchema = {
   shipmentRecordId: string;
   receiptRecordId?: string | null;
@@ -280,6 +326,7 @@ export type BulkConfirmResponseSchema = {
 };
 
 export type ReconciliationScheduleCreateSchema = {
+  enabled?: boolean;
   periodType: "monthly" | "weekly";
   periodStartDay: number;
   periodEndDay?: number | null;

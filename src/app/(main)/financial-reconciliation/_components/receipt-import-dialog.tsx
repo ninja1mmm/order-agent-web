@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileSpreadsheet, LoaderCircle, Save, ScanSearch, Upload } from "lucide-react";
+import { ChevronDown, FileSpreadsheet, LoaderCircle, Save, ScanSearch, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -13,17 +13,16 @@ import {
   DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FilterSelect, SearchableFilterSelect } from "@/components/ui/select";
+import { SearchableFilterSelect } from "@/components/ui/select";
 import type { CustomerConfig } from "@/services/settings";
 import {
-  listParsedReconciliationRecords,
+  getReceiptImportReview,
   mergeReconciliationFile,
-  updateParsedRecordResolution,
   uploadReconciliationFile,
-  type MergeReview,
+  type ReceiptImportReview,
+  type ReceiptImportReviewRow,
 } from "@/services/reconciliation";
-import { importResolutionOptions } from "./reconciliation-types";
-import { customerOptions, normalizedValuePreview } from "./reconciliation-utils";
+import { customerOptions, formatDate, formatQty } from "./reconciliation-utils";
 
 type ReceiptImportDialogProps = {
   open: boolean;
@@ -32,14 +31,132 @@ type ReceiptImportDialogProps = {
   onMerged: () => void;
 };
 
+type ReviewFilter =
+  | "all"
+  | "strategyImportable"
+  | "strategyPendingDemand"
+  | "strategyBlocked"
+  | "strategySkipped"
+  | "orderLinked"
+  | "orderMissing"
+  | "duplicate"
+  | "materialMissing"
+  | "zeroQty";
+
+type ReviewFilterOption = {
+  key: ReviewFilter;
+  label: string;
+  count: number;
+};
+
+type ReviewFilterGroup = {
+  label: string;
+  options: ReviewFilterOption[];
+};
+
+type IssuePresentation = {
+  label: string;
+  severity: ReceiptImportReviewRow["issueSeverity"];
+  text: string | null;
+};
+
+const duplicateIssueCodes = new Set([
+  "DUPLICATE",
+  "DUPLICATE_EXACT",
+  "DUPLICATE_CHANGED_CONTENT",
+  "LOCKED_QTY_CHANGED",
+]);
+
+function isDuplicateRow(row: ReceiptImportReviewRow) {
+  return duplicateIssueCodes.has(row.issueCode) || row.validationStatus === "ignored" || row.resolution === "skip";
+}
+
+function safeIssueText(text: string | null | undefined) {
+  if (!text) return null;
+  return /[\u4e00-\u9fff]/.test(text) ? text : "该行未通过入池校验，请检查对应字段后重新解析";
+}
+
+function issuePresentation(row: ReceiptImportReviewRow): IssuePresentation {
+  if (row.issueCode === "DUPLICATE_CHANGED_CONTENT") {
+    return {
+      label: "重复",
+      severity: "red",
+      text: "池中已存在同键收货记录，但本次文件内容不同，暂不能入池",
+    };
+  }
+  if (row.issueCode === "LOCKED_QTY_CHANGED") {
+    return {
+      label: "重复",
+      severity: "red",
+      text: "池中收货记录已参与对账，且本次文件内容不同，暂不能覆盖",
+    };
+  }
+  if (isDuplicateRow(row)) {
+    return {
+      label: "重复",
+      severity: row.issueSeverity === "red" ? "red" : "amber",
+      text: "池中已存在相同收货记录，本行会跳过",
+    };
+  }
+  if (row.issueCode === "ZERO_QTY") {
+    return {
+      label: "数量为 0",
+      severity: "amber",
+      text: "收货数量为 0，请确认是否需要入池",
+    };
+  }
+  if (row.issueCode === "IMPORTABLE") {
+    return { label: "可入池", severity: row.issueSeverity, text: null };
+  }
+  return { label: row.issueLabel || "需处理", severity: row.issueSeverity, text: safeIssueText(row.issueText) };
+}
+
+function issueVariant(row: ReceiptImportReviewRow) {
+  const presentation = issuePresentation(row);
+  if (presentation.severity === "red") return "red";
+  if (presentation.severity === "amber") return "amber";
+  return "slate";
+}
+
+function rowMatchesFilter(row: ReceiptImportReviewRow, filter: ReviewFilter) {
+  if (filter === "strategyImportable") return row.importable && Boolean(row.demandOrderNo);
+  if (filter === "strategyPendingDemand") return row.importable && !row.demandOrderNo;
+  if (filter === "strategyBlocked") return !row.importable && !isDuplicateRow(row);
+  if (filter === "strategySkipped") return isDuplicateRow(row);
+  if (filter === "orderLinked") return Boolean(row.demandOrderNo);
+  if (filter === "orderMissing") return !row.demandOrderNo;
+  if (filter === "duplicate") return isDuplicateRow(row);
+  if (filter === "materialMissing") return row.issueCode === "UNMAPPED_MATERIAL_RECEIPT";
+  if (filter === "zeroQty") return row.issueCode === "ZERO_QTY";
+  return true;
+}
+
+function importPolicyText(row: ReceiptImportReviewRow) {
+  if (isDuplicateRow(row)) return "跳过，不重复入池";
+  if (!row.importable) return "暂不入池";
+  if (!row.demandOrderNo) return "先入池，待补要货令";
+  return "收货逐条入池";
+}
+
+function groupCount(group: ReviewFilterGroup) {
+  return group.options.reduce((total, option) => total + option.count, 0);
+}
+
 export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }: ReceiptImportDialogProps) {
   const [customerId, setCustomerId] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [review, setReview] = useState<MergeReview | null>(null);
+  const [review, setReview] = useState<ReceiptImportReview | null>(null);
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
+  const [openFilterGroup, setOpenFilterGroup] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const options = useMemo(() => customerOptions(customers, false), [customers]);
+  const selectedCustomerName = customers.find((customer) => customer.id === customerId)?.name ?? "";
+  const mergeableRows = review?.rows.filter((row) => row.importable).length ?? 0;
+  const skippedRows = review?.rows.filter((row) => isDuplicateRow(row)).length ?? 0;
+  const blockedRows = review ? review.rows.length - mergeableRows - skippedRows : 0;
+  const customerMismatch = Boolean(review?.customerId && customerId && review.customerId !== customerId);
   const saveText = review
-    ? `${review.validCount} 行可写入，${review.blockedCount} 行阻塞，${review.ignoredCount} 行不写入`
+    ? `${mergeableRows} 行可入池，${blockedRows} 行暂不入池，${skippedRows} 行跳过`
     : "等待解析结果";
 
   useEffect(() => {
@@ -50,8 +167,16 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
     return () => window.clearTimeout(timer);
   }, [customerId, customers, open]);
 
+  function resetReview() {
+    setReview(null);
+    setReviewFilter("all");
+    setOpenFilterGroup(null);
+  }
+
   function close() {
     onOpenChange(false);
+    setReceiptFile(null);
+    resetReview();
   }
 
   async function handleParse() {
@@ -64,24 +189,23 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
       return;
     }
     setBusy(true);
+    resetReview();
     try {
       const uploaded = await uploadReconciliationFile({ file: receiptFile, fileType: "customer_receipt", customerId });
-      setReview(await listParsedReconciliationRecords(uploaded.id));
-      toast.success("收货文件解析完成");
+      const nextReview = await getReceiptImportReview(uploaded.id);
+      setReview(nextReview);
+      if (nextReview.rows.some((row) => row.importable && row.demandOrderNo)) {
+        setReviewFilter("strategyImportable");
+      } else if (nextReview.rows.some((row) => row.importable)) {
+        setReviewFilter("strategyPendingDemand");
+      } else {
+        setReviewFilter("strategyBlocked");
+      }
+      toast.success(`解析完成：${nextReview.validCount}/${nextReview.totalRows} 行可入池`);
     } catch {
       toast.error("上传或解析收货文件失败");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function setResolution(recordId: string, resolution: string) {
-    if (!review) return;
-    try {
-      await updateParsedRecordResolution(review.fileId, recordId, resolution);
-      setReview(await listParsedReconciliationRecords(review.fileId));
-    } catch {
-      toast.error("更新处理方式失败");
     }
   }
 
@@ -93,14 +217,50 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
       toast.success(`合并完成：新增 ${summary.inserted}，跳过 ${summary.skipped}，失败 ${summary.failed}`);
       onMerged();
       close();
-      setReceiptFile(null);
-      setReview(null);
     } catch {
       toast.error("合并收货文件失败");
     } finally {
       setBusy(false);
     }
   }
+
+  const filteredRows = useMemo(
+    () => (review ? review.rows.filter((row) => rowMatchesFilter(row, reviewFilter)) : []),
+    [review, reviewFilter],
+  );
+  const filterGroups = useMemo<ReviewFilterGroup[]>(() => {
+    const rows = review?.rows ?? [];
+    return [
+      {
+        label: "全部",
+        options: [{ key: "all", label: "全部", count: rows.length }],
+      },
+      {
+        label: "要货令",
+        options: [
+          { key: "orderLinked", label: "已填写", count: rows.filter((row) => rowMatchesFilter(row, "orderLinked")).length },
+          { key: "orderMissing", label: "待补", count: rows.filter((row) => rowMatchesFilter(row, "orderMissing")).length },
+        ],
+      },
+      {
+        label: "问题",
+        options: [
+          { key: "duplicate", label: "重复", count: rows.filter((row) => rowMatchesFilter(row, "duplicate")).length },
+          { key: "materialMissing", label: "物料未维护", count: rows.filter((row) => rowMatchesFilter(row, "materialMissing")).length },
+          { key: "zeroQty", label: "数量为 0", count: rows.filter((row) => rowMatchesFilter(row, "zeroQty")).length },
+        ],
+      },
+      {
+        label: "入池建议",
+        options: [
+          { key: "strategyImportable", label: "可入池", count: rows.filter((row) => rowMatchesFilter(row, "strategyImportable")).length },
+          { key: "strategyPendingDemand", label: "先入池待补", count: rows.filter((row) => rowMatchesFilter(row, "strategyPendingDemand")).length },
+          { key: "strategyBlocked", label: "暂不入池", count: rows.filter((row) => rowMatchesFilter(row, "strategyBlocked")).length },
+          { key: "strategySkipped", label: "跳过", count: rows.filter((row) => rowMatchesFilter(row, "strategySkipped")).length },
+        ],
+      },
+    ];
+  }, [review]);
 
   return (
     <DialogOverlay open={open} onClose={close}>
@@ -128,7 +288,7 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                 options={options}
                 onChange={(value) => {
                   setCustomerId(value);
-                  setReview(null);
+                  resetReview();
                 }}
               />
             </div>
@@ -146,10 +306,10 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                     aria-label="上传客户回传收货单"
                     onChange={(event) => {
                       setReceiptFile(event.target.files?.[0] ?? null);
-                      setReview(null);
+                      resetReview();
                     }}
                   />
-                  <span><Upload className="h-3.5 w-3.5" />更换</span>
+                  <span><Upload className="h-3.5 w-3.5" />上传</span>
                 </span>
               </label>
             </div>
@@ -158,10 +318,16 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                 <div>
                   <p className="mini-title">解析结果</p>
                   <p className="item-meta">
-                    {busy ? "正在上传并解析收货单..." : review ? "系统已按所选客户校验收货单归属，可继续确认入池。" : "等待解析。系统会按所选客户校验收货单归属，并在弹窗内完成去重和冲突确认。"}
+                    {busy
+                      ? "正在上传并解析收货单..."
+                      : review
+                        ? customerMismatch
+                          ? `解析客户为 ${review.customerName ?? review.customerId}，与当前选择的 ${selectedCustomerName || customerId} 不一致，请重新解析`
+                          : `系统已按 ${review.customerName ?? (selectedCustomerName || "所选客户")} 校验收货单，可继续确认入池。`
+                        : "等待解析。系统会按所选客户校验物料映射，并在弹窗内完成去重和冲突确认。"}
                   </p>
                 </div>
-                <Badge variant={review ? "blue" : "slate"}>{review ? "已解析" : "待解析"}</Badge>
+                <Badge variant={customerMismatch ? "red" : review ? "blue" : "slate"}>{review ? "已解析" : "待解析"}</Badge>
               </div>
             </div>
           </section>
@@ -172,11 +338,51 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                 <span className="filter-label">2. 入池预览</span>
               </div>
               {review ? (
-                <div className="recon-summary-strip">
-                  <span>总行数 {review.totalRows}</span>
-                  <span>有效 {review.validCount}</span>
-                  <span>阻塞 {review.blockedCount}</span>
-                  <span>忽略 {review.ignoredCount}</span>
+                <div className="recon-filter-groups" aria-label="导入结果筛选">
+                  {filterGroups.map((group) => {
+                    const activeOption = group.options.find((option) => option.key === reviewFilter);
+                    const open = openFilterGroup === group.label;
+                    return (
+                      <div
+                        className={`recon-filter-dropdown${activeOption ? " active" : ""}${open ? " open" : ""}`}
+                        key={group.label}
+                      >
+                        <button
+                          type="button"
+                          className="recon-filter-dropdown-trigger"
+                          aria-expanded={open}
+                          aria-label={`${group.label}筛选`}
+                          onClick={() => setOpenFilterGroup(open ? null : group.label)}
+                        >
+                          <span className="recon-filter-group-title">{group.label}</span>
+                          {activeOption ? (
+                            <span className="recon-filter-dropdown-value">{activeOption.label}</span>
+                          ) : null}
+                          <strong>{activeOption?.count ?? groupCount(group)}</strong>
+                          <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                        {open ? (
+                          <div className="recon-filter-menu" role="group" aria-label={group.label}>
+                            {group.options.map((option) => (
+                              <button
+                                key={option.key}
+                                aria-pressed={reviewFilter === option.key}
+                                className={`recon-filter-menu-item${reviewFilter === option.key ? " active" : ""}`}
+                                type="button"
+                                onClick={() => {
+                                  setReviewFilter(option.key);
+                                  setOpenFilterGroup(null);
+                                }}
+                              >
+                                <span>{option.label}</span>
+                                <strong>{option.count}</strong>
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>
@@ -191,57 +397,53 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                 <table className="table recon-table import-review-table">
                   <thead>
                     <tr>
-                      <th>问题</th>
                       <th>收货日期</th>
                       <th>物料</th>
                       <th>数量</th>
-                      <th>交货 / 要货令</th>
-                      <th>处理方式</th>
+                      <th>要货令</th>
+                      <th>问题</th>
+                      <th>入池策略</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {review.records.map((record) => (
-                      <tr key={record.id}>
-                        <td>
-                          <div className="stack-tight">
-                            <Badge variant={record.validationStatus === "blocked" ? "red" : record.resolution === "skip" ? "slate" : "green"}>
-                              {record.issueText ? "需处理" : record.validationStatus === "blocked" ? "阻塞" : "可入池"}
-                            </Badge>
-                            {record.issueText ? (
-                              <span className="recon-issue-text" title={record.issueText}>{record.issueText}</span>
-                            ) : null}
-                          </div>
-                        </td>
-                        <td>{receiptPreviewValue(record.normalizedData, ["receiptDate", "receipt_date", "收货日期", "客户收货日期"])}</td>
-                        <td>
-                          <div className="stack-tight">
-                            <strong>{receiptPreviewValue(record.normalizedData, ["internalPartNumber", "internal_part_number", "物料", "物料号", "零件号"])}</strong>
-                            <span className="item-meta">第 {record.sourceRowNumber} 行 · {record.recordType}</span>
-                          </div>
-                        </td>
-                        <td>{receiptPreviewValue(record.normalizedData, ["qty", "quantity", "收货数量", "数量"])}</td>
-                        <td>
-                          <span
-                            className="recon-muted-inline"
-                            title={normalizedValuePreview(record.normalizedData)}
-                          >
-                            {receiptPreviewValue(record.normalizedData, ["deliveryNo", "delivery_no", "交货", "交货号"])}
-                            {" / "}
-                            {receiptPreviewValue(record.normalizedData, ["demandOrderNo", "demand_order_no", "要货令", "交货通知单号"])}
-                          </span>
-                        </td>
-                        <td>
-                          <FilterSelect
-                            label="方式"
-                            value={record.resolution ?? "insert_incremental"}
-                            options={importResolutionOptions}
-                            onChange={(value) => { void setResolution(record.id, value); }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredRows.map((row) => {
+                      const presentation = issuePresentation(row);
+                      return (
+                        <tr key={row.parsedRecordId}>
+                          <td>{formatDate(row.receiptDate)}</td>
+                          <td>
+                            <div className="stack-tight">
+                              <strong>{row.internalPartNumber ?? "-"}</strong>
+                              <span className="item-meta">
+                                {row.customerPartNumber ? `客户物料 ${row.customerPartNumber}` : `第 ${row.sourceRowNumber} 行`}
+                              </span>
+                            </div>
+                          </td>
+                          <td>{formatQty(row.qty)}</td>
+                          <td>
+                            <span className="recon-muted-inline">
+                              {row.demandOrderNo ?? "未填写"}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="stack-tight">
+                              <Badge variant={issueVariant(row)} title={presentation.text ?? undefined}>
+                                {presentation.label}
+                              </Badge>
+                              {presentation.text ? <span className="recon-issue-text">{presentation.text}</span> : null}
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`recon-import-policy${row.importable ? "" : " blocked"}`}>
+                              {importPolicyText(row)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
+                {filteredRows.length === 0 ? <div className="recon-state inline">当前筛选没有待处理行</div> : null}
               </div>
             ) : null}
           </section>
@@ -252,22 +454,12 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
             <span className="filter-label">3. 保存</span>
             <p className="item-title">{saveText}</p>
           </div>
-          <Button variant="primary" disabled={busy || !review} onClick={handleMerge}>
+          <Button variant="primary" disabled={busy || !review || customerMismatch} onClick={handleMerge}>
             {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            合并入池
+            {blockedRows > 0 ? "仅合并可入池数据" : "合并入池"}
           </Button>
         </div>
       </DialogContent>
     </DialogOverlay>
   );
-}
-
-function receiptPreviewValue(data: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = data[key];
-    if (value !== undefined && value !== null && String(value).trim() !== "") {
-      return String(value);
-    }
-  }
-  return "-";
 }

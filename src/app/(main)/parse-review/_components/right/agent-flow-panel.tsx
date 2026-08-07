@@ -112,7 +112,7 @@ export function AgentFlowPanel({
                 {entry.state === "review" && isWaitingHuman ? (
                   <>
                     {taskStaleState && taskStaleState.pendingReevalSteps.length > 0 ? (
-                      <div className="step-meta" style={{ color: "#d97706", fontStyle: "italic", marginBottom: 4 }}>
+                      <div className="step-meta" style={{ color: "var(--warning)", fontStyle: "italic", marginBottom: 4 }}>
                         已修改字段，继续后将重新执行: {taskStaleState.pendingReevalSteps.map((step) => stepLabels[step] ?? step).join(", ")}
                       </div>
                     ) : null}
@@ -168,7 +168,7 @@ export function AgentFlowPanel({
           <button
             type="button"
             className="proceed-btn"
-            style={{ background: "#dc2626", marginTop: 8 }}
+            style={{ background: "var(--danger)", marginTop: 8 }}
             disabled={isCancelling}
             onClick={handleCancel}
           >

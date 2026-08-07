@@ -160,18 +160,18 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
                   <PolarGrid stroke="rgba(148, 163, 184, 0.35)" />
                   <PolarAngleAxis
                     dataKey="label"
-                    tick={{ fontSize: 11, fill: "#667085", fontWeight: 700 }}
+                    tick={{ fontSize: 11, fill: "var(--muted)", fontWeight: 700 }}
                   />
                   <PolarRadiusAxis
                     angle={90}
                     domain={[0, 100]}
-                    tick={{ fontSize: 10, fill: "#98a2b3" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-light)" }}
                   />
                   <RadarShape
                     name="Score"
                     dataKey="score"
-                    stroke="#5b6cff"
-                    fill="#5b6cff"
+                    stroke="var(--forvia-blue)"
+                    fill="var(--forvia-blue)"
                     fillOpacity={0.18}
                     strokeWidth={2}
                   />
@@ -221,11 +221,11 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.25)" />
                       <XAxis
                         dataKey="shortLabel"
-                        tick={{ fontSize: 10, fill: "#667085" }}
+                        tick={{ fontSize: 10, fill: "var(--muted)" }}
                         tickMargin={8}
                         interval="preserveStartEnd"
                       />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#667085" }} width={42} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "var(--muted)" }} width={42} />
                       <Tooltip
                         content={({ active, payload }) => {
                           if (!active || !payload?.length) return null;
@@ -246,7 +246,7 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
                       <Line
                         type="monotone"
                         dataKey="score"
-                        stroke="#5b6cff"
+                        stroke="var(--forvia-blue)"
                         strokeWidth={2}
                         connectNulls={false}
                         dot={(props) => {

@@ -22,39 +22,23 @@
     </header>
 
     <main class="page fit-screen">
-      <div class="settings-grid screen-fill">
-        <aside class="panel scroll-panel">
+      <div class="subnav settings-subnav" aria-label="系统配置导航">
+        <button class="active selected" data-settings-section="customers">客户配置</button>
+        <button data-settings-section="mailbox">统一邮箱</button>
+      </div>
+
+      <section class="panel scroll-panel screen-fill">
+        <div class="settings-section active" data-settings-panel="customers">
           <div class="panel-head">
-            <h2 class="panel-title"><i data-lucide="panel-left"></i>配置菜单</h2>
+            <h2 class="panel-title"><i data-lucide="building-2"></i>客户配置</h2>
+            <div class="list-actions">
+              <button class="btn small"><i data-lucide="plus"></i>新增客户</button>
+              <button class="btn small primary"><i data-lucide="save"></i>保存</button>
+            </div>
           </div>
           <div class="panel-body stack">
-            <button class="settings-nav selected" data-settings-section="customers">
-              <span>客户配置</span>
-              <small>基础信息、识别规则、催发周期、物料映射</small>
-            </button>
-            <button class="settings-nav" data-settings-section="users">
-              <span>用户管理</span>
-              <small>账号、角色、状态</small>
-            </button>
-            <button class="settings-nav" data-settings-section="mailbox">
-              <span>统一邮箱</span>
-              <small>监听邮箱、同步、连接测试</small>
-            </button>
-          </div>
-        </aside>
-
-        <section class="panel scroll-panel">
-          <div class="settings-section active" data-settings-panel="customers">
-            <div class="panel-head">
-              <h2 class="panel-title"><i data-lucide="building-2"></i>客户配置</h2>
-              <div class="list-actions">
-                <button class="btn small"><i data-lucide="plus"></i>新增客户</button>
-                <button class="btn small primary"><i data-lucide="save"></i>保存</button>
-              </div>
-            </div>
-            <div class="panel-body stack">
-              <div class="settings-inner-split">
-                <div class="card stack">
+            <div class="settings-inner-split">
+              <div class="card stack">
                   <div class="row"><p class="mini-title" style="margin-bottom:0">客户列表</p><span class="badge blue">4</span></div>
                   <input class="input" value="VW" aria-label="搜索客户">
                   <div class="list-item selected"><p class="item-title">天津旭阳 / VW</p><p class="item-meta">1032000000 · active</p></div>
@@ -78,88 +62,102 @@
                       <label class="filter-field"><span class="filter-label">客户</span><span class="filter-value">天津旭阳 / VW</span></label>
                       <label class="filter-field"><span class="filter-label">客户编码</span><span class="filter-value">1032000000</span></label>
                       <label class="filter-field"><span class="filter-label">客服</span><span class="filter-value">Cathy Zhang</span></label>
-                      <label class="filter-field"><span class="filter-label">客户姓名</span><span class="filter-value">Pan Dandan</span></label>
-                      <label class="filter-field"><span class="filter-label">客户邮箱</span><span class="filter-value">forecast@vw.example.com</span></label>
+                    </div>
+                    <div class="row" style="margin:14px 0 8px">
+                      <div><p class="mini-title" style="margin-bottom:0">联系人与邮箱</p><p class="item-meta">可维护多个客户联系人和邮件地址。</p></div>
+                      <button class="btn small"><i data-lucide="plus"></i>新增</button>
+                    </div>
+                    <div class="scroll-x">
+                      <table class="table" style="min-width:640px">
+                        <thead><tr><th>客户姓名</th><th>客户邮箱</th><th></th></tr></thead>
+                        <tbody>
+                          <tr><td>Pan Dandan</td><td>forecast@vw.example.com</td><td><button class="icon-link" aria-label="删除联系人"><i data-lucide="trash-2"></i></button></td></tr>
+                          <tr><td>Li Wei</td><td>shipping@vw-group.example.com</td><td><button class="icon-link" aria-label="删除联系人"><i data-lucide="trash-2"></i></button></td></tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
                   <div class="tab-panel" data-customer-config-panel="materials">
                     <div class="row">
-                      <div><p class="mini-title" style="margin-bottom:0">物料映射</p><p class="item-meta">导入先预览，确认后才写入主数据。</p></div>
-                      <div class="list-actions"><button class="btn small"><i data-lucide="upload"></i>导入 Excel</button><button class="btn small primary">确认导入</button></div>
+                      <div><p class="mini-title" style="margin-bottom:0">物料映射</p><p class="item-meta">维护客户物料号与内部物料号的映射关系。</p></div>
+                      <div class="list-actions"><button class="btn small" disabled><i data-lucide="upload"></i>导入</button><button class="btn small primary" data-open="#materialMappingSheet"><i data-lucide="plus"></i>新增</button></div>
                     </div>
                     <div class="scroll-x">
-                      <table class="table" style="min-width:980px">
-                        <thead><tr><th>Customer P/N</th><th>Faurecia P/N</th><th>Product</th><th>SA 号</th><th>Type</th><th>OEM</th><th>Program</th><th>提货地点</th></tr></thead>
+                      <table class="table" style="min-width:1180px">
+                        <thead><tr><th>Customer P/N</th><th>Faurecia P/N</th><th>Designation</th><th>SA 号</th><th>Type</th><th>OEM</th><th>Program</th><th>提货地点</th><th>操作</th></tr></thead>
                         <tbody>
-                          <tr><td>2777977X</td><td>2777977XN</td><td>E-pump 2.0</td><td>30478671</td><td>E-pump</td><td>VW</td><td>VW Tayron</td><td>天津旭阳仓库</td></tr>
-                          <tr><td>1191923XB</td><td>1191923XB</td><td>E-pump 1.0</td><td>30478888</td><td>E-pump</td><td>VW</td><td>VW Sagitar</td><td>天津旭阳仓库</td></tr>
-                          <tr><td>2372846XL</td><td>2372846XL</td><td>Linear Actuator</td><td>30478120</td><td>Actuator</td><td>VW</td><td>VW Magotan</td><td>长春 RDC</td></tr>
+                          <tr><td><strong>2777977X</strong></td><td>2777977XN</td><td>E-pump 2.0</td><td>30478671</td><td>E-pump</td><td>VW</td><td>VW Tayron</td><td>天津旭阳仓库</td><td><div class="row-actions"><button class="icon-link" data-open="#materialMappingSheet" aria-label="编辑物料映射"><i data-lucide="pencil"></i></button><button class="icon-link danger" aria-label="删除物料映射"><i data-lucide="trash-2"></i></button></div></td></tr>
+                          <tr><td><strong>1191923XB</strong></td><td>1191923XB</td><td>E-pump 1.0</td><td>30478888</td><td>E-pump</td><td>VW</td><td>VW Sagitar</td><td>天津旭阳仓库</td><td><div class="row-actions"><button class="icon-link" data-open="#materialMappingSheet" aria-label="编辑物料映射"><i data-lucide="pencil"></i></button><button class="icon-link danger" aria-label="删除物料映射"><i data-lucide="trash-2"></i></button></div></td></tr>
+                          <tr><td><strong>2372846XL</strong></td><td>2372846XL</td><td>Linear Actuator</td><td>30478120</td><td>Actuator</td><td>VW</td><td>VW Magotan</td><td>长春 RDC</td><td><div class="row-actions"><button class="icon-link" data-open="#materialMappingSheet" aria-label="编辑物料映射"><i data-lucide="pencil"></i></button><button class="icon-link danger" aria-label="删除物料映射"><i data-lucide="trash-2"></i></button></div></td></tr>
                         </tbody>
                       </table>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-section" data-settings-panel="users">
-            <div class="panel-head">
-              <h2 class="panel-title"><i data-lucide="users"></i>用户管理</h2>
-              <div class="list-actions"><button class="btn small"><i data-lucide="plus"></i>新增用户</button><button class="btn small primary"><i data-lucide="save"></i>保存</button></div>
-            </div>
-            <div class="panel-body">
-              <div class="settings-inner-split">
-                <div class="card stack">
-                  <div class="list-item selected"><p class="item-title">Cathy Zhang</p><p class="item-meta">customerService · active</p></div>
-                  <div class="list-item"><p class="item-title">Planner Li</p><p class="item-meta">planner · active</p></div>
-                  <div class="list-item"><p class="item-title">Finance Wang</p><p class="item-meta">finance · active</p></div>
-                  <div class="list-item"><p class="item-title">Admin Sun</p><p class="item-meta">admin · active</p></div>
-                </div>
-                <div class="stack">
-                  <div class="grid-2">
-                    <label class="filter-field"><span class="filter-label">Email</span><span class="filter-value">cathy.zhang@example.com</span></label>
-                    <label class="filter-field"><span class="filter-label">Display Name</span><span class="filter-value">Cathy Zhang</span></label>
-                    <label class="filter-field"><span class="filter-label">Role</span><span class="filter-value">customerService</span></label>
-                    <label class="filter-field"><span class="filter-label">Status</span><span class="filter-value">active</span></label>
-                  </div>
-                  <div class="card">
-                    <div class="row">
-                      <div><p class="item-title">配置页权限</p><p class="item-meta">第一版只用角色控制系统配置写权限；业务页权限后续再细分。</p></div>
-                      <button class="btn small">重置密码</button>
+                    <div class="table-footer" style="margin-top:10px">
+                      <span>显示 1-3 / 3</span>
+                      <div class="table-pagination" aria-label="物料映射分页">
+                        <button disabled><i data-lucide="chevron-left"></i></button>
+                        <button class="active">1</button>
+                        <button disabled><i data-lucide="chevron-right"></i></button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
+        </div>
 
-          <div class="settings-section" data-settings-panel="mailbox">
-            <div class="panel-head">
-              <h2 class="panel-title"><i data-lucide="inbox"></i>统一邮箱</h2>
-              <div class="list-actions"><button class="btn small">测试连接</button><button class="btn small primary"><i data-lucide="save"></i>保存</button></div>
+        <div class="settings-section" data-settings-panel="mailbox">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="inbox"></i>统一邮箱</h2>
+            <div class="list-actions"><button class="btn small">测试连接</button><button class="btn small primary"><i data-lucide="save"></i>保存</button></div>
+          </div>
+          <div class="panel-body stack">
+            <div class="grid-2">
+              <label class="filter-field"><span class="filter-label">Mailbox Address</span><span class="filter-value">order-agent@example.com</span></label>
+              <label class="filter-field"><span class="filter-label">Provider Type</span><span class="filter-value">待配置</span></label>
+              <label class="filter-field"><span class="filter-label">Sync Interval</span><span class="filter-value">60 minutes</span></label>
+              <label class="filter-field"><span class="filter-label">Status</span><span class="filter-value">enabled</span></label>
+              <label class="filter-field"><span class="filter-label">Connection</span><span class="filter-value">connected</span></label>
+              <label class="filter-field"><span class="filter-label">Last Sync</span><span class="filter-value">2026-05-15 13:20</span></label>
             </div>
-            <div class="panel-body stack">
-              <div class="grid-2">
-                <label class="filter-field"><span class="filter-label">Mailbox Address</span><span class="filter-value">order-agent@example.com</span></label>
-                <label class="filter-field"><span class="filter-label">Provider Type</span><span class="filter-value">待配置</span></label>
-                <label class="filter-field"><span class="filter-label">Sync Interval</span><span class="filter-value">60 minutes</span></label>
-                <label class="filter-field"><span class="filter-label">Status</span><span class="filter-value">enabled</span></label>
-                <label class="filter-field"><span class="filter-label">Connection</span><span class="filter-value">connected</span></label>
-                <label class="filter-field"><span class="filter-label">Last Sync</span><span class="filter-value">2026-05-15 13:20</span></label>
-              </div>
-              <div class="card">
-                <div class="row">
-                  <div><p class="item-title">密钥不在页面明文展示</p><p class="item-meta">第一版只允许一个 active listener mailbox，页面只显示配置状态和连接测试结果。</p></div>
-                  <button class="btn small cyan">enabled</button>
-                </div>
+            <div class="card">
+              <div class="row">
+                <div><p class="item-title">密钥不在页面明文展示</p><p class="item-meta">第一版只允许一个 active listener mailbox，页面只显示配置状态和连接测试结果。</p></div>
+                <button class="btn small cyan">enabled</button>
               </div>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
+  </div>
+
+  <div class="sheet-backdrop" id="materialMappingSheet">
+    <div class="sheet">
+      <div class="panel-head">
+        <h2 class="panel-title"><i data-lucide="package"></i>物料映射</h2>
+        <button class="btn small" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <div class="grid-2">
+          <label class="filter-field"><span class="filter-label">Customer P/N</span><input class="input" value="2777977X"></label>
+          <label class="filter-field"><span class="filter-label">Faurecia P/N</span><input class="input" value="2777977XN"></label>
+        </div>
+        <label class="filter-field"><span class="filter-label">Designation</span><input class="input" value="E-pump 2.0"></label>
+        <div class="grid-2">
+          <label class="filter-field"><span class="filter-label">SA 号</span><input class="input" value="30478671"></label>
+          <label class="filter-field"><span class="filter-label">Type</span><input class="input" value="E-pump"></label>
+          <label class="filter-field"><span class="filter-label">OEM</span><input class="input" value="VW"></label>
+          <label class="filter-field"><span class="filter-label">Program</span><input class="input" value="VW Tayron"></label>
+        </div>
+        <label class="filter-field"><span class="filter-label">提货地点</span><input class="input" value="天津旭阳仓库"></label>
+        <div class="row" style="justify-content:flex-end">
+          <button class="btn" data-close>取消</button>
+          <button class="btn primary" data-close><i data-lucide="save"></i>保存映射</button>
+        </div>
+      </div>
+    </div>
   </div>
   <script src="assets/app.js"></script>
 </body>

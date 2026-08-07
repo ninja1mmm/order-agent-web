@@ -1,5 +1,6 @@
 export type ContactSchema = {
   contactId?: string;
+  name?: string | null;
   email: string;
 };
 
@@ -13,6 +14,8 @@ export type MaterialMappingSchema = {
   oem: string | null;
   program: string | null;
   designation: string | null;
+  deliveryLocation?: string | null;
+  delivery_location?: string | null;
   status: string;
 };
 
@@ -29,6 +32,8 @@ export type CustomerConfigSchema = {
   name: string;
   abbreviation: string;
   code: string;
+  customerServiceRep?: string | null;
+  customer_service_rep?: string | null;
   contacts: ContactSchema[];
   materialMappings: MaterialMappingSchema[];
   submissionSchedules: SubmissionScheduleSchema[];

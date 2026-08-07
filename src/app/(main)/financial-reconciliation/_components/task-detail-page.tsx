@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, LoaderCircle, Play, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, CheckCircle2, LoaderCircle, LockKeyhole, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useCustomerConfig } from "../../_components/shared";
 import {
   closeReconciliationTask,
+  bulkConfirmReconciliationMatches,
   getReconciliationMatchSummary,
   getReconciliationTask,
   listReceiptRecords,
@@ -27,12 +28,70 @@ import {
 } from "@/services/reconciliation";
 import { buildCommitPreviewRows } from "@/lib/transforms/reconciliation";
 import { CommitPreviewStep } from "./commit-preview-step";
-import { MatchAdjustSheet } from "./match-adjust-sheet";
 import { MatchConfirmationStep } from "./match-confirmation-step";
 import { TaskCompleteStep } from "./task-complete-step";
 import { formatDateTime } from "./reconciliation-utils";
 
 type StepKey = "match" | "preview" | "complete";
+type MatchWorkState = "starting" | "regenerating" | "loading" | null;
+const POOL_PAGE_SIZE = 100;
+const OPEN_RECORD_STATUSES = new Set(["unmatched", "partial"]);
+const RECORDS_COMMITTED_TASK_STATUSES = new Set(["closed"]);
+
+function matchIsHighConfidenceNoDiff(match: ReconciliationMatch) {
+  return (
+    match.status === "candidate"
+    && Boolean(match.receiptRecordId)
+    && (match.differenceQty ?? Number.NaN) === 0
+    && (match.confidenceScore ?? 0) >= 0.9
+  );
+}
+
+async function listAllShipmentRecords(task: ReconciliationTask, customers: Parameters<typeof listShipmentRecords>[1]) {
+  const records: ShipmentRecord[] = [];
+  let total = 0;
+  let page = 1;
+  const includeCommittedRecords = RECORDS_COMMITTED_TASK_STATUSES.has(task.status);
+  do {
+    const response = await listShipmentRecords({
+      page,
+      size: POOL_PAGE_SIZE,
+      customerId: task.customerId,
+      dateFrom: task.shipmentWindowFrom ?? undefined,
+      dateTo: task.shipmentWindowTo ?? undefined,
+    }, customers);
+    records.push(...response.records.filter((record) => (
+      includeCommittedRecords || OPEN_RECORD_STATUSES.has(record.reconciliationStatus)
+    )));
+    total = response.total;
+    if (response.records.length === 0) break;
+    page += 1;
+  } while (records.length < total);
+  return records;
+}
+
+async function listAllReceiptRecords(task: ReconciliationTask, customers: Parameters<typeof listReceiptRecords>[1]) {
+  const records: ReceiptRecord[] = [];
+  let total = 0;
+  let page = 1;
+  const includeCommittedRecords = RECORDS_COMMITTED_TASK_STATUSES.has(task.status);
+  do {
+    const response = await listReceiptRecords({
+      page,
+      size: POOL_PAGE_SIZE,
+      customerId: task.customerId,
+      dateFrom: task.periodFrom,
+      dateTo: task.periodTo,
+    }, customers);
+    records.push(...response.records.filter((record) => (
+      includeCommittedRecords || OPEN_RECORD_STATUSES.has(record.reconciliationStatus)
+    )));
+    total = response.total;
+    if (response.records.length === 0) break;
+    page += 1;
+  } while (records.length < total);
+  return records;
+}
 
 export function TaskDetailPage({ taskId }: { taskId: string }) {
   const { customers, loading: loadingCustomers } = useCustomerConfig();
@@ -43,16 +102,27 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
   const [summary, setSummary] = useState<MatchSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [matchLoading, setMatchLoading] = useState(false);
+  const [matchWorkState, setMatchWorkState] = useState<MatchWorkState>(null);
   const [closing, setClosing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [bulkConfirming, setBulkConfirming] = useState(false);
   const [step, setStep] = useState<StepKey>("match");
-  const [adjustingMatch, setAdjustingMatch] = useState<ReconciliationMatch | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const skipNextAutoMatchLoad = useRef(false);
 
   const previewRows: CommitPreviewRow[] = useMemo(
-    () => buildCommitPreviewRows(shipments, receipts, summary),
-    [receipts, shipments, summary],
+    () => buildCommitPreviewRows(shipments, receipts, summary, task?.status === "closed", groups),
+    [groups, receipts, shipments, summary, task?.status],
   );
+  const highConfidenceNoDiffCandidateIds = useMemo(
+    () => groups
+      .flatMap((group) => group.matches)
+      .filter(matchIsHighConfidenceNoDiff)
+      .map((match) => match.id),
+    [groups],
+  );
+  const actionBusy = busy || bulkConfirming || closing;
+  const canCloseTask = Boolean(task && task.status === "in_progress" && (summary?.confirmedCount ?? 0) > 0);
 
   const loadTask = useCallback(async () => {
     if (loadingCustomers) return;
@@ -60,43 +130,44 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
     try {
       const loadedTask = await getReconciliationTask(taskId, customers);
       setTask(loadedTask);
-    } catch {
+    } catch (error) {
       setTask(null);
-      toast.error("加载对账任务失败");
+      console.error("Failed to load reconciliation task", error);
+      toast.error(error instanceof Error ? `加载对账任务失败：${error.message}` : "加载对账任务失败");
     } finally {
       setLoading(false);
     }
   }, [customers, loadingCustomers, taskId]);
 
-  const loadPoolsAndMatches = useCallback(async (currentTask: ReconciliationTask) => {
+  const loadPoolsAndMatches = useCallback(async (
+    currentTask: ReconciliationTask,
+    workState: MatchWorkState = "loading",
+  ) => {
     setMatchLoading(true);
+    setMatchWorkState(workState);
     try {
       const [shipmentResult, receiptResult, matchSummary] = await Promise.all([
-        listShipmentRecords({ page: 1, size: 100, customerId: currentTask.customerId }, customers),
-        listReceiptRecords({
-          page: 1,
-          size: 100,
-          customerId: currentTask.customerId,
-          dateFrom: currentTask.periodFrom,
-          dateTo: currentTask.periodTo,
-        }, customers),
+        listAllShipmentRecords(currentTask, customers),
+        listAllReceiptRecords(currentTask, customers),
         getReconciliationMatchSummary(currentTask.id),
       ]);
-      setShipments(shipmentResult.records);
-      setReceipts(receiptResult.records);
+      setShipments(shipmentResult);
+      setReceipts(receiptResult);
       setSummary(matchSummary);
       const matchList = await listReconciliationMatches({
         taskId: currentTask.id,
-        shipments: shipmentResult.records,
-        receipts: receiptResult.records,
+        shipments: shipmentResult,
+        receipts: receiptResult,
       });
       setGroups(matchList.groups);
-    } catch {
+    } catch (error) {
+      console.error("Failed to load reconciliation match details", error);
       setGroups([]);
       setSummary(null);
-      toast.error("加载匹配明细失败");
+      toast.error(error instanceof Error ? `加载匹配明细失败：${error.message}` : "加载匹配明细失败");
     } finally {
       setMatchLoading(false);
+      setMatchWorkState(null);
     }
   }, [customers]);
 
@@ -107,6 +178,10 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
 
   useEffect(() => {
     if (!task) return;
+    if (skipNextAutoMatchLoad.current) {
+      skipNextAutoMatchLoad.current = false;
+      return;
+    }
     const timer = window.setTimeout(() => {
       void loadPoolsAndMatches(task);
     }, 0);
@@ -116,13 +191,19 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
   async function handleStart() {
     if (!task) return;
     setBusy(true);
+    setMatchLoading(true);
+    setMatchWorkState("starting");
+    setStep("match");
     try {
       const updated = await startReconciliationTask(task.id, customers);
       toast.success("任务已开始并生成匹配候选");
+      skipNextAutoMatchLoad.current = true;
       setTask(updated);
-      await loadPoolsAndMatches(updated);
+      await loadPoolsAndMatches(updated, "starting");
     } catch {
       toast.error("开始任务失败");
+      setMatchLoading(false);
+      setMatchWorkState(null);
     } finally {
       setBusy(false);
     }
@@ -131,14 +212,33 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
   async function handleRegenerate() {
     if (!task) return;
     setBusy(true);
+    setMatchLoading(true);
+    setMatchWorkState("regenerating");
+    setStep("match");
     try {
       await regenerateReconciliationMatches(task.id);
       toast.success("匹配候选已重新生成");
-      await loadPoolsAndMatches(task);
+      await loadPoolsAndMatches(task, "regenerating");
     } catch {
       toast.error("重新生成匹配失败");
+      setMatchLoading(false);
+      setMatchWorkState(null);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleBulkConfirm() {
+    if (!task || highConfidenceNoDiffCandidateIds.length === 0) return;
+    setBulkConfirming(true);
+    try {
+      const result = await bulkConfirmReconciliationMatches(task.id, highConfidenceNoDiffCandidateIds);
+      toast.success(`已批量确认 ${result.confirmed} 条可确认候选`);
+      await loadPoolsAndMatches(task);
+    } catch {
+      toast.error("批量确认失败");
+    } finally {
+      setBulkConfirming(false);
     }
   }
 
@@ -164,46 +264,60 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
           <Link className="recon-back-link" href="/financial-reconciliation/tasks">
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          任务详情
+          <span className="recon-title-inline">
+            <span>{task?.taskNo ?? "任务详情"}</span>
+            {task ? <small>{task.customerName} · {task.periodLabel}</small> : null}
+          </span>
         </h2>
-        <div className="list-actions">
-          <Button variant="default" size="sm" disabled={busy} onClick={() => setReloadKey((value) => value + 1)}>
-            <RefreshCw className="h-3.5 w-3.5" /> 刷新
-          </Button>
-          <Button variant="default" size="sm" disabled={!task || busy || task.status === "closed"} onClick={handleRegenerate}>
-            <RefreshCw className="h-3.5 w-3.5" /> 重新生成
-          </Button>
-          <Button variant="primary" size="sm" disabled={!task || busy || task.status !== "draft"} onClick={handleStart}>
-            <Play className="h-3.5 w-3.5" /> 开始任务
-          </Button>
-        </div>
+        {task ? (
+          <div className="recon-detail-actions list-actions">
+            <Button variant="default" size="sm" disabled={actionBusy} onClick={() => setReloadKey((value) => value + 1)}>
+              <RefreshCw className="h-3.5 w-3.5" /> 刷新
+            </Button>
+            <Button variant="default" size="sm" disabled={!task || actionBusy || task.status !== "in_progress"} onClick={handleRegenerate}>
+              {busy && matchWorkState === "regenerating" ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              重新生成
+            </Button>
+            <Button variant="primary" size="sm" disabled={!task || actionBusy || task.status !== "draft"} onClick={handleStart}>
+              {busy && matchWorkState === "starting" ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+              {busy && matchWorkState === "starting" ? "正在开始" : "开始任务"}
+            </Button>
+            {step === "match" ? (
+              <Button variant="primary" size="sm" disabled={!task || busy || bulkConfirming || matchLoading || task.status !== "in_progress" || highConfidenceNoDiffCandidateIds.length === 0} onClick={handleBulkConfirm}>
+                {bulkConfirming ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                批量确认一致项
+              </Button>
+            ) : null}
+            {step === "preview" ? (
+              <Button variant="primary" size="sm" disabled={!canCloseTask || closing} onClick={handleCloseTask}>
+                {closing ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <LockKeyhole className="h-3.5 w-3.5" />}
+                {closing ? "关闭中" : "关闭任务并写回"}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <div className="panel-body recon-body">
         {loading ? <div className="recon-state inline"><LoaderCircle className="h-4 w-4 animate-spin" /> 加载任务...</div> : null}
         {task ? (
           <>
-            <div className="recon-detail-head">
-              <div>
-                <p className="eyebrow">Financial Reconciliation</p>
-                <h1>{task.taskNo}</h1>
-                <p className="subtitle">{task.customerName} · {task.periodLabel}</p>
+            <div className="recon-step-bar">
+              <div className="recon-step-tabs">
+                <button className={step === "match" ? "active" : ""} onClick={() => setStep("match")}>1 匹配确认</button>
+                <button className={step === "preview" ? "active" : ""} onClick={() => setStep("preview")}>2 写回预览</button>
+                <button className={step === "complete" ? "active" : ""} onClick={() => setStep("complete")}>3 完成输出</button>
               </div>
               <div className="recon-detail-meta">
                 <Badge variant={task.statusVariant}>{task.statusLabel}</Badge>
                 <span>更新：{formatDateTime(task.updatedAt ?? task.createdAt)}</span>
               </div>
             </div>
-            <div className="recon-step-tabs">
-              <button className={step === "match" ? "active" : ""} onClick={() => setStep("match")}>1 匹配确认</button>
-              <button className={step === "preview" ? "active" : ""} onClick={() => setStep("preview")}>2 提交预览</button>
-              <button className={step === "complete" ? "active" : ""} onClick={() => setStep("complete")}>3 完成输出</button>
-            </div>
             {step === "match" ? (
               <MatchConfirmationStep
                 task={task}
                 groups={groups}
                 loading={matchLoading}
-                onAdjust={setAdjustingMatch}
+                loadingState={matchWorkState}
                 onChanged={() => { void loadPoolsAndMatches(task); }}
               />
             ) : null}
@@ -211,21 +325,12 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
               <CommitPreviewStep
                 summary={summary}
                 rows={previewRows}
-                closing={closing}
-                disabled={task.status === "closed" || summary?.confirmedCount === 0}
-                onCloseTask={() => { void handleCloseTask(); }}
               />
             ) : null}
             {step === "complete" ? <TaskCompleteStep task={task} /> : null}
           </>
         ) : null}
       </div>
-      <MatchAdjustSheet
-        taskId={taskId}
-        match={adjustingMatch}
-        onOpenChange={(open) => { if (!open) setAdjustingMatch(null); }}
-        onSaved={() => { if (task) void loadPoolsAndMatches(task); }}
-      />
     </section>
   );
 }

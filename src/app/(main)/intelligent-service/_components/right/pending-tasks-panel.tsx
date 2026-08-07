@@ -66,7 +66,7 @@ export function PendingTasksPanel({ locale, pendingTasks, customers, onRefresh }
                     onClick={(e) => handleCancel(e, item.taskId)}
                     style={{
                       background: "none", border: "none", cursor: "pointer", padding: 2,
-                      color: "#dc2626", display: "inline-flex", alignItems: "center",
+                      color: "var(--danger)", display: "inline-flex", alignItems: "center",
                       opacity: cancellingId === item.taskId ? 0.5 : 1,
                     }}
                   >

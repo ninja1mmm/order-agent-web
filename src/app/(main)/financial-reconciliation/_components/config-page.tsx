@@ -15,7 +15,11 @@ import {
 } from "@/services/reconciliation";
 import { ConfigSheet } from "./config-sheet";
 import { ReconciliationPagination } from "./reconciliation-pagination";
-import { PAGE_SIZE } from "./reconciliation-utils";
+import {
+  nextScheduleTaskLabel,
+  PAGE_SIZE,
+  scheduleBoundaryLabel,
+} from "./reconciliation-utils";
 
 export function ConfigPage() {
   const { customers, loading: loadingCustomers } = useCustomerConfig();
@@ -103,7 +107,6 @@ export function ConfigPage() {
                 <th>对账开始</th>
                 <th>对账截止</th>
                 <th>任务触发时间</th>
-                <th>发运窗口规则</th>
                 <th>下次任务</th>
                 <th className="recon-actions-col">操作</th>
               </tr>
@@ -118,11 +121,10 @@ export function ConfigPage() {
                     </Badge>
                   </td>
                   <td>{row.schedule ? (row.schedule.periodType === "weekly" ? "周度" : "月度") : "-"}</td>
-                  <td>{row.schedule ? (row.schedule.periodType === "weekly" ? `周 ${row.schedule.periodStartDay}` : `每月 ${row.schedule.periodStartDay} 日`) : "-"}</td>
-                  <td>{row.schedule ? (row.schedule.periodType === "weekly" ? `周 ${row.schedule.periodEndDay ?? row.schedule.periodStartDay}` : (row.schedule.periodEndDay ? `每月 ${row.schedule.periodEndDay} 日` : "每月末日")) : "-"}</td>
+                  <td>{row.schedule ? scheduleBoundaryLabel(row.schedule, "start") : "-"}</td>
+                  <td>{row.schedule ? scheduleBoundaryLabel(row.schedule, "end") : "-"}</td>
                   <td>{row.schedule?.triggerLabel ?? "-"}</td>
-                  <td><span className="recon-muted-inline">后端待补</span></td>
-                  <td><span className="recon-muted-inline">后端待补</span></td>
+                  <td>{row.schedule ? nextScheduleTaskLabel(row.schedule) : <span className="recon-muted-inline">未配置</span>}</td>
                   <td>
                     <div className="recon-row-actions">
                       <Button size="icon-sm" title={row.schedule ? "编辑" : "新增"} onClick={() => setEditingRow(row)}>

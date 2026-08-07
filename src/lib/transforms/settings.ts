@@ -12,7 +12,34 @@ import type {
 export function transformCustomerConfigSchemaToModel(
   customer: CustomerConfigSchema,
 ): CustomerConfig {
-  return customer;
+  return {
+    id: customer.id,
+    name: customer.name,
+    abbreviation: customer.abbreviation,
+    code: customer.code,
+    customerServiceRep: customer.customerServiceRep ?? customer.customer_service_rep ?? null,
+    contacts: (customer.contacts ?? []).map((contact) => ({
+      contactId: contact.contactId,
+      name: contact.name ?? null,
+      email: contact.email,
+    })),
+    materialMappings: (customer.materialMappings ?? []).map((mapping) => ({
+      mappingId: mapping.mappingId,
+      customerPartNumber: mapping.customerPartNumber,
+      internalPartNumber: mapping.internalPartNumber,
+      scheduleAgreement: mapping.scheduleAgreement,
+      productType: mapping.productType,
+      productionLine: mapping.productionLine,
+      oem: mapping.oem,
+      program: mapping.program,
+      designation: mapping.designation,
+      deliveryLocation: mapping.deliveryLocation ?? mapping.delivery_location ?? null,
+      status: mapping.status,
+    })),
+    submissionSchedules: customer.submissionSchedules ?? [],
+    createdAt: customer.createdAt,
+    updatedAt: customer.updatedAt,
+  };
 }
 
 export function transformCustomerConfigModelToSchema(

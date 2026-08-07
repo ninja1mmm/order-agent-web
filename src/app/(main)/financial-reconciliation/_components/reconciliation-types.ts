@@ -16,8 +16,9 @@ export const reconciliationTabs: ReconciliationTab[] = [
 export const reconciliationStatusOptions = [
   { value: "", label: "全部状态" },
   { value: "unmatched", label: "未匹配" },
-  { value: "partially_matched", label: "部分匹配" },
+  { value: "partial", label: "部分匹配" },
   { value: "fully_matched", label: "完全匹配" },
+  { value: "in_transit", label: "在途" },
   { value: "closed", label: "已关闭" },
 ];
 
@@ -25,7 +26,10 @@ export const taskStatusOptions = [
   { value: "", label: "全部任务" },
   { value: "draft", label: "待开始" },
   { value: "in_progress", label: "对账中" },
+  { value: "closing", label: "关闭中" },
   { value: "closed", label: "已关闭" },
+  { value: "reopening", label: "重开中" },
+  { value: "voiding", label: "作废中" },
   { value: "voided", label: "已作废" },
   { value: "cancelled", label: "已取消" },
 ];

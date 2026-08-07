@@ -4,11 +4,13 @@ import type {
   BulkConfirmResponseSchema,
   MappingSuggestionAcceptSchema,
   MatchConfirmRequestSchema,
+  MatchReceiptRemapRequestSchema,
   MatchListResponseSchema,
   MatchSummaryResponseSchema,
   MergeReviewResponseSchema,
   MergeSummaryResponseSchema,
   ReceiptRecordCreateSchema,
+  ReceiptImportReviewResponseSchema,
   ReceiptRecordListResponseSchema,
   ReceiptRecordResponseSchema,
   ReceiptRecordUpdateSchema,
@@ -185,6 +187,12 @@ export function getShipmentImportReviewSchema(params: {
   );
 }
 
+export function getReceiptImportReviewSchema(fileId: string): Promise<ReceiptImportReviewResponseSchema> {
+  return apiRequest<ReceiptImportReviewResponseSchema>(
+    `/api/reconciliation/imports/receipt-review${queryString({ file_id: fileId })}`,
+  );
+}
+
 export function listShipmentRecordsSchema(params: {
   page?: number;
   size?: number;
@@ -287,6 +295,24 @@ export function rejectReconciliationMatchSchema(taskId: string, matchId: string)
   return apiRequest(
     `/api/reconciliation/tasks/${encodeURIComponent(taskId)}/matches/${encodeURIComponent(matchId)}/reject`,
     { method: "POST" },
+  );
+}
+
+export function unconfirmReconciliationMatchSchema(taskId: string, matchId: string) {
+  return apiRequest(
+    `/api/reconciliation/tasks/${encodeURIComponent(taskId)}/matches/${encodeURIComponent(matchId)}/unconfirm`,
+    { method: "POST" },
+  );
+}
+
+export function remapReconciliationMatchReceiptSchema(
+  taskId: string,
+  matchId: string,
+  payload: MatchReceiptRemapRequestSchema,
+) {
+  return apiRequest(
+    `/api/reconciliation/tasks/${encodeURIComponent(taskId)}/matches/${encodeURIComponent(matchId)}/receipt`,
+    { method: "PATCH", body: JSON.stringify(payload) },
   );
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ExternalLink, Link2, LoaderCircle, Save, ScanSearch, Sheet, Upload } from "lucide-react";
+import { ChevronDown, ExternalLink, Link2, LoaderCircle, Save, ScanSearch, Search, Sheet, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -39,12 +39,85 @@ type UploadSlotProps = {
 
 type ReviewFilter =
   | "all"
-  | "importable"
+  | "strategyImportable"
+  | "strategyPendingDemand"
+  | "strategyBlocked"
   | "demandLinked"
   | "demandPending"
+  | "duplicate"
   | "customerMissing"
   | "materialMissing"
-  | "blocked";
+  | "deliveryMissing"
+  | "zeroQty";
+
+type ReviewFilterOption = {
+  key: ReviewFilter;
+  label: string;
+  count: number;
+};
+
+type ReviewFilterGroup = {
+  label: string;
+  options: ReviewFilterOption[];
+};
+
+type IssuePresentation = {
+  label: string;
+  severity: ShipmentImportReviewRow["issueSeverity"];
+  text: string | null;
+};
+
+const duplicateIssueCodes = new Set([
+  "DUPLICATE",
+  "DUPLICATE_EXACT",
+  "DUPLICATE_CHANGED_CONTENT",
+  "LOCKED_QTY_CHANGED",
+]);
+
+const demandPendingIssueCodes = new Set(["DEMAND_ORDER_UNMAPPED", "DEMAND_ORDER_CONFLICT"]);
+
+function safeIssueText(text: string | null | undefined) {
+  if (!text) return null;
+  return /[\u4e00-\u9fff]/.test(text) ? text : "该行未通过入池校验，请检查对应字段后重新解析";
+}
+
+function issuePresentation(row: ShipmentImportReviewRow): IssuePresentation {
+  if (row.issueCode === "DUPLICATE_CHANGED_CONTENT") {
+    return {
+      label: "重复",
+      severity: "red",
+      text: "池中已存在同键记录，但本次文件内容不同，暂不能入池",
+    };
+  }
+  if (row.issueCode === "LOCKED_QTY_CHANGED") {
+    return {
+      label: "重复",
+      severity: "red",
+      text: "池中记录已参与对账，且本次文件内容不同，暂不能覆盖",
+    };
+  }
+  if (duplicateIssueCodes.has(row.issueCode) || row.validationStatus === "ignored" || row.resolution === "skip") {
+    return {
+      label: "重复",
+      severity: row.issueSeverity === "red" ? "red" : "amber",
+      text: "池中已存在相同记录，本行会跳过",
+    };
+  }
+  if (row.issueCode === "ZERO_QTY") {
+    return {
+      label: "数量为 0",
+      severity: "amber",
+      text: "发运数量为 0，请确认是否需要入池",
+    };
+  }
+  if (row.issueCode === "IMPORTABLE") {
+    return { label: "可入池", severity: row.issueSeverity, text: null };
+  }
+  if (row.issueLabel === "阻塞") {
+    return { label: "需处理", severity: row.issueSeverity, text: safeIssueText(row.issueText) };
+  }
+  return { label: row.issueLabel, severity: row.issueSeverity, text: safeIssueText(row.issueText) };
+}
 
 function UploadSlot({ icon, title, fileName, required = false, onFile }: UploadSlotProps) {
   const Icon = icon === "shipment" ? Sheet : Link2;
@@ -70,29 +143,38 @@ function UploadSlot({ icon, title, fileName, required = false, onFile }: UploadS
 }
 
 function issueVariant(row: ShipmentImportReviewRow) {
-  if (row.issueSeverity === "red") return "red";
-  if (row.issueSeverity === "amber") return "amber";
+  const presentation = issuePresentation(row);
+  if (presentation.severity === "red") return "red";
+  if (presentation.severity === "amber") return "amber";
   return "slate";
 }
 
 function rowMatchesFilter(row: ShipmentImportReviewRow, filter: ReviewFilter) {
-  if (filter === "importable") return row.importable;
+  if (filter === "strategyImportable") return row.importable && !demandPendingIssueCodes.has(row.issueCode);
+  if (filter === "strategyPendingDemand") return row.importable && demandPendingIssueCodes.has(row.issueCode);
+  if (filter === "strategyBlocked") return !row.importable;
   if (filter === "demandLinked") return Boolean(row.demandOrderNo);
   if (filter === "demandPending") {
-    return row.issueCode === "DEMAND_ORDER_UNMAPPED" || row.issueCode === "DEMAND_ORDER_CONFLICT";
+    return demandPendingIssueCodes.has(row.issueCode);
   }
+  if (filter === "duplicate") return duplicateIssueCodes.has(row.issueCode) || row.validationStatus === "ignored" || row.resolution === "skip";
   if (filter === "customerMissing") return row.issueCode === "UNKNOWN_CUSTOMER";
   if (filter === "materialMissing") return row.issueCode === "UNMAPPED_MATERIAL_SHIPMENT";
-  if (filter === "blocked") return !row.importable;
+  if (filter === "deliveryMissing") return row.issueCode === "MISSING_DELIVERY";
+  if (filter === "zeroQty") return row.issueCode === "ZERO_QTY";
   return true;
 }
 
 function importPolicyText(row: ShipmentImportReviewRow) {
   if (!row.importable) return "暂不入池";
-  if (row.issueCode === "DEMAND_ORDER_UNMAPPED" || row.issueCode === "DEMAND_ORDER_CONFLICT") {
+  if (demandPendingIssueCodes.has(row.issueCode)) {
     return "先入池，待补要货令";
   }
   return "发运逐条入池";
+}
+
+function groupCount(group: ReviewFilterGroup) {
+  return group.options.reduce((total, option) => total + option.count, 0);
 }
 
 export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentImportDialogProps) {
@@ -102,6 +184,9 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
   const [mappingUpload, setMappingUpload] = useState<FileUploadResult | null>(null);
   const [review, setReview] = useState<ShipmentImportReview | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
+  const [customerFilter, setCustomerFilter] = useState("all");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [openFilterGroup, setOpenFilterGroup] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function reset() {
@@ -111,6 +196,9 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
     setMappingUpload(null);
     setReview(null);
     setReviewFilter("all");
+    setCustomerFilter("all");
+    setCustomerSearch("");
+    setOpenFilterGroup(null);
   }
 
   function close() {
@@ -139,7 +227,7 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
       setShipmentUpload(shipmentResult);
       setMappingUpload(mappingResult);
       const nextReview = await refreshReview(shipmentResult.id, mappingResult.id);
-      setReviewFilter(nextReview.rows.some((row) => row.importable) ? "importable" : "blocked");
+      setReviewFilter(nextReview.rows.some((row) => row.importable) ? "strategyImportable" : "strategyBlocked");
       toast.success(`解析完成：${nextReview.linkedCount}/${nextReview.totalRows} 行已关联要货令`);
     } catch {
       toast.error("上传或解析发运批次失败");
@@ -172,26 +260,76 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
   const customerSummary = parsedReview?.customerResolutionSummary ?? null;
   const unresolvedCustomers = customerSummary?.customers.filter((item) => !item.resolved) ?? [];
   const hasUnresolvedCustomers = unresolvedCustomers.length > 0;
-  const mergeableRows = parsedReview?.rows.filter((row) => row.validationStatus === "valid").length ?? 0;
+  const mergeableRows = parsedReview?.rows.filter((row) => row.importable).length ?? 0;
   const blockedRows = parsedReview ? parsedReview.rows.length - mergeableRows : 0;
   const saveText = parsedReview
     ? `${mergeableRows} 行可入池，${blockedRows} 行暂不入池；${parsedReview.linkedCount} 行已关联要货令，${parsedReview.missingMappingCount} 行待补要货令`
     : "解析后在弹窗内完成去重和冲突确认";
   const filteredRows = useMemo(
-    () => (review ? review.rows.filter((row) => rowMatchesFilter(row, reviewFilter)) : []),
-    [review, reviewFilter],
+    () => (review
+      ? review.rows.filter((row) => (
+          rowMatchesFilter(row, reviewFilter)
+          && (customerFilter === "all" || (row.sapCustomerCode ?? "未填客户码") === customerFilter)
+        ))
+      : []),
+    [customerFilter, review, reviewFilter],
   );
-  const filterOptions = useMemo(() => {
+  const customerFilterOptions = useMemo(() => {
+    const rows = review?.rows ?? [];
+    const counts = new Map<string, { label: string; count: number }>();
+    for (const row of rows) {
+      const code = row.sapCustomerCode ?? "未填客户码";
+      const name = row.resolvedCustomerName ?? row.sapCustomerName;
+      const current = counts.get(code) ?? { label: name ? `${code} · ${name}` : code, count: 0 };
+      current.count += 1;
+      counts.set(code, current);
+    }
+    return [
+      { key: "all", label: "全部客户", count: rows.length },
+      ...Array.from(counts.entries())
+        .map(([key, value]) => ({ key, label: value.label, count: value.count }))
+        .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key, "zh-CN")),
+    ];
+  }, [review]);
+  const selectedCustomerOption = customerFilterOptions.find((option) => option.key === customerFilter);
+  const visibleCustomerFilterOptions = useMemo(() => {
+    const term = customerSearch.trim().toLocaleLowerCase("zh-CN");
+    if (!term) return customerFilterOptions;
+    return customerFilterOptions.filter((option) => (
+      option.key === "all"
+      || option.key.toLocaleLowerCase("zh-CN").includes(term)
+      || option.label.toLocaleLowerCase("zh-CN").includes(term)
+    ));
+  }, [customerFilterOptions, customerSearch]);
+  const filterGroups = useMemo<ReviewFilterGroup[]>(() => {
     const rows = review?.rows ?? [];
     const linked = rows.filter((row) => row.demandOrderNo).length;
     return [
-      { key: "all" as const, label: "全部", count: rows.length },
-      { key: "importable" as const, label: "可入池", count: rows.filter((row) => row.importable).length },
-      { key: "blocked" as const, label: "不可入池", count: rows.filter((row) => rowMatchesFilter(row, "blocked")).length },
-      { key: "demandLinked" as const, label: "要货令已关联", count: linked },
-      { key: "demandPending" as const, label: "待补要货令", count: rows.filter((row) => rowMatchesFilter(row, "demandPending")).length },
-      { key: "customerMissing" as const, label: "客户未维护", count: rows.filter((row) => rowMatchesFilter(row, "customerMissing")).length },
-      { key: "materialMissing" as const, label: "物料未维护", count: rows.filter((row) => rowMatchesFilter(row, "materialMissing")).length },
+      {
+        label: "要货令映射",
+        options: [
+          { key: "demandLinked", label: "已关联", count: linked },
+          { key: "demandPending", label: "待补", count: rows.filter((row) => rowMatchesFilter(row, "demandPending")).length },
+        ],
+      },
+      {
+        label: "问题",
+        options: [
+          { key: "duplicate", label: "重复", count: rows.filter((row) => rowMatchesFilter(row, "duplicate")).length },
+          { key: "customerMissing", label: "客户未维护", count: rows.filter((row) => rowMatchesFilter(row, "customerMissing")).length },
+          { key: "materialMissing", label: "物料未维护", count: rows.filter((row) => rowMatchesFilter(row, "materialMissing")).length },
+          { key: "deliveryMissing", label: "缺少交货", count: rows.filter((row) => rowMatchesFilter(row, "deliveryMissing")).length },
+          { key: "zeroQty", label: "数量为 0", count: rows.filter((row) => rowMatchesFilter(row, "zeroQty")).length },
+        ],
+      },
+      {
+        label: "入池建议",
+        options: [
+          { key: "strategyImportable", label: "可入池", count: rows.filter((row) => rowMatchesFilter(row, "strategyImportable")).length },
+          { key: "strategyPendingDemand", label: "先入池待补", count: rows.filter((row) => rowMatchesFilter(row, "strategyPendingDemand")).length },
+          { key: "strategyBlocked", label: "暂不入池", count: rows.filter((row) => rowMatchesFilter(row, "strategyBlocked")).length },
+        ],
+      },
     ];
   }, [review]);
 
@@ -294,19 +432,109 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
                 <span className="filter-label">2. 入池预览</span>
               </div>
               {review ? (
-                <div className="recon-filter-strip" aria-label="导入结果筛选" role="group">
-                  {filterOptions.map((option) => (
+                <div className="recon-filter-groups" aria-label="导入结果筛选">
+                  <div className={`recon-filter-dropdown${customerFilter !== "all" ? " active" : ""}${openFilterGroup === "客户" ? " open" : ""}`}>
                     <button
-                      key={option.key}
-                      aria-pressed={reviewFilter === option.key}
-                      className={`recon-filter-badge${reviewFilter === option.key ? " active" : ""}`}
                       type="button"
-                      onClick={() => setReviewFilter(option.key)}
+                      className="recon-filter-dropdown-trigger"
+                      aria-expanded={openFilterGroup === "客户"}
+                      aria-label="客户筛选"
+                      onClick={() => {
+                        const nextOpen = openFilterGroup !== "客户";
+                        setOpenFilterGroup(nextOpen ? "客户" : null);
+                        if (!nextOpen) setCustomerSearch("");
+                      }}
                     >
-                      <span>{option.label}</span>
-                      <strong>{option.count}</strong>
+                      <span className="recon-filter-group-title">客户</span>
+                      <span className="recon-filter-dropdown-value">
+                        {selectedCustomerOption?.label ?? "全部客户"}
+                      </span>
+                      <strong>{selectedCustomerOption?.count ?? 0}</strong>
+                      <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
-                  ))}
+                    {openFilterGroup === "客户" ? (
+                      <div className="recon-filter-menu recon-filter-menu-wide" role="group" aria-label="客户">
+                        <label className="recon-filter-menu-search">
+                          <Search className="h-3.5 w-3.5" aria-hidden="true" />
+                          <input
+                            type="search"
+                            value={customerSearch}
+                            onChange={(event) => setCustomerSearch(event.target.value)}
+                            placeholder="搜索客户编码或名称"
+                            aria-label="搜索客户"
+                            autoFocus
+                          />
+                        </label>
+                        <div className="recon-filter-menu-list">
+                          {visibleCustomerFilterOptions.map((option) => (
+                            <button
+                              key={option.key}
+                              aria-pressed={customerFilter === option.key}
+                              className={`recon-filter-menu-item${customerFilter === option.key ? " active" : ""}`}
+                              type="button"
+                              onClick={() => {
+                                setCustomerFilter(option.key);
+                                setCustomerSearch("");
+                                setOpenFilterGroup(null);
+                              }}
+                            >
+                              <span>{option.label}</span>
+                              <strong>{option.count}</strong>
+                            </button>
+                          ))}
+                          {visibleCustomerFilterOptions.length === 0 ? (
+                            <div className="recon-filter-menu-empty">没有匹配客户</div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                  {filterGroups.map((group) => {
+                    const activeOption = group.options.find((option) => option.key === reviewFilter);
+                    const open = openFilterGroup === group.label;
+                    return (
+                      <div
+                        className={`recon-filter-dropdown${activeOption ? " active" : ""}${open ? " open" : ""}`}
+                        key={group.label}
+                      >
+                        <button
+                          type="button"
+                          className="recon-filter-dropdown-trigger"
+                          aria-expanded={open}
+                          aria-label={`${group.label}筛选`}
+                          onClick={() => setOpenFilterGroup(open ? null : group.label)}
+                        >
+                          <span className="recon-filter-group-title">{group.label}</span>
+                          {activeOption ? (
+                            <span className="recon-filter-dropdown-value">{activeOption.label}</span>
+                          ) : null}
+                          <strong>{activeOption?.count ?? groupCount(group)}</strong>
+                          <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                        {open ? (
+                          <div className="recon-filter-menu" role="group" aria-label={group.label}>
+                            <div className="recon-filter-menu-list">
+                              {group.options.map((option) => (
+                                <button
+                                  key={option.key}
+                                  aria-pressed={reviewFilter === option.key}
+                                  className={`recon-filter-menu-item${reviewFilter === option.key ? " active" : ""}`}
+                                  type="button"
+                                  onClick={() => {
+                                    setReviewFilter(option.key);
+                                    setOpenFilterGroup(null);
+                                  }}
+                                >
+                                  <span>{option.label}</span>
+                                  <strong>{option.count}</strong>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>
@@ -322,45 +550,57 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
                 <table className="table recon-table import-review-table">
                   <thead>
                     <tr>
-                      <th>问题</th>
                       <th>发运日期</th>
+                      <th>SAP 客户</th>
                       <th>物料</th>
                       <th>数量</th>
-                      <th>交货 / 要货令</th>
+                      <th>要货令映射</th>
+                      <th>问题</th>
                       <th>入池策略</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRows.map((row) => (
-                      <tr key={row.parsedRecordId}>
-                        <td>
-                          <div className="stack-tight">
-                            <Badge variant={issueVariant(row)} title={row.issueText ?? undefined}>
-                              {row.issueLabel}
-                            </Badge>
-                            {row.issueText ? <span className="recon-issue-text">{row.issueText}</span> : null}
-                          </div>
-                        </td>
-                        <td>{formatDate(row.shipmentDate)}</td>
-                        <td>
-                          <div className="stack-tight">
-                            <strong>{row.internalPartNumber ?? "-"}</strong>
-                            {row.materialName ? <span className="item-meta">{row.materialName}</span> : null}
-                          </div>
-                        </td>
-                        <td>{formatQty(row.qty)}</td>
-                        <td>
-                          <span className="recon-muted-inline">
-                            {row.deliveryNo ?? "-"} / {row.demandOrderNo ?? "未关联"}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`recon-import-policy${row.importable ? "" : " blocked"}`}>
-                            {importPolicyText(row)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredRows.map((row) => {
+                      const presentation = issuePresentation(row);
+                      return (
+                        <tr key={row.parsedRecordId}>
+                          <td>{formatDate(row.shipmentDate)}</td>
+                          <td>
+                            <div className="stack-tight">
+                              <strong>{row.sapCustomerCode ?? "-"}</strong>
+                              {(row.resolvedCustomerName ?? row.sapCustomerName) ? (
+                                <span className="item-meta">{row.resolvedCustomerName ?? row.sapCustomerName}</span>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="stack-tight">
+                              <strong>{row.internalPartNumber ?? "-"}</strong>
+                              {row.materialName ? <span className="item-meta">{row.materialName}</span> : null}
+                            </div>
+                          </td>
+                          <td>{formatQty(row.qty)}</td>
+                          <td>
+                            <span className="recon-muted-inline">
+                              {row.deliveryNo ?? "-"} / {row.demandOrderNo ?? "未关联"}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="stack-tight">
+                              <Badge variant={issueVariant(row)} title={presentation.text ?? undefined}>
+                                {presentation.label}
+                              </Badge>
+                              {presentation.text ? <span className="recon-issue-text">{presentation.text}</span> : null}
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`recon-import-policy${row.importable ? "" : " blocked"}`}>
+                              {importPolicyText(row)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 {filteredRows.length === 0 ? <div className="recon-state inline">当前筛选没有待处理行</div> : null}

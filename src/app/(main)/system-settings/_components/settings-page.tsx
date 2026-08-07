@@ -17,7 +17,6 @@ import {
 } from "@/services/settings";
 import { CustomersSection } from "./customers-section";
 import { MailboxSection } from "./mailbox-section";
-import { SettingsNavPanel } from "./settings-nav-panel";
 import type { CustomerTab, SettingsSection } from "./settings-types";
 
 function cloneCustomerConfig(customer: CustomerConfig): CustomerConfig {
@@ -106,6 +105,7 @@ export function SettingsPage() {
             oem: null,
             program: null,
             designation: null,
+            deliveryLocation: null,
             status: "active",
           },
         ];
@@ -200,6 +200,7 @@ export function SettingsPage() {
       contacts: [
         ...draft.contacts,
         {
+          name: null,
           email: "",
         },
       ],
@@ -234,28 +235,6 @@ export function SettingsPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleAddMaterial = () => {
-    if (!draft) return;
-    setDraft({
-      ...draft,
-      materialMappings: [
-        ...(draft.materialMappings ?? []),
-        {
-          mappingId: crypto.randomUUID(),
-          customerPartNumber: "",
-          internalPartNumber: "",
-          scheduleAgreement: null,
-          productType: null,
-          productionLine: null,
-          oem: null,
-          program: null,
-          designation: null,
-          status: "active",
-        },
-      ],
-    });
   };
 
   const handleRemoveMaterial = (index: number) => {
@@ -296,9 +275,26 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="settings-grid screen-fill">
-      <SettingsNavPanel section={section} onSectionChange={setSection} />
-      <section className="panel scroll-panel">
+    <>
+      <div className="subnav settings-subnav" aria-label="系统配置导航">
+        <button
+          type="button"
+          className={section === "customers" ? "active" : ""}
+          aria-pressed={section === "customers"}
+          onClick={() => setSection("customers")}
+        >
+          客户配置
+        </button>
+        <button
+          type="button"
+          className={section === "mailbox" ? "active" : ""}
+          aria-pressed={section === "mailbox"}
+          onClick={() => setSection("mailbox")}
+        >
+          统一邮箱
+        </button>
+      </div>
+      <section className="panel scroll-panel screen-fill">
         {section === "customers" ? (
           <CustomersSection
             customers={filteredCustomers}
@@ -316,7 +312,6 @@ export function SettingsPage() {
             onTabChange={setTab}
             onAddContact={handleAddContact}
             onRemoveContact={handleRemoveContact}
-            onAddMaterial={handleAddMaterial}
             onRemoveMaterial={handleRemoveMaterial}
           />
         ) : (
@@ -328,6 +323,6 @@ export function SettingsPage() {
           />
         )}
       </section>
-    </div>
+    </>
   );
 }

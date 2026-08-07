@@ -1,5 +1,6 @@
 export type Contact = {
   contactId?: string;
+  name: string | null;
   email: string;
 };
 
@@ -13,6 +14,7 @@ export type MaterialMapping = {
   oem: string | null;
   program: string | null;
   designation: string | null;
+  deliveryLocation: string | null;
   status: string;
 };
 
@@ -29,6 +31,7 @@ export type CustomerConfig = {
   name: string;
   abbreviation: string;
   code: string;
+  customerServiceRep: string | null;
   contacts: Contact[];
   materialMappings: MaterialMapping[];
   submissionSchedules: SubmissionSchedule[];

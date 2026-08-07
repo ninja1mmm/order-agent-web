@@ -3,7 +3,10 @@ import type { CustomerConfig } from "./settings";
 export type ReconciliationTaskStatus =
   | "draft"
   | "in_progress"
+  | "closing"
   | "closed"
+  | "reopening"
+  | "voiding"
   | "voided"
   | "cancelled"
   | string;
@@ -11,8 +14,8 @@ export type ReconciliationTaskStatus =
 export type ReconciliationRecordStatus =
   | "unmatched"
   | "partial"
-  | "partially_matched"
   | "fully_matched"
+  | "in_transit"
   | "closed"
   | string;
 
@@ -102,6 +105,8 @@ export type ShipmentRecord = {
   materialDocNo: string | null;
   adjustmentSeq: number;
   matchedReceiptQty: number;
+  pendingMatchedReceiptQty: number;
+  activeConfirmedMatchCount: number;
   remainingQty: number;
   reconciliationStatus: ReconciliationRecordStatus;
   reconciliationStatusLabel: string;
@@ -124,6 +129,8 @@ export type ReceiptRecord = {
   demandOrderNo: string | null;
   adjustmentSeq: number;
   matchedShipmentQty: number;
+  pendingMatchedShipmentQty: number;
+  activeConfirmedMatchCount: number;
   remainingQty: number;
   reconciliationStatus: ReconciliationRecordStatus;
   reconciliationStatusLabel: string;
@@ -208,6 +215,10 @@ export type ShipmentImportReviewRow = {
   issueLabel: string;
   issueSeverity: "slate" | "amber" | "red" | string;
   importable: boolean;
+  sapCustomerCode: string | null;
+  sapCustomerName: string | null;
+  resolvedCustomerId: string | null;
+  resolvedCustomerName: string | null;
   shipmentDate: string | null;
   internalPartNumber: string | null;
   materialName: string | null;
@@ -248,6 +259,35 @@ export type ShipmentImportReview = {
   rows: ShipmentImportReviewRow[];
 };
 
+export type ReceiptImportReviewRow = {
+  parsedRecordId: string;
+  sourceRowNumber: number;
+  issueCode: string;
+  issueLabel: string;
+  issueSeverity: "slate" | "amber" | "red" | string;
+  importable: boolean;
+  receiptDate: string | null;
+  internalPartNumber: string | null;
+  customerPartNumber: string | null;
+  materialName: string | null;
+  qty: number | null;
+  demandOrderNo: string | null;
+  validationStatus: string;
+  resolution: string | null;
+  issueText: string | null;
+};
+
+export type ReceiptImportReview = {
+  fileId: string;
+  customerId: string | null;
+  customerName: string | null;
+  totalRows: number;
+  validCount: number;
+  blockedCount: number;
+  ignoredCount: number;
+  rows: ReceiptImportReviewRow[];
+};
+
 export type ReconciliationMatch = {
   id: string;
   taskId: string;
@@ -256,6 +296,7 @@ export type ReconciliationMatch = {
   matchedQty: number;
   matchType: string;
   matchMethod: string;
+  matchMethodLabel: string;
   confidenceScore: number | null;
   status: ReconciliationMatchStatus;
   statusLabel: string;
@@ -267,13 +308,41 @@ export type ReconciliationMatch = {
   noDifference: boolean;
 };
 
+export type MatchDetailRow = {
+  key: string;
+  kind: "match" | "shipment_unmatched" | "receipt_unmatched";
+  match: ReconciliationMatch | null;
+  shipment: ShipmentRecord | null;
+  receipt: ReceiptRecord | null;
+  matchedQty: number | null;
+  matchMethod: string;
+  matchMethodLabel: string;
+  confidenceScore: number | null;
+  status: ReconciliationMatchStatus | null;
+  statusLabel: string | null;
+  statusVariant: "blue" | "green" | "amber" | "red" | "slate" | null;
+  resultLabel: string;
+  resultVariant: "blue" | "green" | "amber" | "red" | "slate";
+};
+
 export type MatchGroup = {
   key: string;
+  materialNo: string;
+  materialName: string | null;
   shipment: ShipmentRecord | null;
   matches: ReconciliationMatch[];
+  rows: MatchDetailRow[];
   candidateCount: number;
+  confirmedCount: number;
+  rejectedCount: number;
+  receiptCount: number;
+  hasShipment: boolean;
+  hasReceipt: boolean;
   confirmedQty: number;
   pendingQty: number;
+  shipmentQty: number;
+  receiptQty: number;
+  differenceQty: number;
 };
 
 export type MatchList = {
@@ -293,7 +362,9 @@ export type CommitPreviewRow = {
   recordNo: string;
   customerName: string;
   material: string;
+  shipmentQty: number | null;
   beforeStatus: string;
-  pendingDelta: number;
+  pendingDelta: number | null;
   afterLabel: string;
+  afterVariant: "blue" | "green" | "amber" | "red" | "slate";
 };

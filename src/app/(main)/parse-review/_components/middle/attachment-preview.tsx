@@ -23,7 +23,7 @@ export function AttachmentPreview({
   if (isBodyTextTask && selectedMail) {
     return (
       <div className="mail-body-viewer">
-        <div style={{ whiteSpace: "pre-line", padding: 16, fontSize: 13, lineHeight: 1.7, color: "#334155" }}>
+        <div style={{ whiteSpace: "pre-line", padding: 16, fontSize: 13, lineHeight: 1.7, color: "var(--ink-soft)" }}>
           {normalizeMailBody(selectedMail.bodyText)}
           <MailImages mail={selectedMail} />
         </div>

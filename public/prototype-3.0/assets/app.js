@@ -500,6 +500,7 @@ function initPrototype() {
       });
       document.querySelectorAll("[data-settings-section]").forEach((item) => {
         item.classList.toggle("selected", item === trigger);
+        item.classList.toggle("active", item === trigger);
       });
     });
   });

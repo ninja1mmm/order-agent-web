@@ -26,6 +26,39 @@ import { ReconciliationPagination } from "./reconciliation-pagination";
 import { ShipmentImportDialog } from "./shipment-import-dialog";
 import { ShipmentRecordSheet } from "./shipment-record-sheet";
 
+function shipmentDisplayState(record: ShipmentRecord) {
+  const effectiveMatchedQty = record.matchedReceiptQty + record.pendingMatchedReceiptQty;
+  if (record.activeConfirmedMatchCount > 0) {
+    const fullyConfirmed = effectiveMatchedQty >= Math.abs(record.qty) && Math.abs(record.qty) > 0;
+    return {
+      matchedQty: effectiveMatchedQty,
+      statusLabel: fullyConfirmed ? "已确认待写回" : "部分确认待写回",
+      statusVariant: fullyConfirmed ? "blue" as const : "amber" as const,
+      locked: true,
+      lockReason: "已有任务确认匹配，需先取消确认后才能删除",
+    };
+  }
+  return {
+    matchedQty: record.matchedReceiptQty,
+    statusLabel: record.reconciliationStatusLabel,
+    statusVariant: record.statusVariant,
+    locked: record.locked,
+    lockReason: canEditLocked(record.locked),
+  };
+}
+
+function backendErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) return null;
+  const [, rawBody] = error.message.split(" - ", 2);
+  if (!rawBody) return error.message;
+  try {
+    const parsed = JSON.parse(rawBody) as { error?: unknown };
+    return typeof parsed.error === "string" ? parsed.error : error.message;
+  } catch {
+    return error.message;
+  }
+}
+
 export function ShipmentRecordsPage() {
   const { customers, loading: loadingCustomers } = useCustomerConfig();
   const [records, setRecords] = useState<ShipmentRecord[]>([]);
@@ -71,8 +104,9 @@ export function ShipmentRecordsPage() {
   }, [loadRecords, reloadKey]);
 
   async function handleDelete(record: ShipmentRecord) {
-    if (record.locked) {
-      toast.error(canEditLocked(record.locked));
+    const display = shipmentDisplayState(record);
+    if (display.locked) {
+      toast.error(display.lockReason);
       return;
     }
     setLoading(true);
@@ -80,8 +114,9 @@ export function ShipmentRecordsPage() {
       await deleteShipmentRecord(record.id);
       toast.success("发运记录已删除");
       setReloadKey((value) => value + 1);
-    } catch {
-      toast.error("删除发运记录失败");
+    } catch (error) {
+      const message = backendErrorMessage(error);
+      toast.error(message ? `删除发运记录失败：${message}` : "删除发运记录失败");
     } finally {
       setLoading(false);
     }
@@ -130,35 +165,38 @@ export function ShipmentRecordsPage() {
               </tr>
             </thead>
             <tbody>
-              {records.map((record) => (
-                <tr key={record.id}>
-                  <td className="font-black">{record.customerName}</td>
-                  <td>{formatDate(record.shipmentDate)}</td>
-                  <td>{record.internalPartNumber}</td>
-                  <td className="num">{formatQty(record.qty)}</td>
-                  <td className="num">{formatQty(record.matchedReceiptQty)}</td>
-                  <td><Badge variant={record.statusVariant}>{record.reconciliationStatusLabel}</Badge></td>
-                  <td>{record.deliveryNo ?? "-"}</td>
-                  <td>{record.demandOrderNo ?? "-"}</td>
-                  <td>{record.sourceFileId ? "本次导入" : "手工新增"}</td>
-                  <td>
-                    <div className="recon-row-actions">
-                      <Button size="icon-sm" title={record.locked ? "查看" : "编辑"} onClick={() => setEditingRecord(record)}>
-                        {record.locked ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon-sm"
-                        title={canEditLocked(record.locked) ?? "删除"}
-                        disabled={record.locked}
-                        onClick={() => { void handleDelete(record); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {records.map((record) => {
+                const display = shipmentDisplayState(record);
+                return (
+                  <tr key={record.id}>
+                    <td className="font-black">{record.customerName}</td>
+                    <td>{formatDate(record.shipmentDate)}</td>
+                    <td>{record.internalPartNumber}</td>
+                    <td className="num">{formatQty(record.qty)}</td>
+                    <td className="num">{formatQty(display.matchedQty)}</td>
+                    <td><Badge variant={display.statusVariant}>{display.statusLabel}</Badge></td>
+                    <td>{record.deliveryNo ?? "-"}</td>
+                    <td>{record.demandOrderNo ?? "-"}</td>
+                    <td>{record.sourceFileId ? "本次导入" : "手工新增"}</td>
+                    <td>
+                      <div className="recon-row-actions">
+                        <Button size="icon-sm" title={display.locked ? "查看" : "编辑"} onClick={() => setEditingRecord(record)}>
+                          {display.locked ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon-sm"
+                          title={display.lockReason ?? "删除"}
+                          disabled={display.locked}
+                          onClick={() => { void handleDelete(record); }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {loading ? <div className="recon-state"><LoaderCircle className="h-4 w-4 animate-spin" /> 加载发运记录...</div> : null}

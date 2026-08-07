@@ -23,7 +23,6 @@ type CustomersSectionProps = {
   onTabChange: (tab: CustomerTab) => void;
   onAddContact: () => void;
   onRemoveContact: (index: number) => void;
-  onAddMaterial: () => void;
   onRemoveMaterial: (index: number) => void;
 };
 
@@ -43,7 +42,6 @@ export function CustomersSection({
   onTabChange,
   onAddContact,
   onRemoveContact,
-  onAddMaterial,
   onRemoveMaterial,
 }: CustomersSectionProps) {
   return (
@@ -77,7 +75,6 @@ export function CustomersSection({
             onDraftChange={onDraftChange}
             onAddContact={onAddContact}
             onRemoveContact={onRemoveContact}
-            onAddMaterial={onAddMaterial}
             onRemoveMaterial={onRemoveMaterial}
           />
         </div>

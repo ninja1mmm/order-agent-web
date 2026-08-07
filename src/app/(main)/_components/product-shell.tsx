@@ -60,19 +60,19 @@ function UserMenu() {
             top: "calc(100% + 6px)",
             right: 0,
             minWidth: 220,
-            background: "var(--surface, #fff)",
-            border: "1px solid var(--border, #e7ebf3)",
+            background: "var(--panel)",
+            border: "1px solid var(--line)",
             borderRadius: 10,
             boxShadow: "0 8px 24px rgba(0,0,0,.1)",
             zIndex: 100,
             overflow: "hidden",
           }}
         >
-          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border, #e7ebf3)" }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text, #1a1a2e)" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--line)" }}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>
               {user?.displayName ?? "User"}
             </div>
-            <div style={{ fontSize: 12, color: "var(--muted, #8892a4)", marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
               {user?.email ?? user?.username}
             </div>
             <div
@@ -85,8 +85,8 @@ function UserMenu() {
                 letterSpacing: "0.04em",
                 padding: "2px 8px",
                 borderRadius: 4,
-                background: "var(--forvia-blue-soft, #eef0ff)",
-                color: "var(--forvia-blue, #5b6cff)",
+                background: "var(--forvia-blue-soft)",
+                color: "var(--forvia-blue)",
               }}
             >
               {user?.role}
@@ -104,10 +104,10 @@ function UserMenu() {
               background: "none",
               cursor: "pointer",
               fontSize: 13,
-              color: "var(--danger, #e5484d)",
+              color: "var(--danger)",
               textAlign: "left",
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = "var(--hover, #f5f6f8)")}
+            onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-soft)")}
             onMouseLeave={e => (e.currentTarget.style.background = "none")}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -3,7 +3,6 @@
 import type { CustomerConfig } from "@/services/settings";
 import type { CustomerTab } from "./settings-types";
 import { BasicInfoForm } from "./basic-info-form";
-import { ContactsTab } from "./contacts-tab";
 import { MaterialsTab } from "./materials-tab";
 
 type CustomerDetailProps = {
@@ -13,7 +12,6 @@ type CustomerDetailProps = {
   onDraftChange: (draft: CustomerConfig) => void;
   onAddContact: () => void;
   onRemoveContact: (index: number) => void;
-  onAddMaterial: () => void;
   onRemoveMaterial: (index: number) => void;
 };
 
@@ -24,7 +22,6 @@ export function CustomerDetail({
   onDraftChange,
   onAddContact,
   onRemoveContact,
-  onAddMaterial,
   onRemoveMaterial,
 }: CustomerDetailProps) {
   if (!draft) {
@@ -37,15 +34,12 @@ export function CustomerDetail({
         <p className="item-title">{draft.name}</p>
       </div>
       <div className="tabs settings-tabs">
-        <span className={tab === "basic" ? "active" : ""} onClick={() => onTabChange("basic")}>基础信息</span>
-        <span className={tab === "recognition" ? "active" : ""} onClick={() => onTabChange("recognition")}>联系人识别</span>
+        <span className={tab === "basic" ? "active" : ""} onClick={() => onTabChange("basic")}>客户信息</span>
         <span className={tab === "materials" ? "active" : ""} onClick={() => onTabChange("materials")}>物料映射</span>
       </div>
 
       {tab === "basic" ? (
-        <BasicInfoForm draft={draft} onDraftChange={onDraftChange} />
-      ) : tab === "recognition" ? (
-        <ContactsTab
+        <BasicInfoForm
           draft={draft}
           onDraftChange={onDraftChange}
           onAddContact={onAddContact}
@@ -55,7 +49,6 @@ export function CustomerDetail({
         <MaterialsTab
           draft={draft}
           onDraftChange={onDraftChange}
-          onAddMaterial={onAddMaterial}
           onRemoveMaterial={onRemoveMaterial}
         />
       )}

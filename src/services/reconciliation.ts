@@ -11,6 +11,7 @@ import {
   deleteReceiptRecordSchema,
   deleteReconciliationScheduleSchema,
   deleteShipmentRecordSchema,
+  getReceiptImportReviewSchema,
   getShipmentImportReviewSchema,
   getReconciliationMatchSummarySchema,
   getReconciliationTaskSchema,
@@ -23,7 +24,9 @@ import {
   mergeReconciliationFileSchema,
   regenerateReconciliationMatchesSchema,
   reopenReconciliationTaskSchema,
+  remapReconciliationMatchReceiptSchema,
   startReconciliationTaskSchema,
+  unconfirmReconciliationMatchSchema,
   updateParsedRecordResolutionSchema,
   updateReceiptRecordSchema,
   updateReconciliationScheduleSchema,
@@ -52,6 +55,8 @@ import type {
   MatchSummary,
   MergeReview,
   MergeSummary,
+  ReceiptImportReview,
+  ReceiptImportReviewRow,
   ReceiptRecord,
   ReceiptRecordDraft,
   ReconciliationConfigRow,
@@ -74,6 +79,8 @@ export type {
   MergeReview,
   MergeSummary,
   ParsedImportRecord,
+  ReceiptImportReview,
+  ReceiptImportReviewRow,
   ReceiptRecord,
   ReceiptRecordDraft,
   ReconciliationConfigRow,
@@ -212,6 +219,10 @@ export async function getShipmentImportReview(params: {
   return getShipmentImportReviewSchema(params);
 }
 
+export async function getReceiptImportReview(fileId: string): Promise<ReceiptImportReview> {
+  return getReceiptImportReviewSchema(fileId);
+}
+
 export async function listShipmentRecords(
   params: { page?: number; size?: number; customerId?: string; dateFrom?: string; dateTo?: string; reconciliationStatus?: string },
   customers: CustomerConfig[],
@@ -331,6 +342,10 @@ export async function rejectReconciliationMatch(taskId: string, matchId: string)
   );
 }
 
+export async function unconfirmReconciliationMatch(taskId: string, matchId: string) {
+  await unconfirmReconciliationMatchSchema(taskId, matchId);
+}
+
 export async function createManualReconciliationMatch(
   taskId: string,
   payload: { shipmentRecordId: string; receiptRecordId?: string | null; matchedQty: number; remark?: string | null },
@@ -338,6 +353,14 @@ export async function createManualReconciliationMatch(
   await import("@/api/reconciliation").then(({ createManualReconciliationMatchSchema }) =>
     createManualReconciliationMatchSchema(taskId, payload),
   );
+}
+
+export async function remapReconciliationMatchReceipt(
+  taskId: string,
+  matchId: string,
+  payload: { receiptRecordId?: string | null; matchedQty?: number | null; remark?: string | null },
+) {
+  await remapReconciliationMatchReceiptSchema(taskId, matchId, payload);
 }
 
 export async function bulkConfirmReconciliationMatches(
@@ -364,6 +387,7 @@ export async function createReconciliationSchedule(
   draft: ReconciliationScheduleDraft,
 ) {
   return createReconciliationScheduleSchema(customerId, {
+    enabled: draft.enabled,
     periodType: draft.periodType,
     periodStartDay: draft.periodStartDay,
     periodEndDay: draft.periodEndDay,

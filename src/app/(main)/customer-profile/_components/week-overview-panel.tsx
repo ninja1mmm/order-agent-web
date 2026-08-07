@@ -247,17 +247,17 @@ export function WeekOverviewPanel({
                 <ResponsiveContainer width="100%" height={230}>
                   <ComposedChart data={chartData} margin={{ top: 8, right: 14, left: 0, bottom: 8 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.25)" />
-                      <XAxis dataKey="weekKey" tick={{ fontSize: 11, fill: "#667085" }} tickMargin={8} />
-                      <YAxis tick={{ fontSize: 11, fill: "#667085" }} width={48} />
+                      <XAxis dataKey="weekKey" tick={{ fontSize: 11, fill: "var(--muted)" }} tickMargin={8} />
+                      <YAxis tick={{ fontSize: 11, fill: "var(--muted)" }} width={48} />
                       <Tooltip
                         cursor={{ fill: "rgba(91, 108, 255, 0.06)" }}
                         content={<WeekChartTooltip />}
                       />
-                      <Bar dataKey="shippingQty" fill="#78a6bb" radius={[5, 5, 0, 0]} name="shippingQty" maxBarSize={72} />
+                      <Bar dataKey="shippingQty" fill="var(--forvia-cyan)" radius={[5, 5, 0, 0]} name="shippingQty" maxBarSize={72} />
                       <Line
                         type="monotone"
                         dataKey="forecastQty"
-                        stroke="#5b6cff"
+                        stroke="var(--forvia-blue)"
                         strokeWidth={2}
                         dot={{ r: 3, strokeWidth: 2, fill: "#fff" }}
                         name="forecastQty"

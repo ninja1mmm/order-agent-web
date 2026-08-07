@@ -133,8 +133,8 @@ export function MaterialDetailPanel({ customerId, internalPartNumber, designatio
                       <Legend
                         formatter={(value) => (value === "shippingQty" ? "实际发运 Shipping" : "预测 Forecast")}
                       />
-                      <Bar dataKey="shippingQty" fill="#06b6d4" radius={[6, 6, 0, 0]} name="shippingQty" barSize={chartData.length === 1 ? 40 : undefined} />
-                      <Bar dataKey="forecastQty" fill="#5b6cff" radius={[6, 6, 0, 0]} name="forecastQty" barSize={chartData.length === 1 ? 40 : undefined} />
+                      <Bar dataKey="shippingQty" fill="var(--forvia-cyan)" radius={[6, 6, 0, 0]} name="shippingQty" barSize={chartData.length === 1 ? 40 : undefined} />
+                      <Bar dataKey="forecastQty" fill="var(--forvia-blue)" radius={[6, 6, 0, 0]} name="forecastQty" barSize={chartData.length === 1 ? 40 : undefined} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
