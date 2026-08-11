@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>解析审查 2.0 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service-2.0.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link" href="00-intelligent-service-2.0.html"><i data-lucide="headphones"></i>智能客服</a>
+        <a class="nav-link active" href="01-task-workbench-2.0.html"><i data-lucide="workflow"></i>智能供应链</a>
+        <a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link" href="06-financial-reconciliation.html"><i data-lucide="scale"></i>财务对账</a>
+        <a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
+      </nav>
+      <div class="user-chip"><span>计划员 · 简中</span><span class="avatar">PL</span></div>
+    </header>
+
+    <main class="page fit-screen">
+      <div class="subnav">
+        <a href="00-intelligent-service-2.0.html">工作概览</a>
+        <a href="01-task-workbench-2.0.html">客户收件箱</a>
+        <a class="active" href="02-parse-review-2.0.html">解析审查</a>
+        <a href="03-orders-2.0.html">订单</a>
+      </div>
+
+      <section class="panel scroll-panel screen-fill">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <a class="recon-back-link" href="01-mail-detail-2.0.html" aria-label="返回邮件详情"><i data-lucide="arrow-left"></i></a>
+            <span class="detail-title-inline">
+              <span>Forecast.xlsx 解析审查</span>
+              <small>来自 Audi Q5L Forecast Update v2 · VW Audi · TASK-PR-240514-001</small>
+            </span>
+          </h2>
+          <div class="list-actions">
+            <button class="btn small"><i data-lucide="rotate-ccw"></i>重新解析</button>
+            <a class="btn small primary" href="03-orders-2.0.html"><i data-lucide="check-circle-2"></i>确认并写入订单</a>
+          </div>
+        </div>
+
+        <div class="panel-body parse-detail-body">
+          <div class="route-chain">
+            <a href="01-task-workbench-2.0.html">客户收件箱</a>
+            <i data-lucide="chevron-right"></i>
+            <a href="01-mail-detail-2.0.html">Audi Q5L Forecast Update v2</a>
+            <i data-lucide="chevron-right"></i>
+            <span>Forecast.xlsx 解析审查</span>
+          </div>
+
+          <div class="task-step-bar">
+            <span class="done"><i data-lucide="check"></i>1 文档识别</span>
+            <span class="active"><i data-lucide="file-search"></i>2 结果确认</span>
+            <span><i data-lucide="git-compare"></i>3 写入预览</span>
+            <span><i data-lucide="check-circle-2"></i>4 完成输出</span>
+          </div>
+
+          <div class="task-detail-grid">
+            <aside class="panel scroll-panel inner-panel">
+              <div class="panel-head">
+                <h2 class="panel-title"><i data-lucide="mail"></i>上下文</h2>
+                <span class="badge amber">正文影响</span>
+              </div>
+              <div class="panel-body stack">
+                <div class="card">
+                  <p class="mini-title">邮件</p>
+                  <p class="item-title">Audi Q5L Forecast Update v2</p>
+                  <p class="item-meta">forecast@vw-group.example.com · 2026/05/14 08:42</p>
+                  <a class="btn small" href="01-mail-detail-2.0.html" style="margin-top:10px"><i data-lucide="mail-open"></i>返回邮件</a>
+                </div>
+                <div class="card">
+                  <p class="mini-title">正文指令</p>
+                  <p class="item-title">W14 数量以正文修正为准</p>
+                  <p class="item-meta">Material 2777977X has a temporary decrease. Please confirm whether the updated quantity should override the previous weekly forecast.</p>
+                </div>
+                <div class="card">
+                  <p class="mini-title">任务状态</p>
+                  <div class="task-process">
+                    <span class="done">识别</span>
+                    <span class="active">确认</span>
+                    <span>预览</span>
+                    <span>完成</span>
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            <section class="panel scroll-panel inner-panel">
+              <div class="panel-head">
+                <h2 class="panel-title"><i data-lucide="file-spreadsheet"></i>附件证据与结构化结果</h2>
+                <span class="badge slate">Forecast.xlsx</span>
+              </div>
+              <div class="panel-body stack">
+                <div class="tabs"><span class="active">Excel 预览</span><span>抽取结果</span><span>差异</span></div>
+                <div class="scroll-x">
+                  <table class="table" style="min-width:880px">
+                    <thead>
+                      <tr><th>Customer</th><th>Customer P/N</th><th>Faurecia P/N</th><th>Program</th><th>2026-W12</th><th>2026-W13</th><th>2026-W14</th><th>AI 判断</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>长春</td><td>2777977X</td><td>2777977XN</td><td>Audi_Q5L</td><td>1200</td><td>1360</td><td class="evidence-highlight">800</td><td><span class="badge amber">需确认</span></td></tr>
+                      <tr><td>长春</td><td>1191923XB</td><td>1191923XB</td><td>E-pump 1.0</td><td>2304</td><td>2304</td><td>2560</td><td><span class="badge green">通过</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="split-card">
+                  <div class="soft-panel">
+                    <p class="mini-title">附件值</p>
+                    <p class="item-title">2777977XN · 2026-W14 · 800</p>
+                    <p class="item-meta">来自 Forecast.xlsx Sheet W12-W14，单元格 G2。</p>
+                  </div>
+                  <div class="soft-panel">
+                    <p class="mini-title">正文修正</p>
+                    <p class="item-title">建议保留 800 并标记人工确认</p>
+                    <p class="item-meta">正文说明 temporary decrease，与附件值方向一致，AI 推荐写入但保留来源说明。</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <aside class="panel scroll-panel inner-panel">
+              <div class="panel-head">
+                <h2 class="panel-title"><i data-lucide="clipboard-check"></i>处理动作</h2>
+                <span class="badge amber">等待确认</span>
+              </div>
+              <div class="panel-body stack">
+                <div class="callout">
+                  <p class="item-title">确认写入 Sales Forecast</p>
+                  <p class="item-meta">系统会将 2777977XN 在 2026-W14 的数量写为 800，并保留邮件正文与附件单元格作为 lineage。</p>
+                </div>
+                <div class="selector-box">
+                  <p class="mini-title">处理选择</p>
+                  <div class="select-grid">
+                    <span class="select-chip selected">采用 AI 建议</span>
+                    <span class="select-chip">仅采用附件</span>
+                    <span class="select-chip">人工改数</span>
+                  </div>
+                </div>
+                <textarea class="textarea compact-textarea">原因：正文与附件一致说明 W14 临时下调，本次确认写入并保留来源。</textarea>
+                <a class="btn primary" href="03-orders-2.0.html"><i data-lucide="check-circle-2"></i>确认并写入订单</a>
+                <button class="btn"><i data-lucide="pause-circle"></i>稍后处理</button>
+                <div class="timeline compact-timeline">
+                  <div class="step"><div class="step-title">文档分类完成</div><div class="step-meta">Sales Forecast Excel。</div></div>
+                  <div class="step"><div class="step-title">规则检查命中</div><div class="step-meta">正文包含覆盖指令，暂停等待。</div></div>
+                  <div class="step"><div class="step-title">当前操作</div><div class="step-meta">人工确认后进入订单写入预览。</div></div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

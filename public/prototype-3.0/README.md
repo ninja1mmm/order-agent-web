@@ -22,3 +22,19 @@ This folder contains static HTML pages for reviewing the frontend structure befo
 - The secondary color is cyan `#00A7D8`, used for analytical, assistant, and supporting actions.
 - Pages are static and use mock data only.
 - Buttons and sheets are used to help identify future read models, commands, services, and state transitions.
+
+## Context continuity 2.0 prototypes
+
+The context-continuity exploration is kept alongside the original pages and does not replace them. This version keeps the original prototype visual language and only changes the workflow structure:
+
+| Page | 2.0 prototype |
+| --- | --- |
+| 工作概览 | `00-intelligent-service-2.0.html` |
+| 客户收件箱（overall list） | `01-task-workbench-2.0.html` |
+| 邮件详情（mail object view） | `01-mail-detail-2.0.html` |
+| 解析审查（mail-scoped task detail） | `02-parse-review-2.0.html` |
+| 订单（overall table with source context） | `03-orders-2.0.html` |
+
+Recommended flow:
+
+`00-intelligent-service-2.0.html` -> `01-task-workbench-2.0.html` -> `01-mail-detail-2.0.html` -> `02-parse-review-2.0.html` -> `03-orders-2.0.html`

@@ -5630,3 +5630,240 @@ button.recon-record:hover {
     display: grid;
   }
 }
+
+.inbox-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 18px;
+}
+
+.inbox-filter-bar {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mail-thread-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mail-thread-row {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 12px;
+  align-items: center;
+}
+
+.mail-thread-row.selected {
+  border-color: rgba(91, 108, 255, 0.24);
+  background: var(--forvia-blue-soft);
+}
+
+.thread-status {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  text-align: right;
+}
+
+.recon-back-link {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: white;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.recon-back-link:hover {
+  color: var(--forvia-blue);
+  border-color: var(--forvia-blue-border);
+  background: var(--forvia-blue-soft);
+}
+
+.recon-back-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.detail-title-inline {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.detail-title-inline span,
+.detail-title-inline small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-title-inline small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.route-chain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.route-chain a {
+  color: var(--forvia-blue);
+}
+
+.route-chain svg {
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+}
+
+.mail-detail-body,
+.parse-detail-body,
+.orders-detail-body {
+  display: grid;
+  gap: 14px;
+  min-height: 0;
+}
+
+.mail-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mail-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 410px;
+  gap: 18px;
+  min-height: 0;
+}
+
+.task-detail-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 360px;
+  gap: 18px;
+  min-height: 0;
+}
+
+.inner-panel {
+  box-shadow: none;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.selected-result {
+  border-color: var(--forvia-blue-border);
+  background: var(--forvia-blue-soft);
+}
+
+.compact-timeline {
+  padding-left: 16px;
+}
+
+.compact-timeline .step {
+  padding-bottom: 12px;
+}
+
+.task-step-bar {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.task-step-bar span {
+  min-height: 34px;
+  border-radius: 10px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.task-step-bar span.done {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.task-step-bar span.active {
+  color: var(--forvia-blue);
+  background: var(--forvia-blue-soft);
+}
+
+.task-step-bar svg {
+  width: 15px;
+  height: 15px;
+}
+
+.source-banner {
+  border: 1px solid var(--forvia-blue-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff, var(--forvia-blue-soft));
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.source-banner .mini-title {
+  margin-bottom: 4px;
+}
+
+.order-filter-bar {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+a.heat-cell {
+  display: block;
+}
+
+@media (max-width: 1180px) {
+  .inbox-overview-grid,
+  .mail-detail-grid,
+  .task-detail-grid,
+  .mail-summary-strip,
+  .inbox-filter-bar,
+  .order-filter-bar,
+  .source-banner,
+  .mail-thread-row {
+    grid-template-columns: 1fr;
+  }
+
+  .thread-status {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 780px) {
+  .task-step-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-head {
+    height: auto;
+    flex-basis: auto;
+    align-items: flex-start;
+  }
+}

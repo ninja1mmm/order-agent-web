@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智能客服 2.0 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service-2.0.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link active" href="00-intelligent-service-2.0.html"><i data-lucide="headphones"></i>智能客服</a>
+        <a class="nav-link" href="01-task-workbench-2.0.html"><i data-lucide="workflow"></i>智能供应链</a>
+        <a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link" href="06-financial-reconciliation.html"><i data-lucide="scale"></i>财务对账</a>
+        <a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
+      </nav>
+      <div class="user-chip"><span>客服经理 · 简中</span><span class="avatar">CS</span></div>
+    </header>
+
+    <main class="page fit-screen">
+      <div class="subnav">
+        <a class="active" href="00-intelligent-service-2.0.html">工作概览</a>
+        <a href="01-task-workbench-2.0.html">客户收件箱</a>
+        <a href="02-parse-review-2.0.html">解析审查</a>
+        <a href="03-orders-2.0.html">订单</a>
+      </div>
+
+      <div class="grid-3 screen-fill">
+        <aside class="panel scroll-panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="sparkles"></i>昨日工作总结</h2>
+            <span class="badge blue">05/14</span>
+          </div>
+          <div class="panel-body stack">
+            <div class="metric-grid">
+              <div class="metric"><div class="metric-value">14</div><div class="metric-label">完成解析</div></div>
+              <div class="metric"><div class="metric-value">6</div><div class="metric-label">涉及客户</div></div>
+              <div class="metric"><div class="metric-value">3</div><div class="metric-label">等待人工</div></div>
+              <div class="metric"><div class="metric-value">2</div><div class="metric-label">已写入订单</div></div>
+            </div>
+            <div class="card">
+              <p class="item-title">AI 自动完成大部分邮件处理</p>
+              <p class="item-meta">Sales Forecast 9 份，Shipping Plan 5 份。需要人工判断的工作被聚合到“邮件对象”下，不再把邮件、附件、任务拆散显示。</p>
+            </div>
+            <div class="card">
+              <p class="mini-title">今日建议处理顺序</p>
+              <div class="timeline">
+                <div class="step"><div class="step-title">先处理正文影响附件的邮件</div><div class="step-meta">Audi Q5L 有正文修正，进入邮件详情后确认附件任务。</div></div>
+                <div class="step"><div class="step-title">再处理解析失败</div><div class="step-meta">WLB1343 缺少表头，需要确认模板或重新解析。</div></div>
+                <div class="step"><div class="step-title">最后检查订单影响</div><div class="step-meta">已确认任务会带来源上下文跳转到订单表。</div></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="panel scroll-panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="calendar-days"></i>客户回邮件节奏</h2>
+            <div class="mode-strip">
+              <button class="btn small primary">30 天</button>
+              <button class="btn small">今日</button>
+            </div>
+          </div>
+          <div class="panel-body stack">
+            <div class="heatmap service-heatmap">
+              <strong>客户</strong><span>05/01</span><span>05/02</span><span>05/03</span><span>05/04</span><span>05/05</span><span>05/06</span><span>05/07</span><span>05/08</span><span>05/09</span><span>05/10</span><span>05/11</span><span>05/12</span><span>05/13</span><span>05/14</span>
+              <span>VW Audi</span><a class="heat-cell heat-1" href="01-mail-detail-2.0.html" aria-label="05/01 VW Audi"></a><a class="heat-cell heat-0" href="01-mail-detail-2.0.html" aria-label="05/02 VW Audi"></a><a class="heat-cell heat-2" href="01-mail-detail-2.0.html" aria-label="05/03 VW Audi"></a><a class="heat-cell heat-0" href="01-mail-detail-2.0.html" aria-label="05/04 VW Audi"></a><a class="heat-cell missed" href="01-task-workbench-2.0.html" aria-label="05/05 VW Audi 应收未收"></a><a class="heat-cell heat-3" href="01-mail-detail-2.0.html" aria-label="05/06 VW Audi"></a><a class="heat-cell heat-0" href="01-mail-detail-2.0.html" aria-label="05/07 VW Audi"></a><a class="heat-cell heat-1" href="01-mail-detail-2.0.html" aria-label="05/08 VW Audi"></a><a class="heat-cell heat-0" href="01-mail-detail-2.0.html" aria-label="05/09 VW Audi"></a><a class="heat-cell heat-2" href="01-mail-detail-2.0.html" aria-label="05/10 VW Audi"></a><a class="heat-cell heat-0" href="01-mail-detail-2.0.html" aria-label="05/11 VW Audi"></a><a class="heat-cell heat-0" href="01-mail-detail-2.0.html" aria-label="05/12 VW Audi"></a><a class="heat-cell heat-4" href="01-mail-detail-2.0.html" aria-label="05/13 VW Audi"></a><a class="heat-cell heat-2" href="01-mail-detail-2.0.html" aria-label="05/14 VW Audi"></a>
+              <span>BYD 合肥</span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span><span class="heat-cell missed"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell missed"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span>
+              <span>WLB1343</span><span class="heat-cell heat-2"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-2"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-2"></span>
+              <span>SAIC</span><span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell missed"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-0"></span>
+            </div>
+
+            <div class="card">
+              <div class="row">
+                <div>
+                  <p class="item-title">点击热力格进入邮件详情，而不是在概览里处理任务</p>
+                  <p class="item-meta">概览只回答“哪里需要关注”；具体处理在邮件详情和任务详情中完成。</p>
+                </div>
+                <a class="btn small primary" href="01-task-workbench-2.0.html"><i data-lucide="mailbox"></i>打开收件箱</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel scroll-panel">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="list-todo"></i>待处理邮件</h2>
+            <span class="badge red">7</span>
+          </div>
+          <div class="panel-body stack">
+            <a class="list-item selected" href="01-mail-detail-2.0.html">
+              <p class="item-title">Audi Q5L Forecast Update v2</p>
+              <p class="item-meta">VW Audi · 09:18 · 正文修正影响 Forecast.xlsx，等待人工确认。</p>
+            </a>
+            <a class="list-item" href="01-mail-detail-2.0.html">
+              <p class="item-title">May Shipping Plan PDF</p>
+              <p class="item-meta">WLB1343 · 08:42 · 解析失败，需要确认模板。</p>
+            </a>
+            <a class="list-item" href="01-mail-detail-2.0.html">
+              <p class="item-title">W20 订单数量正文修正</p>
+              <p class="item-meta">BYD 合肥 · 05/14 16:30 · 正文与附件存在冲突。</p>
+            </a>
+            <a class="list-item" href="01-task-workbench-2.0.html">
+              <p class="item-title">查看全部邮件队列</p>
+              <p class="item-meta">进入收件箱后按客户、状态、时间筛选，不在概览页堆更多筛选。</p>
+            </a>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

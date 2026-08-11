@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>邮件详情 2.0 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service-2.0.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link" href="00-intelligent-service-2.0.html"><i data-lucide="headphones"></i>智能客服</a>
+        <a class="nav-link active" href="01-task-workbench-2.0.html"><i data-lucide="workflow"></i>智能供应链</a>
+        <a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link" href="06-financial-reconciliation.html"><i data-lucide="scale"></i>财务对账</a>
+        <a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
+      </nav>
+      <div class="user-chip"><span>计划员 · 简中</span><span class="avatar">PL</span></div>
+    </header>
+
+    <main class="page fit-screen">
+      <div class="subnav">
+        <a href="00-intelligent-service-2.0.html">工作概览</a>
+        <a class="active" href="01-task-workbench-2.0.html">客户收件箱</a>
+        <a href="02-parse-review-2.0.html">解析审查</a>
+        <a href="03-orders-2.0.html">订单</a>
+      </div>
+
+      <section class="panel scroll-panel screen-fill">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <a class="recon-back-link" href="01-task-workbench-2.0.html" aria-label="返回收件箱"><i data-lucide="arrow-left"></i></a>
+            <span class="detail-title-inline">
+              <span>Audi Q5L Forecast Update v2</span>
+              <small>VW Audi · forecast@vw-group.example.com · 2026/05/14 08:42</small>
+            </span>
+          </h2>
+          <div class="list-actions">
+            <span class="badge amber">部分完成</span>
+            <button class="btn small"><i data-lucide="reply"></i>回复客户</button>
+            <button class="btn small primary"><i data-lucide="refresh-cw"></i>重新解析</button>
+          </div>
+        </div>
+
+        <div class="panel-body mail-detail-body">
+          <div class="route-chain">
+            <a href="01-task-workbench-2.0.html">客户收件箱</a>
+            <i data-lucide="chevron-right"></i>
+            <span>Audi Q5L Forecast Update v2</span>
+          </div>
+
+          <div class="mail-summary-strip">
+            <div class="filter-field">
+              <span class="filter-label">客户</span>
+              <span class="filter-value">VW Audi</span>
+            </div>
+            <div class="filter-field">
+              <span class="filter-label">邮件状态</span>
+              <span class="filter-value">部分完成 · 1 个任务等待确认</span>
+            </div>
+            <div class="filter-field">
+              <span class="filter-label">附件</span>
+              <span class="filter-value">Forecast.xlsx / FirmOrder.pdf</span>
+            </div>
+            <div class="filter-field">
+              <span class="filter-label">来源</span>
+              <span class="filter-value">Inbox MSG-20260514-0842</span>
+            </div>
+          </div>
+
+          <div class="mail-detail-grid">
+            <section class="panel scroll-panel inner-panel">
+              <div class="panel-head">
+                <h2 class="panel-title"><i data-lucide="mail-open"></i>邮件原文</h2>
+                <span class="badge slate">只读</span>
+              </div>
+              <div class="panel-body stack">
+                <div class="card">
+                  <div class="row">
+                    <p class="item-title">正文影响附件任务</p>
+                    <span class="badge amber">body instruction</span>
+                  </div>
+                  <p class="item-meta">邮件正文说明 W14 数量调整，需要和 Forecast.xlsx 的解析结果一起确认。</p>
+                </div>
+                <div class="mail-body">
+                  Dear team,<br><br>
+                  Please find attached the latest Audi Q5L rolling forecast. Please note that W14 quantity has been adjusted in the email body and should be reviewed together with the attachment.<br><br>
+                  Material 2777977X has a temporary decrease. Please confirm whether the updated quantity should override the previous weekly forecast.<br><br>
+                  Best regards,<br>
+                  VW Planning Team
+                </div>
+              </div>
+            </section>
+
+            <aside class="panel scroll-panel inner-panel">
+              <div class="panel-head">
+                <h2 class="panel-title"><i data-lucide="files"></i>邮件内任务</h2>
+                <span class="badge amber">1 待处理</span>
+              </div>
+              <div class="panel-body stack">
+                <a class="result-block selected-result" href="02-parse-review-2.0.html">
+                  <div class="result-title">
+                    <span class="result-name"><i data-lucide="file-spreadsheet"></i>Forecast.xlsx</span>
+                    <span class="badge amber">等待确认</span>
+                  </div>
+                  <p class="item-meta">识别为 Sales Forecast。正文提到 W14 数量修改，任务需要人工确认后才能写入订单。</p>
+                  <div class="result-actions"><span class="btn small primary">进入任务</span></div>
+                </a>
+                <div class="result-block">
+                  <div class="result-title">
+                    <span class="result-name"><i data-lucide="file-text"></i>FirmOrder.pdf</span>
+                    <span class="badge green">已完成</span>
+                  </div>
+                  <p class="item-meta">识别为 Shipping Plan。12 行发运记录已通过校验并入库。</p>
+                  <div class="result-actions"><button class="btn small">查看结果</button></div>
+                </div>
+                <div class="card">
+                  <p class="mini-title">处理记录</p>
+                  <div class="timeline compact-timeline">
+                    <div class="step"><div class="step-title">09:18 接收邮件</div><div class="step-meta">创建邮件对象和两个附件任务。</div></div>
+                    <div class="step"><div class="step-title">09:19 完成 PDF 任务</div><div class="step-meta">Shipping Plan 已写入。</div></div>
+                    <div class="step"><div class="step-title">09:20 暂停 Forecast</div><div class="step-meta">等待人工确认正文覆盖逻辑。</div></div>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

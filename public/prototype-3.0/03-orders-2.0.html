@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>订单 2.0 - Supply Chain Agent</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="00-intelligent-service-2.0.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group">
+        <a class="nav-link" href="00-intelligent-service-2.0.html"><i data-lucide="headphones"></i>智能客服</a>
+        <a class="nav-link active" href="01-task-workbench-2.0.html"><i data-lucide="workflow"></i>智能供应链</a>
+        <a class="nav-link" href="05-customer-profile.html"><i data-lucide="users"></i>客户</a>
+        <a class="nav-link" href="06-financial-reconciliation.html"><i data-lucide="scale"></i>财务对账</a>
+        <a class="nav-link" href="07-system-settings.html"><i data-lucide="settings"></i>系统配置</a>
+      </nav>
+      <div class="user-chip"><span>计划员 · 简中</span><span class="avatar">PL</span></div>
+    </header>
+
+    <main class="page fit-screen">
+      <div class="subnav">
+        <a href="00-intelligent-service-2.0.html">工作概览</a>
+        <a href="01-task-workbench-2.0.html">客户收件箱</a>
+        <a href="02-parse-review-2.0.html">解析审查</a>
+        <a class="active" href="03-orders-2.0.html">订单</a>
+      </div>
+
+      <section class="panel scroll-panel screen-fill">
+        <div class="panel-head">
+          <h2 class="panel-title"><i data-lucide="table-2"></i>标准订单输出表</h2>
+          <div class="list-actions">
+            <button class="btn small primary" data-order-view="current">当前值</button>
+            <button class="btn small" data-order-view="delta">变化量</button>
+            <button class="btn small primary"><i data-lucide="download"></i>导出</button>
+          </div>
+        </div>
+
+        <div class="panel-body orders-detail-body">
+          <div class="source-banner">
+            <div>
+              <p class="mini-title">当前来源上下文</p>
+              <p class="item-title">Audi Q5L Forecast Update v2 → Forecast.xlsx → TASK-PR-240514-001</p>
+              <p class="item-meta">来自解析审查确认写入。高亮单元格保留邮件、附件、sheet、单元格和处理人的 lineage。</p>
+            </div>
+            <div class="list-actions">
+              <a class="btn small" href="02-parse-review-2.0.html"><i data-lucide="file-search"></i>返回任务</a>
+              <a class="btn small" href="01-mail-detail-2.0.html"><i data-lucide="mail-open"></i>打开邮件</a>
+            </div>
+          </div>
+
+          <div class="filter-bar order-filter-bar">
+            <details class="filter-select"><summary>客户：VW Audi</summary><div class="filter-options"><span>全部客户</span><span>VW Audi</span><span>BYD 合肥</span><span>WLB1343</span></div></details>
+            <details class="filter-select"><summary>日期：2026-W12 起</summary><div class="filter-options"><span>未来 4 周</span><span>未来 12 周</span><span>自定义</span></div></details>
+            <details class="filter-select"><summary>料号：2777977XN</summary><div class="filter-options"><span>全部料号</span><span>2777977XN</span><span>1191923XB</span><span>4003304</span></div></details>
+            <details class="filter-select"><summary>来源：当前任务</summary><div class="filter-options"><span>全部来源</span><span>当前任务</span><span>人工修改</span><span>客户邮件</span></div></details>
+            <details class="filter-select"><summary>Program：Audi_Q5L</summary><div class="filter-options"><span>全部</span><span>Audi_Q5L</span><span>E-pump 1.0</span></div></details>
+          </div>
+
+          <div class="tabs"><span class="active" data-order-tab="forecast">Sales Forecast</span><span data-order-tab="shipping">Shipping Plan</span></div>
+          <div data-order-section="forecast">
+            <div class="scroll-x" data-order-table="current">
+              <table class="table" style="min-width:1280px">
+                <thead>
+                  <tr><th>Customer</th><th>Customer Code</th><th>Customer P/N</th><th>Customer#+Ref#</th><th>Faurecia P/N</th><th>OEM</th><th>Program</th><th>2026-W12<br><span class="item-meta">3/16</span></th><th>2026-W13<br><span class="item-meta">3/23</span></th><th>2026-W14<br><span class="item-meta">3/30</span></th><th>2026-W15<br><span class="item-meta">4/6</span></th><th>来源</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>长春</td><td>1032000000</td><td>2777977X</td><td>1032000000-2777977XN</td><td>2777977XN</td><td>VW</td><td>Audi_Q5L</td><td>1200</td><td>1360</td><td class="evidence-highlight" data-open="#lineageSheet">800</td><td>1880</td><td><span class="badge amber">当前任务</span></td></tr>
+                  <tr><td>长春</td><td>1032000000</td><td>1191923XB</td><td>1032000000-1191923XB</td><td>1191923XB</td><td>VW</td><td>E-pump 1.0</td><td>2304</td><td>2304</td><td>2560</td><td>2400</td><td><span class="badge slate">同邮件附件</span></td></tr>
+                  <tr><td>天津旭阳</td><td>2082000000</td><td>21779866X</td><td>2082000000-21779866XT</td><td>21779866XT</td><td>VW</td><td>Audi_Q5L</td><td>20088</td><td>20064</td><td>20088</td><td>25680</td><td><span class="badge slate">历史邮件</span></td></tr>
+                  <tr><td>WLB1343</td><td>1343000000</td><td>1191923XB</td><td>1343000000-1191923XB</td><td>1191923XB</td><td>VW</td><td>E-pump 1.0</td><td>2304</td><td>2304</td><td>2560</td><td>2400</td><td><span class="badge slate">历史邮件</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="scroll-x" data-order-table="delta" style="display:none">
+              <table class="table" style="min-width:1280px">
+                <thead>
+                  <tr><th>Customer</th><th>Customer Code</th><th>Customer P/N</th><th>Customer#+Ref#</th><th>Faurecia P/N</th><th>OEM</th><th>Program</th><th>2026-W12</th><th>2026-W13</th><th>2026-W14</th><th>2026-W15</th><th>来源</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>长春</td><td>1032000000</td><td>2777977X</td><td>1032000000-2777977XN</td><td>2777977XN</td><td>VW</td><td>Audi_Q5L</td><td class="delta-cell">-250</td><td class="delta-cell">-90</td><td class="delta-cell evidence-highlight" data-open="#lineageSheet">-160</td><td class="delta-cell">+80</td><td><span class="badge amber">当前任务</span></td></tr>
+                  <tr><td>长春</td><td>1032000000</td><td>1191923XB</td><td>1032000000-1191923XB</td><td>1191923XB</td><td>VW</td><td>E-pump 1.0</td><td class="delta-cell">0</td><td class="delta-cell">0</td><td class="delta-cell">+256</td><td class="delta-cell">-160</td><td><span class="badge slate">同邮件附件</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div data-order-section="shipping" style="display:none">
+            <div class="scroll-x">
+              <table class="table" style="min-width:1180px">
+                <thead><tr><th>Source.Name</th><th>Customer code</th><th>Customer</th><th>Part Number</th><th>Actual Qty</th><th>Shipping Date</th><th>Delivery Note</th><th>备注</th><th>客服</th><th>工厂</th><th>HU</th><th>托数</th><th>Product</th></tr></thead>
+                <tbody>
+                  <tr><td>FirmOrder.pdf</td><td>1032000000</td><td>长春</td><td>2777977XN</td><td>1800</td><td>2026/3/30</td><td>45810466</td><td>-</td><td>Li Mei</td><td>一厂</td><td>192</td><td>7</td><td>E-pump 2.0</td></tr>
+                  <tr><td>Pan Dandan-May.xlsx</td><td>1343000000</td><td>WLB1343</td><td>1191923XB</td><td>2304</td><td>2026/3/30</td><td>45810432</td><td>261301077</td><td>Pandandan</td><td>二厂</td><td>256</td><td>9</td><td>E-pump 1.0</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="sheet-backdrop" id="lineageSheet">
+    <div class="sheet">
+      <div class="panel-head">
+        <h2 class="panel-title">单元格来源</h2>
+        <button class="btn" data-close>关闭</button>
+      </div>
+      <div class="panel-body stack">
+        <div class="card">
+          <p class="item-title">当前值：800 · 2026-W14</p>
+          <p class="item-meta">Customer 1032000000 · Material 2777977XN · 来源 TASK-PR-240514-001</p>
+        </div>
+        <div class="timeline">
+          <div class="step"><div class="step-title">客户邮件</div><div class="step-meta">Audi Q5L Forecast Update v2 · 2026/05/14 08:42</div><a class="btn small" href="01-mail-detail-2.0.html">打开邮件</a></div>
+          <div class="step"><div class="step-title">附件证据</div><div class="step-meta">Forecast.xlsx · Sheet W12-W14 · 单元格 G2</div><a class="btn small" href="02-parse-review-2.0.html">打开任务</a></div>
+          <div class="step"><div class="step-title">人工确认</div><div class="step-meta">计划员确认采用 AI 建议，保留正文覆盖说明。</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
