@@ -19,10 +19,11 @@ import {
   getReceiptImportReview,
   mergeReconciliationFile,
   uploadReconciliationFile,
+  type FileUploadResult,
   type ReceiptImportReview,
   type ReceiptImportReviewRow,
 } from "@/services/reconciliation";
-import { customerOptions, formatDate, formatQty } from "./reconciliation-utils";
+import { apiErrorMessage, customerOptions, formatDate, formatQty } from "./reconciliation-utils";
 
 type ReceiptImportDialogProps = {
   open: boolean;
@@ -59,6 +60,10 @@ type IssuePresentation = {
   severity: ReceiptImportReviewRow["issueSeverity"];
   text: string | null;
 };
+
+function isSupportedWorkbook(file: File | null) {
+  return Boolean(file && /\.xlsx$/i.test(file.name));
+}
 
 const duplicateIssueCodes = new Set([
   "DUPLICATE",
@@ -105,8 +110,14 @@ function issuePresentation(row: ReceiptImportReviewRow): IssuePresentation {
       text: "收货数量为 0，请确认是否需要入池",
     };
   }
+  if (row.issueCode === "UNMAPPED_MATERIAL_RECEIPT") {
+    return { label: "物料未维护", severity: "red", text: "客户物料尚未配置内部物料映射，本行暂不能入池" };
+  }
   if (row.issueCode === "IMPORTABLE") {
     return { label: "可入池", severity: row.issueSeverity, text: null };
+  }
+  if (row.issueCode === "BLOCKED") {
+    return { label: "需处理", severity: "red", text: safeIssueText(row.issueText) };
   }
   return { label: row.issueLabel || "需处理", severity: row.issueSeverity, text: safeIssueText(row.issueText) };
 }
@@ -145,6 +156,7 @@ function groupCount(group: ReviewFilterGroup) {
 export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }: ReceiptImportDialogProps) {
   const [customerId, setCustomerId] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptUpload, setReceiptUpload] = useState<FileUploadResult | null>(null);
   const [review, setReview] = useState<ReceiptImportReview | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   const [openFilterGroup, setOpenFilterGroup] = useState<string | null>(null);
@@ -176,6 +188,7 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
   function close() {
     onOpenChange(false);
     setReceiptFile(null);
+    setReceiptUpload(null);
     resetReview();
   }
 
@@ -188,10 +201,16 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
       toast.error("导入收货记录必须先选择客户");
       return;
     }
+    if (!isSupportedWorkbook(receiptFile)) {
+      toast.error("当前后端解析只支持 .xlsx，请先将文件另存为 .xlsx 后再上传");
+      return;
+    }
     setBusy(true);
     resetReview();
     try {
-      const uploaded = await uploadReconciliationFile({ file: receiptFile, fileType: "customer_receipt", customerId });
+      const uploaded = receiptUpload
+        ?? await uploadReconciliationFile({ file: receiptFile, fileType: "customer_receipt", customerId });
+      setReceiptUpload(uploaded);
       const nextReview = await getReceiptImportReview(uploaded.id);
       setReview(nextReview);
       if (nextReview.rows.some((row) => row.importable && row.demandOrderNo)) {
@@ -202,8 +221,9 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
         setReviewFilter("strategyBlocked");
       }
       toast.success(`解析完成：${nextReview.validCount}/${nextReview.totalRows} 行可入池`);
-    } catch {
-      toast.error("上传或解析收货文件失败");
+    } catch (error) {
+      const message = apiErrorMessage(error);
+      toast.error(message ? `上传或解析收货文件失败：${message}` : "上传或解析收货文件失败");
     } finally {
       setBusy(false);
     }
@@ -217,8 +237,9 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
       toast.success(`合并完成：新增 ${summary.inserted}，跳过 ${summary.skipped}，失败 ${summary.failed}`);
       onMerged();
       close();
-    } catch {
-      toast.error("合并收货文件失败");
+    } catch (error) {
+      const message = apiErrorMessage(error);
+      toast.error(message ? `合并收货文件失败：${message}` : "合并收货文件失败");
     } finally {
       setBusy(false);
     }
@@ -288,6 +309,7 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                 options={options}
                 onChange={(value) => {
                   setCustomerId(value);
+                  setReceiptUpload(null);
                   resetReview();
                 }}
               />
@@ -302,10 +324,11 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                 <span className="recon-upload-picker">
                   <input
                     type="file"
-                    accept=".xlsx,.xls,.csv"
+                    accept=".xlsx"
                     aria-label="上传客户回传收货单"
                     onChange={(event) => {
                       setReceiptFile(event.target.files?.[0] ?? null);
+                      setReceiptUpload(null);
                       resetReview();
                     }}
                   />

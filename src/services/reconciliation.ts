@@ -112,8 +112,6 @@ export async function createReconciliationTask(
     customerId: payload.customerId,
     periodFrom: payload.periodFrom,
     periodTo: payload.periodTo,
-    shipmentWindowFrom: payload.shipmentWindowFrom || null,
-    shipmentWindowTo: payload.shipmentWindowTo || null,
     creationSource: "manual",
     remark: payload.remark || null,
   });
@@ -224,7 +222,7 @@ export async function getReceiptImportReview(fileId: string): Promise<ReceiptImp
 }
 
 export async function listShipmentRecords(
-  params: { page?: number; size?: number; customerId?: string; dateFrom?: string; dateTo?: string; reconciliationStatus?: string },
+  params: { page?: number; size?: number; customerId?: string; taskId?: string; dateFrom?: string; dateTo?: string; reconciliationStatus?: string },
   customers: CustomerConfig[],
 ) {
   const response = await listShipmentRecordsSchema(params);
@@ -272,7 +270,7 @@ export async function deleteShipmentRecord(recordId: string): Promise<void> {
 }
 
 export async function listReceiptRecords(
-  params: { page?: number; size?: number; customerId?: string; dateFrom?: string; dateTo?: string; reconciliationStatus?: string },
+  params: { page?: number; size?: number; customerId?: string; taskId?: string; dateFrom?: string; dateTo?: string; reconciliationStatus?: string },
   customers: CustomerConfig[],
 ) {
   const response = await listReceiptRecordsSchema(params);

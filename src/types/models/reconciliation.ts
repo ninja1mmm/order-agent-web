@@ -3,10 +3,7 @@ import type { CustomerConfig } from "./settings";
 export type ReconciliationTaskStatus =
   | "draft"
   | "in_progress"
-  | "closing"
   | "closed"
-  | "reopening"
-  | "voiding"
   | "voided"
   | "cancelled"
   | string;
@@ -15,9 +12,12 @@ export type ReconciliationRecordStatus =
   | "unmatched"
   | "partial"
   | "fully_matched"
-  | "in_transit"
-  | "closed"
   | string;
+
+export type EffectiveReconciliationRecordStatus =
+  | ReconciliationRecordStatus
+  | "partial_confirmed_pending_writeback"
+  | "confirmed_pending_writeback";
 
 export type ReconciliationMatchStatus = "candidate" | "confirmed" | "rejected" | string;
 
@@ -29,10 +29,8 @@ export type ReconciliationTask = {
   periodFrom: string;
   periodTo: string;
   periodLabel: string;
-  shipmentWindowFrom: string | null;
-  shipmentWindowTo: string | null;
-  shipmentWindowLabel: string;
   status: ReconciliationTaskStatus;
+  isTransitioning: boolean;
   statusLabel: string;
   statusVariant: "blue" | "green" | "amber" | "red" | "slate";
   creationSource: string;
@@ -57,8 +55,6 @@ export type ReconciliationTaskCreate = {
   customerId: string;
   periodFrom: string;
   periodTo: string;
-  shipmentWindowFrom: string;
-  shipmentWindowTo: string;
   remark: string;
 };
 
@@ -109,6 +105,7 @@ export type ShipmentRecord = {
   activeConfirmedMatchCount: number;
   remainingQty: number;
   reconciliationStatus: ReconciliationRecordStatus;
+  effectiveReconciliationStatus: EffectiveReconciliationRecordStatus;
   reconciliationStatusLabel: string;
   statusVariant: "blue" | "green" | "amber" | "red" | "slate";
   locked: boolean;
@@ -133,6 +130,7 @@ export type ReceiptRecord = {
   activeConfirmedMatchCount: number;
   remainingQty: number;
   reconciliationStatus: ReconciliationRecordStatus;
+  effectiveReconciliationStatus: EffectiveReconciliationRecordStatus;
   reconciliationStatusLabel: string;
   statusVariant: "blue" | "green" | "amber" | "red" | "slate";
   locked: boolean;
@@ -360,6 +358,7 @@ export type CommitPreviewRow = {
   id: string;
   side: "shipment" | "receipt";
   recordNo: string;
+  recordDate: string | null;
   customerName: string;
   material: string;
   shipmentQty: number | null;

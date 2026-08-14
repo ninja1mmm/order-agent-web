@@ -6763,6 +6763,13 @@ span.stale::after {
   min-width: 0;
 }
 
+.task-center-toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 240px));
+  gap: 8px;
+  align-items: center;
+}
+
 .history-section {
   border-top: 1px solid var(--line);
   padding-top: 12px;
@@ -6982,52 +6989,47 @@ span.stale::after {
 }
 
 .task-center-table {
-  min-width: 1280px;
+  min-width: 1080px;
 }
 
 .task-center-table th:nth-child(1),
 .task-center-table td:nth-child(1) {
-  width: 13%;
+  width: 14%;
 }
 
 .task-center-table th:nth-child(2),
 .task-center-table td:nth-child(2) {
-  width: 11%;
+  width: 12%;
 }
 
 .task-center-table th:nth-child(3),
 .task-center-table td:nth-child(3),
 .task-center-table th:nth-child(4),
 .task-center-table td:nth-child(4) {
-  width: 9%;
+  width: 10%;
 }
 
 .task-center-table th:nth-child(5),
-.task-center-table td:nth-child(5) {
-  width: 11%;
-}
-
+.task-center-table td:nth-child(5),
 .task-center-table th:nth-child(6),
 .task-center-table td:nth-child(6),
 .task-center-table th:nth-child(7),
-.task-center-table td:nth-child(7),
+.task-center-table td:nth-child(7) {
+  width: 7%;
+}
+
 .task-center-table th:nth-child(8),
 .task-center-table td:nth-child(8) {
-  width: 7%;
+  width: 9%;
 }
 
 .task-center-table th:nth-child(9),
 .task-center-table td:nth-child(9) {
-  width: 8%;
+  width: 13%;
 }
 
 .task-center-table th:nth-child(10),
 .task-center-table td:nth-child(10) {
-  width: 12%;
-}
-
-.task-center-table th:nth-child(11),
-.task-center-table td:nth-child(11) {
   width: 156px;
   min-width: 156px;
   text-align: center;
@@ -7036,6 +7038,13 @@ span.stale::after {
 .task-center-actions {
   justify-content: center;
   min-width: 120px;
+}
+
+.task-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
 }
 
 .config-table {
@@ -7732,12 +7741,52 @@ span.stale::after {
   font-weight: 850;
 }
 
+.recon-preview-tabs {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: white;
+}
+
+.recon-preview-tabs button {
+  min-height: 30px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.recon-preview-tabs button:last-child {
+  border-right: 0;
+}
+
+.recon-preview-tabs button:hover {
+  color: var(--ink);
+}
+
+.recon-preview-tabs button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--forvia-blue);
+  outline-offset: -2px;
+}
+
+.recon-preview-tabs button.active {
+  background: var(--forvia-blue-soft);
+  color: var(--forvia-blue);
+}
+
 .recon-commit-table-wrap {
   flex: 1;
 }
 
 .recon-commit-table {
-  min-width: 980px;
+  min-width: 1060px;
 }
 
 .recon-commit-table th:nth-child(1) {
@@ -7748,12 +7797,16 @@ span.stale::after {
   width: 180px;
 }
 
-.recon-commit-table th:nth-child(5),
-.recon-commit-table th:nth-child(7) {
+.recon-commit-table th:nth-child(3) {
+  width: 112px;
+}
+
+.recon-commit-table th:nth-child(6),
+.recon-commit-table th:nth-child(8) {
   width: 132px;
 }
 
-.recon-commit-table th:nth-child(6) {
+.recon-commit-table th:nth-child(7) {
   width: 128px;
 }
 
@@ -8399,6 +8452,7 @@ span.stale::after {
 @media (max-width: 900px) {
   .recon-history-workspace,
   .recon-toolbar,
+  .task-center-toolbar,
   .recon-match-workspace,
   .recon-complete-grid {
     grid-template-columns: 1fr;

@@ -27,23 +27,15 @@ import { ShipmentImportDialog } from "./shipment-import-dialog";
 import { ShipmentRecordSheet } from "./shipment-record-sheet";
 
 function shipmentDisplayState(record: ShipmentRecord) {
-  const effectiveMatchedQty = record.matchedReceiptQty + record.pendingMatchedReceiptQty;
-  if (record.activeConfirmedMatchCount > 0) {
-    const fullyConfirmed = effectiveMatchedQty >= Math.abs(record.qty) && Math.abs(record.qty) > 0;
-    return {
-      matchedQty: effectiveMatchedQty,
-      statusLabel: fullyConfirmed ? "已确认待写回" : "部分确认待写回",
-      statusVariant: fullyConfirmed ? "blue" as const : "amber" as const,
-      locked: true,
-      lockReason: "已有任务确认匹配，需先取消确认后才能删除",
-    };
-  }
+  const hasPendingConfirmation = record.activeConfirmedMatchCount > 0;
   return {
-    matchedQty: record.matchedReceiptQty,
+    matchedQty: record.matchedReceiptQty + record.pendingMatchedReceiptQty,
     statusLabel: record.reconciliationStatusLabel,
     statusVariant: record.statusVariant,
     locked: record.locked,
-    lockReason: canEditLocked(record.locked),
+    lockReason: hasPendingConfirmation
+      ? "已有任务确认匹配，需先取消确认后才能删除"
+      : canEditLocked(record.locked),
   };
 }
 

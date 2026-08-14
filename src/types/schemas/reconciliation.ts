@@ -1,10 +1,7 @@
 export type ReconciliationTaskStatusSchema =
   | "draft"
   | "in_progress"
-  | "closing"
   | "closed"
-  | "reopening"
-  | "voiding"
   | "voided"
   | "cancelled"
   | string;
@@ -13,9 +10,12 @@ export type ReconciliationRecordStatusSchema =
   | "unmatched"
   | "partial"
   | "fully_matched"
-  | "in_transit"
-  | "closed"
   | string;
+
+export type EffectiveReconciliationRecordStatusSchema =
+  | ReconciliationRecordStatusSchema
+  | "partial_confirmed_pending_writeback"
+  | "confirmed_pending_writeback";
 
 export type ReconciliationMatchStatusSchema = "candidate" | "confirmed" | "rejected" | string;
 
@@ -23,8 +23,6 @@ export type ReconciliationTaskCreateSchema = {
   customerId: string;
   periodFrom: string;
   periodTo: string;
-  shipmentWindowFrom?: string | null;
-  shipmentWindowTo?: string | null;
   creationSource?: string;
   remark?: string | null;
 };
@@ -35,9 +33,8 @@ export type ReconciliationTaskResponseSchema = {
   customerId: string;
   periodFrom: string;
   periodTo: string;
-  shipmentWindowFrom: string | null;
-  shipmentWindowTo: string | null;
   status: ReconciliationTaskStatusSchema;
+  isTransitioning: boolean;
   creationSource: string;
   totalRecordCount: number;
   matchedRecordCount: number;
@@ -216,6 +213,7 @@ export type ShipmentRecordResponseSchema = {
   pendingMatchedReceiptQty: number;
   activeConfirmedMatchCount: number;
   reconciliationStatus: ReconciliationRecordStatusSchema;
+  effectiveReconciliationStatus: EffectiveReconciliationRecordStatusSchema;
   lastReconciledTaskId: string | null;
   remark: string | null;
   status: string;
@@ -229,6 +227,16 @@ export type ShipmentRecordListResponseSchema = {
   total: number;
   page: number;
   size: number;
+};
+
+export type ShipmentRecordListParamsSchema = {
+  page?: number;
+  size?: number;
+  customerId?: string;
+  taskId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  reconciliationStatus?: string;
 };
 
 export type ReceiptRecordCreateSchema = {
@@ -258,6 +266,7 @@ export type ReceiptRecordResponseSchema = {
   pendingMatchedShipmentQty: number;
   activeConfirmedMatchCount: number;
   reconciliationStatus: ReconciliationRecordStatusSchema;
+  effectiveReconciliationStatus: EffectiveReconciliationRecordStatusSchema;
   lastReconciledTaskId: string | null;
   remark: string | null;
   status: string;
@@ -271,6 +280,16 @@ export type ReceiptRecordListResponseSchema = {
   total: number;
   page: number;
   size: number;
+};
+
+export type ReceiptRecordListParamsSchema = {
+  page?: number;
+  size?: number;
+  customerId?: string;
+  taskId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  reconciliationStatus?: string;
 };
 
 export type ReconciliationMatchResponseSchema = {

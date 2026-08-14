@@ -57,8 +57,7 @@ async function listAllShipmentRecords(task: ReconciliationTask, customers: Param
       page,
       size: POOL_PAGE_SIZE,
       customerId: task.customerId,
-      dateFrom: task.shipmentWindowFrom ?? undefined,
-      dateTo: task.shipmentWindowTo ?? undefined,
+      taskId: task.id,
     }, customers);
     records.push(...response.records.filter((record) => (
       includeCommittedRecords || OPEN_RECORD_STATUSES.has(record.reconciliationStatus)
@@ -80,6 +79,7 @@ async function listAllReceiptRecords(task: ReconciliationTask, customers: Parame
       page,
       size: POOL_PAGE_SIZE,
       customerId: task.customerId,
+      taskId: task.id,
       dateFrom: task.periodFrom,
       dateTo: task.periodTo,
     }, customers);
@@ -122,7 +122,7 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
     [groups],
   );
   const actionBusy = busy || bulkConfirming || closing;
-  const canCloseTask = Boolean(task && task.status === "in_progress" && (summary?.confirmedCount ?? 0) > 0);
+  const canCloseTask = Boolean(task && !task.isTransitioning && task.status === "in_progress" && (summary?.confirmedCount ?? 0) > 0);
 
   const loadTask = useCallback(async () => {
     if (loadingCustomers) return;
@@ -274,16 +274,16 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
             <Button variant="default" size="sm" disabled={actionBusy} onClick={() => setReloadKey((value) => value + 1)}>
               <RefreshCw className="h-3.5 w-3.5" /> 刷新
             </Button>
-            <Button variant="default" size="sm" disabled={!task || actionBusy || task.status !== "in_progress"} onClick={handleRegenerate}>
+            <Button variant="default" size="sm" disabled={!task || task.isTransitioning || actionBusy || task.status !== "in_progress"} onClick={handleRegenerate}>
               {busy && matchWorkState === "regenerating" ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               重新生成
             </Button>
-            <Button variant="primary" size="sm" disabled={!task || actionBusy || task.status !== "draft"} onClick={handleStart}>
+            <Button variant="primary" size="sm" disabled={!task || task.isTransitioning || actionBusy || task.status !== "draft"} onClick={handleStart}>
               {busy && matchWorkState === "starting" ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
               {busy && matchWorkState === "starting" ? "正在开始" : "开始任务"}
             </Button>
             {step === "match" ? (
-              <Button variant="primary" size="sm" disabled={!task || busy || bulkConfirming || matchLoading || task.status !== "in_progress" || highConfidenceNoDiffCandidateIds.length === 0} onClick={handleBulkConfirm}>
+              <Button variant="primary" size="sm" disabled={!task || task.isTransitioning || busy || bulkConfirming || matchLoading || task.status !== "in_progress" || highConfidenceNoDiffCandidateIds.length === 0} onClick={handleBulkConfirm}>
                 {bulkConfirming ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                 批量确认一致项
               </Button>
@@ -308,7 +308,10 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
                 <button className={step === "complete" ? "active" : ""} onClick={() => setStep("complete")}>3 完成输出</button>
               </div>
               <div className="recon-detail-meta">
-                <Badge variant={task.statusVariant}>{task.statusLabel}</Badge>
+                <span className="task-status-cell">
+                  <Badge variant={task.statusVariant}>{task.statusLabel}</Badge>
+                  {task.isTransitioning ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-label="任务处理中" /> : null}
+                </span>
                 <span>更新：{formatDateTime(task.updatedAt ?? task.createdAt)}</span>
               </div>
             </div>

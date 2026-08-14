@@ -31,8 +31,6 @@ export function TaskCreateSheet({ open, customers, onOpenChange, onCreated }: Ta
   const [customerId, setCustomerId] = useState("");
   const [periodFrom, setPeriodFrom] = useState(firstDayOfMonth());
   const [periodTo, setPeriodTo] = useState(todayKey());
-  const [shipmentWindowFrom, setShipmentWindowFrom] = useState(firstDayOfMonth());
-  const [shipmentWindowTo, setShipmentWindowTo] = useState(todayKey());
   const [remark, setRemark] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -53,18 +51,12 @@ export function TaskCreateSheet({ open, customers, onOpenChange, onCreated }: Ta
       toast.error("对账期间不合法");
       return;
     }
-    if ((shipmentWindowFrom && shipmentWindowTo) && shipmentWindowFrom > shipmentWindowTo) {
-      toast.error("发运窗口不合法");
-      return;
-    }
     setSaving(true);
     try {
       await createReconciliationTask({
         customerId,
         periodFrom,
         periodTo,
-        shipmentWindowFrom,
-        shipmentWindowTo,
         remark,
       }, customers);
       toast.success("对账任务已创建");
@@ -102,16 +94,6 @@ export function TaskCreateSheet({ open, customers, onOpenChange, onCreated }: Ta
             <label className="filter-field">
               <span className="filter-label">对账截止日期</span>
               <Input type="date" value={periodTo} onChange={(event) => setPeriodTo(event.target.value)} />
-            </label>
-          </div>
-          <div className="grid-2">
-            <label className="filter-field">
-              <span className="filter-label">发运窗口开始</span>
-              <Input type="date" value={shipmentWindowFrom} onChange={(event) => setShipmentWindowFrom(event.target.value)} />
-            </label>
-            <label className="filter-field">
-              <span className="filter-label">发运窗口截止</span>
-              <Input type="date" value={shipmentWindowTo} onChange={(event) => setShipmentWindowTo(event.target.value)} />
             </label>
           </div>
           <label className="filter-field">

@@ -21,7 +21,7 @@ import {
   type ShipmentImportReview,
   type ShipmentImportReviewRow,
 } from "@/services/reconciliation";
-import { formatDate, formatQty } from "./reconciliation-utils";
+import { apiErrorMessage, formatDate, formatQty } from "./reconciliation-utils";
 
 type ShipmentImportDialogProps = {
   open: boolean;
@@ -67,6 +67,10 @@ type IssuePresentation = {
   text: string | null;
 };
 
+function isSupportedWorkbook(file: File | null) {
+  return Boolean(file && /\.xlsx$/i.test(file.name));
+}
+
 const duplicateIssueCodes = new Set([
   "DUPLICATE",
   "DUPLICATE_EXACT",
@@ -75,6 +79,14 @@ const duplicateIssueCodes = new Set([
 ]);
 
 const demandPendingIssueCodes = new Set(["DEMAND_ORDER_UNMAPPED", "DEMAND_ORDER_CONFLICT"]);
+
+function isEffectivelyImportable(row: ShipmentImportReviewRow) {
+  return row.importable && row.issueSeverity !== "red" && row.issueCode !== "MISSING_DELIVERY";
+}
+
+function isBlockingRow(row: ShipmentImportReviewRow) {
+  return row.validationStatus === "blocked" || row.issueSeverity === "red";
+}
 
 function safeIssueText(text: string | null | undefined) {
   if (!text) return null;
@@ -110,10 +122,25 @@ function issuePresentation(row: ShipmentImportReviewRow): IssuePresentation {
       text: "发运数量为 0，请确认是否需要入池",
     };
   }
+  if (row.issueCode === "UNKNOWN_CUSTOMER") {
+    return { label: "客户未维护", severity: "red", text: "SAP 客户编码尚未维护，本行暂不能入池" };
+  }
+  if (row.issueCode === "UNMAPPED_MATERIAL_SHIPMENT") {
+    return { label: "物料未维护", severity: "red", text: "发运物料尚未配置客户物料映射，本行暂不能入池" };
+  }
+  if (row.issueCode === "MISSING_DELIVERY") {
+    return { label: "缺少交货", severity: "red", text: "缺少交货编号，本行暂不能入池" };
+  }
+  if (row.issueCode === "DEMAND_ORDER_UNMAPPED") {
+    return { label: "待补要货令", severity: "amber", text: "没有找到对应要货令，可先入池后补充" };
+  }
+  if (row.issueCode === "DEMAND_ORDER_CONFLICT") {
+    return { label: "要货令冲突", severity: "amber", text: "同一交货编号对应多个要货令，请核对映射" };
+  }
   if (row.issueCode === "IMPORTABLE") {
     return { label: "可入池", severity: row.issueSeverity, text: null };
   }
-  if (row.issueLabel === "阻塞") {
+  if (row.issueCode === "BLOCKED" || row.issueLabel === "阻塞") {
     return { label: "需处理", severity: row.issueSeverity, text: safeIssueText(row.issueText) };
   }
   return { label: row.issueLabel, severity: row.issueSeverity, text: safeIssueText(row.issueText) };
@@ -126,12 +153,12 @@ function UploadSlot({ icon, title, fileName, required = false, onFile }: UploadS
       <Icon className="h-5 w-5" />
       <div className="min-w-0">
         <strong>{title}</strong>
-        <span title={fileName ?? undefined}>{fileName ?? "请选择 .xlsx / .xls 文件"}</span>
+        <span title={fileName ?? undefined}>{fileName ?? "请选择 .xlsx 文件"}</span>
       </div>
       <label className="recon-upload-picker">
         <input
           type="file"
-          accept=".xlsx,.xls"
+          accept=".xlsx"
           required={required}
           aria-label={`上传${title}`}
           onChange={(event) => onFile(event.target.files?.[0] ?? null)}
@@ -150,9 +177,10 @@ function issueVariant(row: ShipmentImportReviewRow) {
 }
 
 function rowMatchesFilter(row: ShipmentImportReviewRow, filter: ReviewFilter) {
-  if (filter === "strategyImportable") return row.importable && !demandPendingIssueCodes.has(row.issueCode);
-  if (filter === "strategyPendingDemand") return row.importable && demandPendingIssueCodes.has(row.issueCode);
-  if (filter === "strategyBlocked") return !row.importable;
+  const importable = isEffectivelyImportable(row);
+  if (filter === "strategyImportable") return importable && !demandPendingIssueCodes.has(row.issueCode);
+  if (filter === "strategyPendingDemand") return importable && demandPendingIssueCodes.has(row.issueCode);
+  if (filter === "strategyBlocked") return !importable;
   if (filter === "demandLinked") return Boolean(row.demandOrderNo);
   if (filter === "demandPending") {
     return demandPendingIssueCodes.has(row.issueCode);
@@ -166,7 +194,7 @@ function rowMatchesFilter(row: ShipmentImportReviewRow, filter: ReviewFilter) {
 }
 
 function importPolicyText(row: ShipmentImportReviewRow) {
-  if (!row.importable) return "暂不入池";
+  if (!isEffectivelyImportable(row)) return "暂不入池";
   if (demandPendingIssueCodes.has(row.issueCode)) {
     return "先入池，待补要货令";
   }
@@ -217,20 +245,37 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
       toast.error("请先选择 SAP 发运记录和交货-要货令映射表");
       return;
     }
+    if (!isSupportedWorkbook(shipmentFile) || !isSupportedWorkbook(mappingFile)) {
+      toast.error("当前后端解析只支持 .xlsx，请先将文件另存为 .xlsx 后再上传");
+      return;
+    }
     setBusy(true);
     setReview(null);
     try {
-      const [shipmentResult, mappingResult] = await Promise.all([
-        uploadReconciliationFile({ file: shipmentFile, fileType: "sap_shipment" }),
-        uploadReconciliationFile({ file: mappingFile, fileType: "delivery_mapping" }),
+      const [shipmentOutcome, mappingOutcome] = await Promise.allSettled([
+        shipmentUpload
+          ? Promise.resolve(shipmentUpload)
+          : uploadReconciliationFile({ file: shipmentFile, fileType: "sap_shipment" }),
+        mappingUpload
+          ? Promise.resolve(mappingUpload)
+          : uploadReconciliationFile({ file: mappingFile, fileType: "delivery_mapping" }),
       ]);
+
+      if (shipmentOutcome.status === "fulfilled") setShipmentUpload(shipmentOutcome.value);
+      if (mappingOutcome.status === "fulfilled") setMappingUpload(mappingOutcome.value);
+      if (shipmentOutcome.status === "rejected") throw shipmentOutcome.reason;
+      if (mappingOutcome.status === "rejected") throw mappingOutcome.reason;
+
+      const shipmentResult = shipmentOutcome.value;
+      const mappingResult = mappingOutcome.value;
       setShipmentUpload(shipmentResult);
       setMappingUpload(mappingResult);
       const nextReview = await refreshReview(shipmentResult.id, mappingResult.id);
-      setReviewFilter(nextReview.rows.some((row) => row.importable) ? "strategyImportable" : "strategyBlocked");
+      setReviewFilter(nextReview.rows.some(isEffectivelyImportable) ? "strategyImportable" : "strategyBlocked");
       toast.success(`解析完成：${nextReview.linkedCount}/${nextReview.totalRows} 行已关联要货令`);
-    } catch {
-      toast.error("上传或解析发运批次失败");
+    } catch (error) {
+      const message = apiErrorMessage(error);
+      toast.error(message ? `上传或解析发运批次失败：${message}` : "上传或解析发运批次失败");
     } finally {
       setBusy(false);
     }
@@ -238,6 +283,10 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
 
   async function handleMerge() {
     if (!review) return;
+    if (!review.rows.some(isEffectivelyImportable)) {
+      toast.error("当前批次没有可入池数据，请先处理红色问题后重新解析");
+      return;
+    }
     setBusy(true);
     try {
       const mappingSummary = await mergeReconciliationFile(review.mappingFileId);
@@ -249,8 +298,9 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
       toast.success(`合并完成：新增 ${inserted}，跳过 ${skipped}，失败 ${failed}，关联 ${enriched}`);
       onMerged();
       close();
-    } catch {
-      toast.error("合并发运批次失败");
+    } catch (error) {
+      const message = apiErrorMessage(error);
+      toast.error(message ? `合并发运批次失败：${message}` : "合并发运批次失败");
     } finally {
       setBusy(false);
     }
@@ -260,10 +310,14 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
   const customerSummary = parsedReview?.customerResolutionSummary ?? null;
   const unresolvedCustomers = customerSummary?.customers.filter((item) => !item.resolved) ?? [];
   const hasUnresolvedCustomers = unresolvedCustomers.length > 0;
-  const mergeableRows = parsedReview?.rows.filter((row) => row.importable).length ?? 0;
+  const mergeableRows = parsedReview?.rows.filter(isEffectivelyImportable).length ?? 0;
   const blockedRows = parsedReview ? parsedReview.rows.length - mergeableRows : 0;
+  const blockingRows = parsedReview?.rows.filter(isBlockingRow) ?? [];
+  const hasBlockingRows = blockingRows.length > 0;
   const saveText = parsedReview
-    ? `${mergeableRows} 行可入池，${blockedRows} 行暂不入池；${parsedReview.linkedCount} 行已关联要货令，${parsedReview.missingMappingCount} 行待补要货令`
+    ? hasBlockingRows
+      ? `${mergeableRows} 行可入池，${blockingRows.length} 行红色问题将排除；可先合并有效数据，问题数据维护后重新解析`
+      : `${mergeableRows} 行可入池，${blockedRows} 行暂不入池；${parsedReview.linkedCount} 行已关联要货令，${parsedReview.missingMappingCount} 行待补要货令`
     : "解析后在弹窗内完成去重和冲突确认";
   const filteredRows = useMemo(
     () => (review
@@ -399,7 +453,7 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
                       <div>
                         <strong>部分客户没有找到</strong>
                         <p>
-                          {customerSummary.unresolvedRowCount} 行发运记录会暂不入池。可先合并已维护客户且校验通过的数据，未维护客户补齐后重新解析导入。
+                          {customerSummary.unresolvedRowCount} 行发运记录不会入池。可先合并其他有效数据，维护客户信息后再重新解析问题数据。
                         </p>
                       </div>
                       <Button size="sm" onClick={() => window.open("/system-settings", "_blank", "noopener,noreferrer")}>
@@ -594,7 +648,7 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
                             </div>
                           </td>
                           <td>
-                            <span className={`recon-import-policy${row.importable ? "" : " blocked"}`}>
+                            <span className={`recon-import-policy${isEffectivelyImportable(row) ? "" : " blocked"}`}>
                               {importPolicyText(row)}
                             </span>
                           </td>
@@ -614,15 +668,17 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
             <span className="filter-label">3. 保存</span>
             <p className="item-title">
               {review
-                ? hasUnresolvedCustomers
-                  ? `${mergeableRows} 行当前可入池，${customerSummary?.unresolvedRowCount ?? 0} 行未维护客户暂不入池`
-                  : `${review.totalRows} 行发运逐条入池，映射表按交货号合并后补充要货令`
+                ? `${blockedRows} 行不能入池`
                 : "等待解析结果"}
             </p>
           </div>
-          <Button variant="primary" disabled={busy || !review} onClick={handleMerge}>
+          <Button variant="primary" disabled={busy || !review || mergeableRows === 0} onClick={handleMerge}>
             {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {hasUnresolvedCustomers ? "仅合并可入池数据" : "合并入池"}
+            {mergeableRows === 0
+              ? "没有可入池数据"
+              : hasBlockingRows
+                ? "合并可入池数据"
+                : "合并入池"}
           </Button>
         </div>
       </DialogContent>

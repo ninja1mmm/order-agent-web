@@ -48,6 +48,24 @@ export function formatQty(value: number | null | undefined) {
   return (value ?? 0).toLocaleString("zh-CN");
 }
 
+export function apiErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) return "";
+  const jsonStart = error.message.indexOf("{");
+  if (jsonStart >= 0) {
+    try {
+      const payload = JSON.parse(error.message.slice(jsonStart)) as {
+        error?: unknown;
+        detail?: unknown;
+      };
+      const detail = payload.error ?? payload.detail;
+      if (typeof detail === "string" && detail.trim()) return detail;
+    } catch {
+      // Keep the original message when the backend body is not JSON.
+    }
+  }
+  return error.message;
+}
+
 export function normalizeIntegerText(value: string) {
   const compact = value.replace(/\s/g, "");
   const negative = compact.startsWith("-");

@@ -48,21 +48,13 @@ function periodLabel(from: string, to: string) {
   return `${from} - ${to}`;
 }
 
-function shipmentWindowLabel(from: string | null, to: string | null) {
-  if (!from && !to) return "累计未对账发运池";
-  return `${from ?? "-"} - ${to ?? "-"}`;
-}
-
 export function reconciliationTaskStatusMeta(status: string): { label: string; variant: Variant } {
   const map: Record<string, { label: string; variant: Variant }> = {
     draft: { label: "待开始", variant: "slate" },
     in_progress: { label: "对账中", variant: "blue" },
-    closing: { label: "关闭中", variant: "blue" },
     closed: { label: "已关闭", variant: "green" },
-    reopening: { label: "重开中", variant: "blue" },
-    voiding: { label: "作废中", variant: "amber" },
-    voided: { label: "已作废", variant: "red" },
-    cancelled: { label: "已取消", variant: "amber" },
+    voided: { label: "已作废", variant: "slate" },
+    cancelled: { label: "已取消", variant: "slate" },
   };
   return map[status] ?? { label: status || "未知", variant: "slate" };
 }
@@ -70,10 +62,10 @@ export function reconciliationTaskStatusMeta(status: string): { label: string; v
 export function reconciliationRecordStatusMeta(status: string): { label: string; variant: Variant } {
   const map: Record<string, { label: string; variant: Variant }> = {
     unmatched: { label: "未匹配", variant: "slate" },
-    partial: { label: "部分对账", variant: "amber" },
+    partial_confirmed_pending_writeback: { label: "部分确认待写回", variant: "amber" },
+    confirmed_pending_writeback: { label: "已确认待写回", variant: "blue" },
+    partial: { label: "部分匹配", variant: "amber" },
     fully_matched: { label: "完全匹配", variant: "green" },
-    in_transit: { label: "在途", variant: "blue" },
-    closed: { label: "已关闭", variant: "blue" },
   };
   return map[status] ?? { label: status || "未知", variant: "slate" };
 }
@@ -121,10 +113,8 @@ export function transformTaskSchemaToModel(
     periodFrom: task.periodFrom,
     periodTo: task.periodTo,
     periodLabel: periodLabel(task.periodFrom, task.periodTo),
-    shipmentWindowFrom: task.shipmentWindowFrom,
-    shipmentWindowTo: task.shipmentWindowTo,
-    shipmentWindowLabel: shipmentWindowLabel(task.shipmentWindowFrom, task.shipmentWindowTo),
     status: task.status,
+    isTransitioning: task.isTransitioning,
     statusLabel: meta.label,
     statusVariant: meta.variant,
     creationSource: task.creationSource,
@@ -196,7 +186,8 @@ export function transformShipmentSchemaToModel(
   record: ShipmentRecordResponseSchema,
   customers: CustomerConfig[],
 ): ShipmentRecord {
-  const meta = reconciliationRecordStatusMeta(record.reconciliationStatus);
+  const meta = reconciliationRecordStatusMeta(record.effectiveReconciliationStatus);
+  const activeConfirmedMatchCount = record.activeConfirmedMatchCount ?? 0;
   const remainingQty = record.qty - record.matchedReceiptQty;
   return {
     id: record.id,
@@ -213,12 +204,13 @@ export function transformShipmentSchemaToModel(
     adjustmentSeq: record.adjustmentSeq,
     matchedReceiptQty: record.matchedReceiptQty,
     pendingMatchedReceiptQty: record.pendingMatchedReceiptQty ?? 0,
-    activeConfirmedMatchCount: record.activeConfirmedMatchCount ?? 0,
+    activeConfirmedMatchCount,
     remainingQty,
     reconciliationStatus: record.reconciliationStatus,
+    effectiveReconciliationStatus: record.effectiveReconciliationStatus,
     reconciliationStatusLabel: meta.label,
     statusVariant: meta.variant,
-    locked: record.reconciliationStatus !== "unmatched",
+    locked: record.effectiveReconciliationStatus !== "unmatched",
     remark: record.remark,
     sourceFileId: record.sourceFileId,
     updatedAt: record.updatedAt,
@@ -239,7 +231,8 @@ export function transformReceiptSchemaToModel(
   record: ReceiptRecordResponseSchema,
   customers: CustomerConfig[],
 ): ReceiptRecord {
-  const meta = reconciliationRecordStatusMeta(record.reconciliationStatus);
+  const meta = reconciliationRecordStatusMeta(record.effectiveReconciliationStatus);
+  const activeConfirmedMatchCount = record.activeConfirmedMatchCount ?? 0;
   const remainingQty = record.qty - record.matchedShipmentQty;
   return {
     id: record.id,
@@ -254,12 +247,13 @@ export function transformReceiptSchemaToModel(
     adjustmentSeq: record.adjustmentSeq,
     matchedShipmentQty: record.matchedShipmentQty,
     pendingMatchedShipmentQty: record.pendingMatchedShipmentQty ?? 0,
-    activeConfirmedMatchCount: record.activeConfirmedMatchCount ?? 0,
+    activeConfirmedMatchCount,
     remainingQty,
     reconciliationStatus: record.reconciliationStatus,
+    effectiveReconciliationStatus: record.effectiveReconciliationStatus,
     reconciliationStatusLabel: meta.label,
     statusVariant: meta.variant,
-    locked: record.reconciliationStatus !== "unmatched",
+    locked: record.effectiveReconciliationStatus !== "unmatched",
     remark: record.remark,
     sourceFileId: record.sourceFileId,
     updatedAt: record.updatedAt,
@@ -563,6 +557,7 @@ export function buildCommitPreviewRows(
       id: `shipment:${id}`,
       side: "shipment",
       recordNo: record?.deliveryNo || id,
+      recordDate: record?.shipmentDate ?? null,
       customerName: record?.customerName ?? "-",
       material: record?.internalPartNumber ?? "-",
       shipmentQty: record ? Math.abs(record.qty) : hint?.shipmentQty ?? null,
@@ -580,6 +575,7 @@ export function buildCommitPreviewRows(
       id: `receipt:${id}`,
       side: "receipt",
       recordNo: record?.demandOrderNo || id,
+      recordDate: record?.receiptDate ?? null,
       customerName: record?.customerName ?? "-",
       material: record?.internalPartNumber ?? "-",
       shipmentQty: hint?.shipmentQty ?? null,
@@ -601,6 +597,7 @@ export function buildCommitPreviewRows(
       id: `missing-shipment:${record.id}`,
       side: "shipment",
       recordNo: record.deliveryNo || record.id,
+      recordDate: record.shipmentDate,
       customerName: record.customerName,
       material: record.internalPartNumber,
       shipmentQty: Math.abs(record.qty),
@@ -615,6 +612,7 @@ export function buildCommitPreviewRows(
       id: `missing-receipt:${record.id}`,
       side: "receipt",
       recordNo: record.demandOrderNo || record.id,
+      recordDate: record.receiptDate,
       customerName: record.customerName,
       material: record.internalPartNumber,
       shipmentQty: null,

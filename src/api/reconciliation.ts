@@ -11,6 +11,7 @@ import type {
   MergeSummaryResponseSchema,
   ReceiptRecordCreateSchema,
   ReceiptImportReviewResponseSchema,
+  ReceiptRecordListParamsSchema,
   ReceiptRecordListResponseSchema,
   ReceiptRecordResponseSchema,
   ReceiptRecordUpdateSchema,
@@ -23,6 +24,7 @@ import type {
   ReconciliationTaskResponseSchema,
   ShipmentImportReviewResponseSchema,
   ShipmentRecordCreateSchema,
+  ShipmentRecordListParamsSchema,
   ShipmentRecordListResponseSchema,
   ShipmentRecordResponseSchema,
   ShipmentRecordUpdateSchema,
@@ -193,14 +195,9 @@ export function getReceiptImportReviewSchema(fileId: string): Promise<ReceiptImp
   );
 }
 
-export function listShipmentRecordsSchema(params: {
-  page?: number;
-  size?: number;
-  customerId?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  reconciliationStatus?: string;
-}): Promise<ShipmentRecordListResponseSchema> {
+export function listShipmentRecordsSchema(
+  params: ShipmentRecordListParamsSchema,
+): Promise<ShipmentRecordListResponseSchema> {
   return apiRequest<ShipmentRecordListResponseSchema>(
     `/api/reconciliation/shipment-records${queryString(params)}`,
   );
@@ -232,14 +229,9 @@ export function deleteShipmentRecordSchema(recordId: string): Promise<void> {
   );
 }
 
-export function listReceiptRecordsSchema(params: {
-  page?: number;
-  size?: number;
-  customerId?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  reconciliationStatus?: string;
-}): Promise<ReceiptRecordListResponseSchema> {
+export function listReceiptRecordsSchema(
+  params: ReceiptRecordListParamsSchema,
+): Promise<ReceiptRecordListResponseSchema> {
   return apiRequest<ReceiptRecordListResponseSchema>(
     `/api/reconciliation/receipt-records${queryString(params)}`,
   );
