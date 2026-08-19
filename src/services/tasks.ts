@@ -1,8 +1,11 @@
 import {
+  addRowSchema,
   cancelTaskSchema,
+  deleteRowSchema,
   getEffectiveRowsSchema,
   patchRowSchema,
   proceedTaskSchema,
+  publishTaskSchema,
   rerunTaskSchema,
 } from "@/api/tasks";
 import {
@@ -13,12 +16,16 @@ import {
 } from "@/lib/transforms/tasks";
 import { getInboxWorkspace, type WorkspaceTask } from "./inbox";
 import type {
+  AddRowResponse,
+  DeleteRowResponse,
   EffectiveRowsResponse,
   RowPatchResponse,
 } from "@/types/models/tasks";
 
 export type {
   AddedTaskRow,
+  AddRowResponse,
+  DeleteRowResponse,
   EffectiveRowsResponse,
   ProceedTaskRequest,
   RowPatchRequest,
@@ -66,6 +73,42 @@ export async function patchRow(
 export async function getEffectiveRows(taskId: string): Promise<EffectiveRowsResponse> {
   const response = await getEffectiveRowsSchema(taskId);
   return transformEffectiveRowsResponseToModel(response);
+}
+
+export async function addRow(
+  taskId: string,
+  resultRevision: number,
+  customerPartNumber: string,
+  quantity?: number | null,
+  dateInfo?: string | null,
+  dateFormat?: string | null,
+  classification?: string | null,
+): Promise<AddRowResponse> {
+  const response = await addRowSchema(taskId, {
+    result_revision: resultRevision,
+    customer_part_number: customerPartNumber,
+    quantity,
+    date_info: dateInfo,
+    date_format: dateFormat,
+    classification,
+  });
+  return response;
+}
+
+export async function deleteRow(
+  taskId: string,
+  rowId: string,
+  resultRevision: number,
+): Promise<DeleteRowResponse> {
+  const response = await deleteRowSchema(taskId, rowId, resultRevision);
+  return response;
+}
+
+export async function publishTask(
+  taskId: string,
+  resultRevision: number,
+): Promise<void> {
+  await publishTaskSchema(taskId, { result_revision: resultRevision });
 }
 
 export async function cancelTask(taskId: string): Promise<void> {

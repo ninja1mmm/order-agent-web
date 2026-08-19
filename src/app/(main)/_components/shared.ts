@@ -460,5 +460,8 @@ export function translatePipelineSummary(text: string | null | undefined): strin
   m = text.match(/^(\d+)\s+rows?\s+skipped\.?$/i);
   if (m) return `${m[1]} 行已跳过`;
 
+  m = text.match(/^Pipeline completed with (\d+) row\(s\)\.\s*Please review and confirm before publishing\.?$/i);
+  if (m) return `流程已完成，共 ${m[1]} 行，请确认后发布`;
+
   return text;
 }

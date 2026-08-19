@@ -14,7 +14,14 @@ import {
   useCustomerConfig,
   useWorkspacePolling,
 } from "../../_components/shared";
-import { proceedTask, patchRow, type TaskStaleState } from "@/services/tasks";
+import {
+  proceedTask,
+  patchRow,
+  publishTask,
+  addRow as addRowApi,
+  deleteRow as deleteRowApi,
+  type TaskStaleState,
+} from "@/services/tasks";
 import { TaskListPanel } from "./left/task-list-panel";
 import { MiddlePanel } from "./middle/middle-panel";
 import { AgentFlowPanel } from "./right/agent-flow-panel";
@@ -53,12 +60,13 @@ function detectDateFormat(input: string): { dateInfo: string; dateFormat: "day" 
   return null;
 }
 
-const PIPELINE_STEPS = ["extraction", "date_expansion", "conflict_resolution", "material_mapping", "published"] as const;
+const PIPELINE_STEPS = ["extraction", "date_expansion", "conflict_resolution", "material_mapping", "ready_to_publish", "published"] as const;
 const STEP_LABELS: Record<string, string> = {
   extraction: "AI 提取",
   date_expansion: "日期扩展",
   conflict_resolution: "冲突检测",
   material_mapping: "料号匹配",
+  ready_to_publish: "确认发布",
   published: "已发布",
 };
 
@@ -77,6 +85,7 @@ export function ParseReviewPage() {
   const [referenceTime] = useState(() => Date.now());
   const [orderTypeMap, setOrderTypeMap] = useState<Map<string, OrderType>>(new Map());
   const [isProceedLoading, setIsProceedLoading] = useState(false);
+  const [isPublishLoading, setIsPublishLoading] = useState(false);
   const [mappingSortOrder, setMappingSortOrder] = useState<"asc" | "desc" | null>(null);
   const [deletedRowIds, setDeletedRowIds] = useState<Set<string>>(new Set());
   const [taskStaleState, setTaskStaleState] = useState<TaskStaleState | null>(null);
@@ -290,13 +299,24 @@ export function ParseReviewPage() {
     setMappingSortOrder((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null));
   }, []);
 
-  const deleteRow = useCallback((rowId: string) => {
-    setDeletedRowIds((prev) => {
-      const next = new Set(prev);
-      next.add(rowId);
-      return next;
-    });
-  }, []);
+  const handleDeleteRow = useCallback(async (rowId: string) => {
+    if (!selectedTask) return;
+    const revision = localResultRevision ?? selectedTask.resultRevision;
+    try {
+      const res = await deleteRowApi(selectedTask.id, rowId, revision);
+      setLocalResultRevision(res.resultRevision);
+      localRevRef.current = res.resultRevision;
+      setTaskStaleState(res.taskStaleState);
+      refresh();
+    } catch (err) {
+      console.error("Delete row failed:", err);
+      setDeletedRowIds((prev) => {
+        const next = new Set(prev);
+        next.add(rowId);
+        return next;
+      });
+    }
+  }, [selectedTask, localResultRevision, refresh]);
 
   const startEditing = useCallback((rowId: string, field: string, currentValue: unknown) => {
     if (!isWaitingHuman) return;
@@ -409,7 +429,28 @@ export function ParseReviewPage() {
     }
   }, [selectedTask, orderTypeMap, deletedRowIds, localNewRows, localResultRevision, refresh]);
 
-  const handleSaveNewRow = useCallback(() => {
+  const handlePublish = useCallback(async () => {
+    if (!selectedTask) return;
+    setIsPublishLoading(true);
+    try {
+      const revision = localResultRevision ?? selectedTask.resultRevision;
+      await publishTask(selectedTask.id, revision);
+      setTaskStaleState(null);
+      setLocalResultRevision(null);
+      localRevRef.current = null;
+      setLocalRowOverrides(new Map());
+      setLocalNewRows([]);
+      refresh();
+    } catch (err) {
+      console.error("Publish failed:", err);
+    } finally {
+      setIsPublishLoading(false);
+    }
+  }, [selectedTask, localResultRevision, refresh]);
+
+  const handleSaveNewRow = useCallback(async () => {
+    if (!selectedTask) return;
+
     const errors: Record<string, string> = {};
     if (!newRowData.customerPartNumber.trim()) errors.customerPartNumber = "必填";
     const qty = parseInt(newRowData.quantity, 10);
@@ -427,20 +468,40 @@ export function ParseReviewPage() {
       return;
     }
 
-    setLocalNewRows((prev) => [
-      ...prev,
-      {
-        id: `new_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        customerPartNumber: newRowData.customerPartNumber.trim(),
-        quantity: qty,
-        dateInfo: dateResult!.dateInfo,
-        dateFormat: dateResult!.dateFormat,
-      },
-    ]);
-    setIsAddingRow(false);
-    setNewRowData({ customerPartNumber: "", quantity: "", dateInfo: "" });
-    setNewRowErrors({});
-  }, [newRowData]);
+    const revision = localResultRevision ?? selectedTask.resultRevision;
+    try {
+      const res = await addRowApi(
+        selectedTask.id,
+        revision,
+        newRowData.customerPartNumber.trim(),
+        qty,
+        dateResult!.dateInfo,
+        dateResult!.dateFormat,
+      );
+      setLocalResultRevision(res.resultRevision);
+      localRevRef.current = res.resultRevision;
+      setTaskStaleState(res.taskStaleState);
+      setIsAddingRow(false);
+      setNewRowData({ customerPartNumber: "", quantity: "", dateInfo: "" });
+      setNewRowErrors({});
+      refresh();
+    } catch (err) {
+      console.error("Add row failed:", err);
+      setLocalNewRows((prev) => [
+        ...prev,
+        {
+          id: `new_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          customerPartNumber: newRowData.customerPartNumber.trim(),
+          quantity: qty,
+          dateInfo: dateResult!.dateInfo,
+          dateFormat: dateResult!.dateFormat,
+        },
+      ]);
+      setIsAddingRow(false);
+      setNewRowData({ customerPartNumber: "", quantity: "", dateInfo: "" });
+      setNewRowErrors({});
+    }
+  }, [selectedTask, newRowData, localResultRevision, refresh]);
 
   const handleCancelNewRow = useCallback(() => {
     setIsAddingRow(false);
@@ -573,7 +634,7 @@ export function ParseReviewPage() {
           onBulkToggleOrderType={bulkToggleOrderType}
           onStartAddingRow={handleStartAddingRow}
           onToggleOrderType={toggleOrderType}
-          onDeleteRow={deleteRow}
+          onDeleteRow={handleDeleteRow}
           onStartEditing={startEditing}
           onEditValueChange={setEditValue}
           onCommitEdit={commitEdit}
@@ -590,10 +651,12 @@ export function ParseReviewPage() {
           isTaskRunning={isTaskRunning}
           isWaitingHuman={isWaitingHuman}
           isProceedLoading={isProceedLoading}
+          isPublishLoading={isPublishLoading}
           resultHref={resultHref}
           taskStaleState={taskStaleState}
           stepLabels={STEP_LABELS}
           onProceed={handleProceed}
+          onPublish={handlePublish}
           onRefresh={refresh}
         />
       </div>

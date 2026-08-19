@@ -72,7 +72,20 @@ export function ResultTable({
   onSaveNewRow,
   onCancelNewRow,
 }: ResultTableProps) {
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && localNewRows.length === 0 && !isAddingRow) {
+    if (!isWaitingHuman) return null;
+    return (
+      <div className="scroll-x">
+        <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--muted)" }}>
+          <p style={{ marginBottom: 12 }}>未提取到数据，可手动添加行</p>
+          <button type="button" className="proceed-btn" onClick={onStartAddingRow}>
+            <Plus className="h-3 w-3" />
+            添加行
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="scroll-x">

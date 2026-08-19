@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, FileSearch, LoaderCircle, Play, RefreshCw, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileSearch, LoaderCircle, Play, RefreshCw, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { WorkspaceTask } from "@/services/inbox";
@@ -23,10 +23,12 @@ type AgentFlowPanelProps = {
   isTaskRunning: boolean;
   isWaitingHuman: boolean;
   isProceedLoading: boolean;
+  isPublishLoading: boolean;
   resultHref: string;
   taskStaleState: TaskStaleState | null;
   stepLabels: Record<string, string>;
   onProceed: () => void;
+  onPublish: () => void;
   onRefresh: () => void;
 };
 
@@ -37,10 +39,12 @@ export function AgentFlowPanel({
   isTaskRunning,
   isWaitingHuman,
   isProceedLoading,
+  isPublishLoading,
   resultHref,
   taskStaleState,
   stepLabels,
   onProceed,
+  onPublish,
   onRefresh,
 }: AgentFlowPanelProps) {
   const t = copy[locale];
@@ -116,19 +120,36 @@ export function AgentFlowPanel({
                         已修改字段，继续后将重新执行: {taskStaleState.pendingReevalSteps.map((step) => stepLabels[step] ?? step).join(", ")}
                       </div>
                     ) : null}
-                    <button
-                      type="button"
-                      className="proceed-btn"
-                      disabled={isProceedLoading}
-                      onClick={onProceed}
-                    >
-                      {isProceedLoading ? (
-                        <LoaderCircle className="animate-spin" />
-                      ) : (
-                        <Play className="h-3 w-3" />
-                      )}
-                      继续流程
-                    </button>
+                    {entry.key === "ready_to_publish" ? (
+                      <button
+                        type="button"
+                        className="proceed-btn"
+                        style={{ background: "var(--accent)" }}
+                        disabled={isPublishLoading}
+                        onClick={onPublish}
+                      >
+                        {isPublishLoading ? (
+                          <LoaderCircle className="animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-3 w-3" />
+                        )}
+                        确认并发布
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="proceed-btn"
+                        disabled={isProceedLoading}
+                        onClick={onProceed}
+                      >
+                        {isProceedLoading ? (
+                          <LoaderCircle className="animate-spin" />
+                        ) : (
+                          <Play className="h-3 w-3" />
+                        )}
+                        继续流程
+                      </button>
+                    )}
                   </>
                 ) : null}
                 {idx === timeline.length - 1 && resultHref ? (

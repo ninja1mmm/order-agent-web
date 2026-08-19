@@ -33,3 +33,23 @@ export type RowPatchRequest = {
   resultRevision: number;
   changes: Record<string, string | number | null>;
 };
+
+export type AddRowRequest = {
+  resultRevision: number;
+  customerPartNumber: string;
+  quantity?: number | null;
+  dateInfo?: string | null;
+  dateFormat?: string | null;
+  classification?: string | null;
+};
+
+export type AddRowResponse = {
+  resultRevision: number;
+  row: Record<string, unknown>;
+  taskStaleState: TaskStaleState;
+};
+
+export type DeleteRowResponse = {
+  resultRevision: number;
+  taskStaleState: TaskStaleState;
+};
