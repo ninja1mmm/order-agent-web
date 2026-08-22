@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>邮件解析确认 · Prototype 4.0</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="index.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group" aria-label="主导航">
+        <a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i><span>智能客服</span></a>
+        <a class="nav-link active" href="01-task-workbench.html"><i data-lucide="workflow"></i><span>智能供应链</span></a>
+        <a class="nav-link" href="../prototype-3.0/05-customer-profile.html"><i data-lucide="users"></i><span>客户画像</span></a>
+        <a class="nav-link" href="../prototype-3.0/06-financial-reconciliation-2.0.html"><i data-lucide="scale"></i><span>财务对账</span></a>
+        <a class="nav-link" href="../prototype-3.0/07-system-settings.html"><i data-lucide="settings"></i><span>系统配置</span></a>
+      </nav>
+      <div class="top-actions"><button class="icon-button" aria-label="打开智能助手"><i data-lucide="bot"></i></button><span class="avatar">A</span></div>
+    </header>
+
+    <main class="page fit review-page">
+      <header class="review-header">
+        <div class="row-start" style="min-width:0">
+          <a class="back-link" href="01-task-workbench.html?view=customer" aria-label="返回客户收件箱"><i data-lucide="arrow-left"></i></a>
+          <span class="prototype-tag">4.0</span>
+          <div class="review-identity">
+            <div class="review-subject">无锡佛吉亚 W35 周提货计划</div>
+            <div class="review-meta">Faurecia-Wuhan · ying.chen@forvia.com · 收件 2026/08/20 17:27 · 邮件处理会话 MPS-20260820-014</div>
+          </div>
+        </div>
+        <div class="actions"><span class="badge warning"><span class="dot warning"></span>待人工确认</span><button class="btn small" data-demo-action="草稿已保存。"><i data-lucide="save"></i>保存草稿</button></div>
+      </header>
+
+      <div class="review-grid">
+        <aside class="panel scroll mail-outline">
+          <div class="panel-head">
+            <div><div class="outline-subject">无锡佛吉亚 W35 周提货计划</div><div class="outline-meta">本页只包含当前邮件正文、附件及其解析来源。</div></div>
+          </div>
+          <div class="panel-body stack">
+            <div class="outline-group-label">邮件内容</div>
+            <button class="outline-item">
+              <div class="outline-item-title"><i data-lucide="mail"></i><span class="truncate">Email Body</span><span class="badge">参考</span></div>
+              <div class="outline-item-meta">正文含“详情见附件”，不直接提取订单行</div>
+            </button>
+            <div class="outline-group-label">附件 · 1</div>
+            <button class="outline-item selected">
+              <div class="outline-item-title"><i data-lucide="file-spreadsheet"></i><span class="truncate">15WK35-无锡佛吉亚提货计划.xlsx</span></div>
+              <div class="outline-item-meta">3 Sheets · 2 个进入解析范围 · 草稿 v4</div>
+            </button>
+            <div class="outline-group-label">本邮件状态</div>
+            <div class="card">
+              <div class="row"><span class="caption">当前阶段</span><strong data-current-step-label>解析范围确认</strong></div>
+              <div class="row" style="margin-top:8px"><span class="caption">草稿行</span><strong class="numeric">38</strong></div>
+              <div class="row" style="margin-top:8px"><span class="caption">阻塞问题</span><strong class="numeric" style="color:var(--warning)">1</strong></div>
+              <div class="row" style="margin-top:8px"><span class="caption">Orders 影响</span><strong class="numeric">12 物料</strong></div>
+            </div>
+            <div class="callout warning">当前所有修改都只作用于邮件草稿。完成 Merge 前不会写入 Orders。</div>
+          </div>
+        </aside>
+
+        <section class="review-main">
+          <div class="process-panel" aria-label="邮件解析流程">
+            <div class="process-steps">
+              <button class="process-step active" data-review-step="1" aria-current="step"><span class="step-index">1</span><span class="step-copy"><strong>解析范围确认</strong><small>附件、Sheet、数据类型</small></span></button>
+              <button class="process-step" data-review-step="2"><span class="step-index">2</span><span class="step-copy"><strong>物料核对</strong><small>完整性与映射</small></span></button>
+              <button class="process-step" data-review-step="3"><span class="step-index">3</span><span class="step-copy"><strong>日期语义</strong><small>收货转发运</small></span></button>
+              <button class="process-step" data-review-step="4"><span class="step-index">4</span><span class="step-copy"><strong>数量策略</strong><small>增加、扣减、覆盖</small></span></button>
+              <button class="process-step" data-review-step="5"><span class="step-index">5</span><span class="step-copy"><strong>合并预览</strong><small>Before / After</small></span></button>
+              <button class="process-step" data-review-step="6"><span class="step-index">6</span><span class="step-copy"><strong>已合并</strong><small>Changeset 与审计</small></span></button>
+            </div>
+          </div>
+
+          <div class="review-workspace">
+            <section class="panel scroll preview-panel">
+              <div class="panel-head"><h2 class="panel-title"><i data-lucide="file-search"></i>来源与影响预览</h2><span class="badge">只读来源</span></div>
+              <div class="panel-body">
+                <!-- Preview 1: source scope -->
+                <div class="step-panel active" data-preview-panel="1">
+                  <div class="source-preview">
+                    <div class="preview-toolbar"><strong class="truncate">15WK35-无锡佛吉亚提货计划.xlsx</strong><span class="caption">Sheet 预览</span></div>
+                    <div class="sheet-tabs"><button class="sheet-tab" data-sheet-tab>Summary</button><button class="sheet-tab active" data-sheet-tab>Shipping Plan</button><button class="sheet-tab" data-sheet-tab>Forecast</button></div>
+                    <div style="overflow:auto">
+                      <table class="excel-grid">
+                        <thead><tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr></thead>
+                        <tbody>
+                          <tr><th>1</th><td>Customer PN</td><td>Description</td><td>Arrival Date</td><td>Firm Qty</td><td>Plant</td><td>Remark</td></tr>
+                          <tr><th>2</th><td class="source-hit">537736001X</td><td>TRACK ASSY</td><td class="highlight">2026-08-26</td><td class="highlight">192</td><td>Wuhan</td><td>W35</td></tr>
+                          <tr><th>3</th><td>471532101X</td><td>FRAME ASSY</td><td class="highlight">2026-08-27</td><td class="highlight">384</td><td>Wuhan</td><td></td></tr>
+                          <tr><th>4</th><td>2172717X</td><td>RECLINER</td><td class="highlight">2026-08-28</td><td class="highlight">4032</td><td>Wuhan</td><td>New</td></tr>
+                          <tr><th>5</th><td>1868640X</td><td>MECHANISM</td><td class="highlight">2026-08-28</td><td class="highlight">960</td><td>Wuhan</td><td></td></tr>
+                          <tr><th>6</th><td>990X</td><td>COMMON PART</td><td class="highlight">2026-08-31</td><td class="highlight">480</td><td>Wuhan</td><td>Changed</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="callout" style="margin-top:10px">AI 初步选择了 <strong>Shipping Plan</strong>。同一文件还检测到 Forecast Sheet，可作为第二个解析来源加入本邮件草稿。</div>
+                </div>
+
+                <!-- Preview 2: material -->
+                <div class="step-panel" data-preview-panel="2">
+                  <div class="source-preview">
+                    <div class="preview-toolbar"><strong>来源定位 · Shipping Plan</strong><span class="badge warning">1 个未映射</span></div>
+                    <div style="overflow:auto">
+                      <table class="excel-grid">
+                        <thead><tr><th>行</th><th>Customer PN</th><th>Designation</th><th>Qty</th><th>来源</th></tr></thead>
+                        <tbody>
+                          <tr><td>2</td><td>537736001X</td><td>TRACK ASSY</td><td>192</td><td>B2:D2</td></tr>
+                          <tr><td>3</td><td>471532101X</td><td>FRAME ASSY</td><td>384</td><td>B3:D3</td></tr>
+                          <tr><td>4</td><td>2172717X</td><td>RECLINER</td><td>4032</td><td>B4:D4</td></tr>
+                          <tr><td>5</td><td class="source-hit">1868640X</td><td>MECHANISM</td><td>960</td><td>B5:D5</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="callout warning" style="margin-top:10px">点击未映射行时，左侧预览会定位到原始 Sheet 单元格，避免脱离来源修改。</div>
+                </div>
+
+                <!-- Preview 3: dates -->
+                <div class="step-panel" data-preview-panel="3">
+                  <div class="source-preview">
+                    <div class="preview-toolbar"><strong>日期来源对照</strong><span class="badge info">AI：收货日期 87%</span></div>
+                    <div style="overflow:auto">
+                      <table class="excel-grid">
+                        <thead><tr><th>Customer PN</th><th>原表日期</th><th>表头语义</th><th>转换后发运日期</th></tr></thead>
+                        <tbody>
+                          <tr><td>537736001X</td><td class="highlight">2026-08-26</td><td>Arrival Date</td><td data-normalized-date>—</td></tr>
+                          <tr><td>471532101X</td><td class="highlight">2026-08-27</td><td>Arrival Date</td><td data-normalized-date>—</td></tr>
+                          <tr><td>2172717X</td><td class="highlight">2026-08-28</td><td>Arrival Date</td><td data-normalized-date>—</td></tr>
+                          <tr><td>1868640X</td><td class="highlight">2026-08-29</td><td>Arrival Date</td><td data-normalized-date>—</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="callout" style="margin-top:10px">保留原始日期和转换规则，Orders 中只使用确认后的发运日期。</div>
+                </div>
+
+                <!-- Preview 4: quantity semantics -->
+                <div class="step-panel" data-preview-panel="4">
+                  <div class="source-preview">
+                    <div class="preview-toolbar"><strong>邮件正文与附件语义</strong><span class="badge warning">数量动作</span></div>
+                    <div style="padding:14px;line-height:1.75;background:#fff">
+                      <div class="caption">邮件正文</div>
+                      <p>无锡佛吉亚 W35 周提货计划更新，<mark>新增 717X，16 号提货 4032 PCS</mark>，详情见附件，谢谢。</p>
+                      <div class="caption">AI 推断</div>
+                      <div class="card" style="margin-top:6px"><div class="row"><strong>2172717X</strong><span class="badge warning">建议：增加</span></div><div class="card-meta">“新增”语义不应覆盖 Orders 当前数量。</div></div>
+                      <div class="card" style="margin-top:8px"><div class="row"><strong>537736001X</strong><span class="badge info">建议：覆盖</span></div><div class="card-meta">附件提供了完整的 W35 新计划值。</div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Preview 5: scoped orders -->
+                <div class="step-panel" data-preview-panel="5">
+                  <div class="source-preview">
+                    <div class="preview-toolbar"><strong>本邮件 Orders 局部预览</strong><span class="badge primary">12 个物料受影响</span></div>
+                    <div style="overflow:auto">
+                      <table class="excel-grid">
+                        <thead><tr><th>物料</th><th>类型</th><th>8/24</th><th>8/25</th><th>8/26</th><th>8/27</th><th>8/28</th></tr></thead>
+                        <tbody>
+                          <tr><td>537736001X</td><td>Firm</td><td>—</td><td>—</td><td class="source-hit">192</td><td>—</td><td>—</td></tr>
+                          <tr><td>471532101X</td><td>Firm</td><td>—</td><td>—</td><td>—</td><td class="source-hit">384</td><td>—</td></tr>
+                          <tr><td>2172717X</td><td>Firm</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="source-hit">4,032</td></tr>
+                          <tr><td>1868640X</td><td>Forecast</td><td>480</td><td class="highlight">960</td><td>960</td><td>960</td><td>480</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="callout warning" style="margin-top:10px">预览仅包含当前邮件草稿影响，不代表完整 Orders 页面。合并前会再次检查 Orders revision。</div>
+                </div>
+
+                <!-- Preview 6: complete -->
+                <div class="step-panel" data-preview-panel="6">
+                  <div class="complete-state">
+                    <div class="complete-icon"><i data-lucide="check"></i></div>
+                    <h3>Changeset 已提交</h3>
+                    <p>邮件 MPS-20260820-014 的 38 行草稿已作为一个原子 Changeset 合并。来源附件与 Sheet 仍可追溯。</p>
+                    <div class="card" style="text-align:left"><div class="row"><span class="caption">Changeset</span><strong>CHG-20260822-0048</strong></div><div class="row" style="margin-top:8px"><span class="caption">提交人</span><strong>Anna Zhou</strong></div><div class="row" style="margin-top:8px"><span class="caption">提交时间</span><strong>2026/08/22 15:42</strong></div></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel scroll edit-panel">
+              <div class="panel-head"><h2 class="panel-title"><i data-lucide="square-pen"></i><span data-current-step-label>解析范围确认</span></h2><span class="badge primary">邮件草稿 v4</span></div>
+              <div class="panel-body">
+                <!-- Step 1 -->
+                <div class="step-panel active" data-step-panel="1">
+                  <div class="form-section">
+                    <div class="form-section-title"><span>确认需要解析的来源</span><span class="badge warning">AI 建议</span></div>
+                    <div class="help">一个附件可以添加多个 Sheet。每个 Sheet 生成独立解析来源，并在邮件级草稿中汇总。</div>
+                    <div style="margin-top:10px">
+                      <div class="source-unit"><input type="checkbox" checked aria-label="选择 Shipping Plan"><div><strong>Shipping Plan</strong><small>36 行 × 14 列 · 检测为 Firm · 置信度 94%</small></div><select class="mini-select" aria-label="Shipping Plan 数据类型"><option>Firm</option><option>Forecast</option><option>不参与</option></select></div>
+                      <div class="source-unit"><input type="checkbox" checked aria-label="选择 Forecast"><div><strong>Forecast</strong><small>92 行 × 28 列 · 检测为 Forecast · 置信度 89%</small></div><select class="mini-select" aria-label="Forecast 数据类型"><option>Forecast</option><option>Firm</option><option>不参与</option></select></div>
+                      <div class="source-unit"><input type="checkbox" aria-label="选择 Summary"><div><strong>Summary</strong><small>12 行 × 8 列 · 未检测到订单数据</small></div><select class="mini-select" aria-label="Summary 数据类型"><option>不参与</option><option>Firm</option><option>Forecast</option></select></div>
+                    </div>
+                    <div class="actions" style="margin-top:10px"><button class="btn small" data-demo-action="已展开 Sheet 选择器。"><i data-lucide="plus"></i>添加 Sheet</button><button class="btn small" data-reparse-source><i data-lucide="refresh-cw"></i>按当前范围重新解析</button></div>
+                  </div>
+                  <div class="form-section" style="margin-top:10px">
+                    <div class="form-section-title"><span>范围检查结果</span><span class="badge success">可继续</span></div>
+                    <div class="row"><span class="caption">解析来源</span><strong>2 个 Sheets</strong></div><div class="row" style="margin-top:7px"><span class="caption">初步提取</span><strong>38 行</strong></div><div class="row" style="margin-top:7px"><span class="caption">遗漏风险</span><strong>低</strong></div>
+                  </div>
+                  <div class="sticky-actions"><span class="caption">确认后生成邮件级中间草稿，不写入 Orders。</span><button class="btn primary" data-next-step="2">确认范围，核对物料<i data-lucide="arrow-right"></i></button></div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-panel" data-step-panel="2">
+                  <div class="impact-summary"><div class="impact-item"><strong>12</strong><small>客户物料</small></div><div class="impact-item"><strong>11</strong><small>已映射</small></div><div class="impact-item"><strong style="color:var(--warning)">1</strong><small>待处理</small></div><div class="impact-item"><strong>38</strong><small>数据行</small></div></div>
+                  <div class="review-table-wrap" style="margin-top:10px">
+                    <table class="review-table">
+                      <thead><tr><th>Customer P/N</th><th>Designation</th><th>Faurecia P/N</th><th>映射状态</th><th>来源</th><th></th></tr></thead>
+                      <tbody>
+                        <tr><td>537736001X</td><td>TRACK ASSY</td><td>537736001</td><td><span class="badge success">已映射</span></td><td>Shipping Plan</td><td><button class="btn small" data-demo-action="已定位到原始单元格 B2。">定位</button></td></tr>
+                        <tr><td>471532101X</td><td>FRAME ASSY</td><td>471532101</td><td><span class="badge success">已映射</span></td><td>Shipping Plan</td><td><button class="btn small" data-demo-action="已定位到原始单元格 B3。">定位</button></td></tr>
+                        <tr><td>2172717X</td><td>RECLINER</td><td>2172717</td><td><span class="badge success">已映射</span></td><td>Shipping Plan</td><td><button class="btn small" data-demo-action="已定位到原始单元格 B4。">定位</button></td></tr>
+                        <tr><td>1868640X</td><td>MECHANISM</td><td><input class="field" value="" placeholder="选择内部物料" style="min-width:130px;height:28px;min-height:28px"></td><td><span class="badge warning">未映射</span></td><td>Shipping Plan</td><td><button class="btn small primary" data-demo-action="物料映射已保存到邮件草稿。">确认映射</button></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="sticky-actions"><button class="btn" data-prev-step="1"><i data-lucide="arrow-left"></i>返回范围</button><button class="btn primary" data-next-step="3">物料完整，确认日期<i data-lucide="arrow-right"></i></button></div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-panel" data-step-panel="3">
+                  <div class="form-section">
+                    <div class="form-section-title"><span>批量日期语义</span><span class="badge info">应用到 Shipping Plan</span></div>
+                    <div class="date-adjust">
+                      <label><span class="label">原日期含义</span><select class="select-field"><option>收货日期</option><option>发运日期</option><option>未确定</option></select></label>
+                      <label><span class="label">转换方式</span><select class="select-field"><option>提前 2 个工作日</option><option>提前 N 个自然日</option><option>使用客户运输提前期</option></select></label>
+                      <label><span class="label">节假日历</span><select class="select-field"><option>中国工作日</option><option>自然日</option></select></label>
+                    </div>
+                    <div class="actions" style="margin-top:10px"><button class="btn primary" data-date-apply><i data-lucide="calendar-check"></i>生成发运日期</button><button class="btn" data-demo-action="已允许对单行日期进行覆盖。">允许单行覆盖</button></div>
+                  </div>
+                  <div class="review-table-wrap" style="margin-top:10px">
+                    <table class="review-table">
+                      <thead><tr><th>Customer P/N</th><th>原始日期</th><th>含义</th><th>发运日期</th><th>规则</th></tr></thead>
+                      <tbody><tr><td>537736001X</td><td>2026-08-26</td><td>收货</td><td class="changed">2026-08-24</td><td>-2 工作日</td></tr><tr><td>471532101X</td><td>2026-08-27</td><td>收货</td><td class="changed">2026-08-25</td><td>-2 工作日</td></tr><tr><td>2172717X</td><td>2026-08-28</td><td>收货</td><td class="changed">2026-08-26</td><td>-2 工作日</td></tr><tr><td>1868640X</td><td>2026-08-29</td><td>收货</td><td class="changed">2026-08-27</td><td>-2 工作日</td></tr></tbody>
+                    </table>
+                  </div>
+                  <div class="sticky-actions"><button class="btn" data-prev-step="2"><i data-lucide="arrow-left"></i>返回物料</button><button class="btn primary" data-next-step="4">日期正确，确认数量<i data-lucide="arrow-right"></i></button></div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="step-panel" data-step-panel="4">
+                  <div class="row"><div><strong>确认每行数量如何作用于 Orders</strong><div class="help">“新建”由目标是否存在自动判断；已有目标必须明确增加、扣减或覆盖。</div></div><div class="actions"><button class="btn small" data-apply-strategy="increment">全部增加</button><button class="btn small" data-apply-strategy="replace">全部覆盖</button></div></div>
+                  <div class="review-table-wrap" style="margin-top:10px">
+                    <table class="review-table">
+                      <thead><tr><th>物料</th><th class="number">当前值</th><th class="number">提取值</th><th>合并策略</th><th class="number">变化量</th><th class="number">合并后</th><th>AI 依据</th></tr></thead>
+                      <tbody>
+                        <tr data-quantity-row data-current="1200" data-extracted="192"><td>537736001X</td><td class="number">1,200</td><td class="number">192</td><td><select class="mini-select" data-quantity-strategy><option value="replace">覆盖</option><option value="increment">增加</option><option value="decrement">扣减</option></select></td><td class="number" data-delta-quantity></td><td class="number changed" data-after-quantity></td><td><span class="badge info">完整计划值</span></td></tr>
+                        <tr data-quantity-row data-current="384" data-extracted="384"><td>471532101X</td><td class="number">384</td><td class="number">384</td><td><select class="mini-select" data-quantity-strategy><option value="replace">覆盖</option><option value="increment">增加</option><option value="decrement">扣减</option></select></td><td class="number" data-delta-quantity></td><td class="number changed" data-after-quantity></td><td><span class="badge info">完整计划值</span></td></tr>
+                        <tr data-quantity-row data-current="960" data-extracted="4032"><td>2172717X</td><td class="number">960</td><td class="number">4,032</td><td><select class="mini-select" data-quantity-strategy><option value="increment">增加</option><option value="replace">覆盖</option><option value="decrement">扣减</option></select></td><td class="number" data-delta-quantity></td><td class="number changed" data-after-quantity></td><td><span class="badge warning">正文“新增”</span></td></tr>
+                        <tr data-quantity-row data-current="1440" data-extracted="480"><td>990X</td><td class="number">1,440</td><td class="number">480</td><td><select class="mini-select" data-quantity-strategy><option value="decrement">扣减</option><option value="replace">覆盖</option><option value="increment">增加</option></select></td><td class="number" data-delta-quantity></td><td class="number changed" data-after-quantity></td><td><span class="badge warning">正文“取消部分”</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="sticky-actions"><button class="btn" data-prev-step="3"><i data-lucide="arrow-left"></i>返回日期</button><button class="btn primary" data-next-step="5">数量策略正确，生成预览<i data-lucide="arrow-right"></i></button></div>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="step-panel" data-step-panel="5">
+                  <div class="impact-summary"><div class="impact-item"><strong>38</strong><small>草稿行</small></div><div class="impact-item"><strong>12</strong><small>受影响物料</small></div><div class="impact-item"><strong>4</strong><small>日期区间</small></div><div class="impact-item"><strong class="positive">+3,552</strong><small>净数量变化</small></div></div>
+                  <div class="review-table-wrap" style="margin-top:10px">
+                    <table class="review-table">
+                      <thead><tr><th>Customer P/N</th><th>Faurecia P/N</th><th>发运日期</th><th>类型</th><th class="number">Before</th><th>动作</th><th class="number">Input</th><th class="number">After</th></tr></thead>
+                      <tbody><tr><td>537736001X</td><td>537736001</td><td>2026-08-24</td><td>Firm</td><td class="number">1,200</td><td><span class="badge info">覆盖</span></td><td class="number">192</td><td class="number changed">192</td></tr><tr><td>471532101X</td><td>471532101</td><td>2026-08-25</td><td>Firm</td><td class="number">384</td><td><span class="badge info">覆盖</span></td><td class="number">384</td><td class="number changed">384</td></tr><tr><td>2172717X</td><td>2172717</td><td>2026-08-26</td><td>Firm</td><td class="number">960</td><td><span class="badge success">增加</span></td><td class="number">4,032</td><td class="number changed">4,992</td></tr><tr><td>990X</td><td>990</td><td>2026-08-27</td><td>Forecast</td><td class="number">1,440</td><td><span class="badge danger">扣减</span></td><td class="number">480</td><td class="number changed">960</td></tr></tbody>
+                    </table>
+                  </div>
+                  <div class="callout warning" style="margin-top:10px">提交时将以 Session revision 4 和 Orders snapshot 1092 做并发校验；如 Orders 已变化，需要重新生成预览。</div>
+                  <div class="sticky-actions"><button class="btn" data-prev-step="4"><i data-lucide="arrow-left"></i>返回数量</button><button class="btn primary" data-open-modal="#mergeModal"><i data-lucide="git-merge"></i>确认并 Merge 到 Orders</button></div>
+                </div>
+
+                <!-- Step 6 -->
+                <div class="step-panel" data-step-panel="6">
+                  <div class="complete-state">
+                    <div class="complete-icon"><i data-lucide="check"></i></div><h3>邮件处理完成</h3><p>38 行已合并，Orders 页面无需为本次原型修改。可以通过 Changeset 追溯邮件、附件、Sheet 与人工确认记录。</p>
+                    <div class="actions" style="justify-content:center"><a class="btn" href="01-task-workbench.html?view=customer"><i data-lucide="mail"></i>返回邮件</a><a class="btn primary" href="../prototype-3.0/03-orders-2.0.html"><i data-lucide="table-2"></i>查看 Orders</a></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="mergeModal" role="dialog" aria-modal="true" aria-labelledby="mergeTitle">
+    <div class="modal">
+      <div class="modal-head"><strong id="mergeTitle">确认合并到 Orders</strong><button class="icon-button" data-close-modal aria-label="关闭"><i data-lucide="x"></i></button></div>
+      <div class="modal-body stack">
+        <div class="callout warning">这是本流程唯一会影响 Orders 的动作。原型只演示状态变化，不会连接真实后端。</div>
+        <div class="row"><span class="muted">邮件</span><strong>无锡佛吉亚 W35 周提货计划</strong></div>
+        <div class="row"><span class="muted">草稿版本</span><strong>v4</strong></div>
+        <div class="row"><span class="muted">影响范围</span><strong>12 个物料 · 38 行</strong></div>
+        <div class="row"><span class="muted">数量净变化</span><strong class="positive">+3,552</strong></div>
+      </div>
+      <div class="modal-foot"><button class="btn" data-close-modal>取消</button><button class="btn primary" data-confirm-merge><i data-lucide="git-merge"></i>确认合并</button></div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

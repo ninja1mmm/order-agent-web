@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智能客服 · Prototype 4.0</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="index.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group" aria-label="主导航">
+        <a class="nav-link active" href="00-intelligent-service.html"><i data-lucide="headphones"></i><span>智能客服</span></a>
+        <a class="nav-link" href="01-task-workbench.html"><i data-lucide="workflow"></i><span>智能供应链</span></a>
+        <a class="nav-link" href="../prototype-3.0/05-customer-profile.html"><i data-lucide="users"></i><span>客户画像</span></a>
+        <a class="nav-link" href="../prototype-3.0/06-financial-reconciliation-2.0.html"><i data-lucide="scale"></i><span>财务对账</span></a>
+        <a class="nav-link" href="../prototype-3.0/07-system-settings.html"><i data-lucide="settings"></i><span>系统配置</span></a>
+      </nav>
+      <div class="top-actions"><button class="icon-button" aria-label="打开智能助手"><i data-lucide="bot"></i></button><span class="avatar">A</span></div>
+    </header>
+
+    <main class="page fit">
+      <div class="page-row">
+        <div class="page-context"><span class="prototype-tag">4.0</span><div><strong>智能客服工作概览</strong><small> · 待办按邮件聚合</small></div></div>
+        <div class="actions">
+          <button class="btn small" data-demo-action="工作概览已刷新。"><i data-lucide="refresh-cw"></i>刷新</button>
+          <a class="btn small primary" href="01-task-workbench.html"><i data-lucide="inbox"></i>打开客户收件箱</a>
+        </div>
+      </div>
+
+      <div class="service-grid screen-fill">
+        <aside class="panel scroll">
+          <div class="panel-head"><h2 class="panel-title"><i data-lucide="sparkles"></i>昨日工作总结</h2><span class="badge">08/21</span></div>
+          <div class="panel-body stack">
+            <div class="metric-grid">
+              <div class="metric"><div class="metric-value">54</div><div class="metric-label">完成解析</div></div>
+              <div class="metric"><div class="metric-value">74</div><div class="metric-label">涉及客户</div></div>
+              <div class="metric"><div class="metric-value">9</div><div class="metric-label">待处理邮件</div></div>
+              <div class="metric"><div class="metric-value">4</div><div class="metric-label">待合并确认</div></div>
+            </div>
+            <div class="card">
+              <div class="row"><span class="card-title">邮件处理健康度</span><span class="badge success">92%</span></div>
+              <div class="card-meta">63 封邮件由 AI 自动推进到草稿阶段；9 封因数据源、物料、日期或数量语义等待人工确认。</div>
+            </div>
+            <div class="card">
+              <div class="card-title">今日优先级</div>
+              <div class="stack" style="margin-top:9px">
+                <div class="row-start"><span class="dot danger"></span><div><strong>2 封解析失败</strong><div class="caption">先确认 Excel Sheet 或重新解析</div></div></div>
+                <div class="row-start"><span class="dot warning"></span><div><strong>4 封等待业务确认</strong><div class="caption">物料、日期与数量策略存在问题</div></div></div>
+                <div class="row-start"><span class="dot primary"></span><div><strong>3 封可生成预览</strong><div class="caption">确认后才会 Merge 到 Orders</div></div></div>
+              </div>
+            </div>
+            <div class="callout">4.0 中 Task 仍是后台执行单位，但概览、通知和人工待办都以邮件为主对象。</div>
+          </div>
+        </aside>
+
+        <section class="panel scroll">
+          <div class="panel-head">
+            <h2 class="panel-title"><i data-lucide="calendar-days"></i>客户回邮件节奏</h2>
+            <div class="segmented"><button class="active">30 天</button><button>今日</button></div>
+          </div>
+          <div class="panel-body stack">
+            <div style="overflow:auto">
+              <div class="rhythm">
+                <strong class="rhythm-customer">客户</strong><span class="rhythm-head">8/09</span><span class="rhythm-head">8/10</span><span class="rhythm-head">8/11</span><span class="rhythm-head">8/12</span><span class="rhythm-head">8/13</span><span class="rhythm-head">8/14</span><span class="rhythm-head">8/15</span><span class="rhythm-head">8/16</span><span class="rhythm-head">8/17</span><span class="rhythm-head">8/18</span><span class="rhythm-head">8/19</span><span class="rhythm-head">8/20</span><span class="rhythm-head">8/21</span><span class="rhythm-head">8/22</span>
+                <span class="rhythm-customer">SLP Mexico</span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-2"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-3"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span>
+                <span class="rhythm-customer">Faurecia-Wuhan</span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-2"></span><span class="rhythm-cell level-3"></span><span class="rhythm-cell level-2"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-3"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span>
+                <span class="rhythm-customer">Pisek</span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-3"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell missed"></span>
+                <span class="rhythm-customer">天津旭阳</span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell missed"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span>
+                <span class="rhythm-customer">长春</span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-2"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span>
+                <span class="rhythm-customer">西安 BYD</span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-2"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span>
+                <span class="rhythm-customer">Caligny</span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span>
+                <span class="rhythm-customer">WLB-1343</span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-1"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell missed"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell"></span><span class="rhythm-cell level-2"></span><span class="rhythm-cell"></span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div><div class="card-title">按客户查看完整邮件时间线</div><div class="card-meta">从客户节奏进入 Workbench，可同时看到历史邮件、附件数量和待确认阶段。</div></div>
+                <a class="btn small" href="01-task-workbench.html?view=customer"><i data-lucide="rows-3"></i>客户视图</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel scroll">
+          <div class="panel-head"><h2 class="panel-title"><i data-lucide="mail-warning"></i>待处理邮件</h2><span class="badge danger">9</span></div>
+          <div class="panel-body stack">
+            <article class="mail-queue-card selected">
+              <div class="queue-title-row"><div class="queue-subject">无锡佛吉亚 W35 周提货计划</div><span class="badge warning">待确认数据源</span></div>
+              <div class="card-meta">Faurecia-Wuhan · 8/20 17:27 · 1 个附件</div>
+              <div class="queue-summary">Excel 检测到 3 个 Sheet；Firm 与 Forecast 可能分布在不同 Sheet。</div>
+              <div class="queue-progress"><div class="progress"><span style="width:24%"></span></div><span class="caption numeric">1/5 阶段</span></div>
+              <div class="actions" style="margin-top:10px"><a class="btn small primary" href="02-mail-parse-review.html?mail=w35&amp;attachment=15WK35.xlsx">进入处理<i data-lucide="arrow-right"></i></a><a class="btn small" href="01-task-workbench.html?view=customer">查看邮件</a></div>
+            </article>
+            <article class="mail-queue-card">
+              <div class="queue-title-row"><div class="queue-subject">Manifest(s) 0255898249 and 2 others</div><span class="badge warning">待核对物料</span></div>
+              <div class="card-meta">SLP Mexico · 8/20 23:23 · 12 个附件</div>
+              <div class="queue-summary">3 个附件共 4 个客户料号未映射；其余附件已生成解析草稿。</div>
+              <div class="queue-progress"><div class="progress"><span style="width:48%"></span></div><span class="caption numeric">2/5 阶段</span></div>
+              <div class="actions" style="margin-top:10px"><a class="btn small primary" href="02-mail-parse-review.html?mail=manifest&amp;attachment=Manifest.pdf">进入处理<i data-lucide="arrow-right"></i></a></div>
+            </article>
+            <article class="mail-queue-card">
+              <div class="queue-title-row"><div class="queue-subject">FAURECIA 1067 Release 1037000000</div><span class="badge info">待确认日期</span></div>
+              <div class="card-meta">Pisek · 8/17 20:01 · 1 个附件</div>
+              <div class="queue-summary">AI 判断 Excel 日期为收货日期，需确认提前 2 个工作日转换为发运日期。</div>
+              <div class="queue-progress"><div class="progress"><span style="width:66%"></span></div><span class="caption numeric">3/5 阶段</span></div>
+              <div class="actions" style="margin-top:10px"><a class="btn small primary" href="02-mail-parse-review.html?step=3">进入处理<i data-lucide="arrow-right"></i></a></div>
+            </article>
+            <article class="mail-queue-card">
+              <div class="queue-title-row"><div class="queue-subject">回复：无锡佛吉亚 W34 周提货计划</div><span class="badge warning">待确认数量</span></div>
+              <div class="card-meta">Faurecia-Wuhan · 8/14 09:34 · 正文 + 1 个附件</div>
+              <div class="queue-summary">正文包含“新增 717X 4032 PCS”，AI 建议使用增加而不是覆盖。</div>
+              <div class="queue-progress"><div class="progress"><span style="width:82%"></span></div><span class="caption numeric">4/5 阶段</span></div>
+              <div class="actions" style="margin-top:10px"><a class="btn small primary" href="02-mail-parse-review.html?step=4">进入处理<i data-lucide="arrow-right"></i></a></div>
+            </article>
+            <article class="mail-queue-card">
+              <div class="queue-title-row"><div class="queue-subject">BL4 Forecast update_2026CW20</div><span class="badge primary">待合并</span></div>
+              <div class="card-meta">天津旭阳 · 8/13 14:20 · 1 个附件</div>
+              <div class="queue-summary">38 行已通过确认，预计影响 12 个物料与 4 个周区间。</div>
+              <div class="queue-progress"><div class="progress"><span style="width:100%"></span></div><span class="caption numeric">预览就绪</span></div>
+              <div class="actions" style="margin-top:10px"><a class="btn small primary" href="02-mail-parse-review.html?step=5">查看预览<i data-lucide="arrow-right"></i></a></div>
+            </article>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <script src="assets/app.js"></script>
+</body>
+</html>

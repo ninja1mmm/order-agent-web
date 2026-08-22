@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Workbench · Prototype 4.0</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="index.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+      <nav class="nav-group" aria-label="主导航">
+        <a class="nav-link" href="00-intelligent-service.html"><i data-lucide="headphones"></i><span>智能客服</span></a>
+        <a class="nav-link active" href="01-task-workbench.html"><i data-lucide="workflow"></i><span>智能供应链</span></a>
+        <a class="nav-link" href="../prototype-3.0/05-customer-profile.html"><i data-lucide="users"></i><span>客户画像</span></a>
+        <a class="nav-link" href="../prototype-3.0/06-financial-reconciliation-2.0.html"><i data-lucide="scale"></i><span>财务对账</span></a>
+        <a class="nav-link" href="../prototype-3.0/07-system-settings.html"><i data-lucide="settings"></i><span>系统配置</span></a>
+      </nav>
+      <div class="top-actions"><button class="icon-button" aria-label="打开智能助手"><i data-lucide="bot"></i></button><span class="avatar">A</span></div>
+    </header>
+
+    <main class="page fit">
+      <div class="page-row">
+        <div class="page-context"><span class="prototype-tag">4.0</span><div><strong>Task Workbench</strong><small> · 一处查看邮件、客户时间线与解析入口</small></div></div>
+        <div class="actions">
+          <div class="segmented" aria-label="工作台视图">
+            <button class="active" data-workbench-view="mail" aria-pressed="true"><i data-lucide="list"></i>邮件视图</button>
+            <button data-workbench-view="customer" aria-pressed="false"><i data-lucide="rows-3"></i>客户时间线</button>
+          </div>
+          <button class="btn small" data-demo-action="邮件数据已刷新。"><i data-lucide="refresh-cw"></i>刷新</button>
+          <button class="btn small primary" data-demo-action="已打开新增邮件窗口。"><i data-lucide="plus"></i>新增邮件</button>
+        </div>
+      </div>
+
+      <nav class="subnav" aria-label="智能供应链二级导航">
+        <a class="active" href="01-task-workbench.html">客户收件箱</a>
+        <a href="../prototype-3.0/03-orders-2.0.html">订单</a>
+      </nav>
+
+      <section class="workbench screen-fill">
+        <!-- Existing mail-oriented triage view -->
+        <div class="view-panel mail-view active" data-workbench-panel="mail" data-mail-scope>
+          <aside class="panel scroll">
+            <div class="panel-head"><h2 class="panel-title"><i data-lucide="inbox"></i>邮件列表</h2><span class="badge">20 封</span></div>
+            <div class="panel-body stack">
+              <div class="filter-grid">
+                <select class="select-field" aria-label="客户"><option>全部客户</option><option>Faurecia-Wuhan</option><option>SLP Mexico</option><option>Pisek</option></select>
+                <select class="select-field" aria-label="时间"><option>最近 30 天</option><option>最近 7 天</option><option>今天</option></select>
+                <select class="select-field" aria-label="附件"><option>全部邮件</option><option>有附件</option><option>无附件</option></select>
+                <select class="select-field" aria-label="状态"><option>全部状态</option><option>需要处理</option><option>已完成</option></select>
+              </div>
+              <button class="list-button selected" data-mail-select data-mail-title="Manifest(s) 0255898249 and 2 other(s)" data-mail-date="2026/8/20 23:23:05">
+                <div class="row"><span class="badge primary">SLP Mexico</span><span class="caption numeric">8/20 23:23</span></div>
+                <div class="mail-card-subject">Manifest(s) 0255898249 and 2 other(s)</div>
+                <div class="mail-card-preview">Please find enclosed manifests corresponding to a delivery. 12 个附件，3 个需要人工确认。</div>
+              </button>
+              <button class="list-button" data-mail-select data-mail-title="无锡佛吉亚 W35 周提货计划" data-mail-date="2026/8/20 17:27:55">
+                <div class="row"><span class="badge">Faurecia-Wuhan</span><span class="caption numeric">8/20 17:27</span></div>
+                <div class="mail-card-subject">无锡佛吉亚 W35 周提货计划</div>
+                <div class="mail-card-preview">请查收无锡佛吉亚 W35 周提货计划，详情见附件。</div>
+              </button>
+              <button class="list-button" data-mail-select data-mail-title="Manifest(s) 0261716309" data-mail-date="2026/8/17 20:07:59">
+                <div class="row"><span class="badge">Pisek</span><span class="caption numeric">8/17 20:07</span></div>
+                <div class="mail-card-subject">Manifest(s) 0261716309</div>
+                <div class="mail-card-preview">1 个附件，已完成解析并生成草稿，等待 Merge 前预览。</div>
+              </button>
+              <button class="list-button" data-mail-select data-mail-title="FAURECIA 1067 Release 1037000000" data-mail-date="2026/8/17 20:01:45">
+                <div class="row"><span class="badge">Pisek</span><span class="caption numeric">8/17 20:01</span></div>
+                <div class="mail-card-subject">FAURECIA 1067 Release 1037000000</div>
+                <div class="mail-card-preview">AI 判断日期为收货日期，需要确认发运日期转换规则。</div>
+              </button>
+              <button class="list-button" data-mail-select data-mail-title="回复：无锡佛吉亚 W34 周提货计划" data-mail-date="2026/8/14 09:34:43">
+                <div class="row"><span class="badge">Faurecia-Wuhan</span><span class="caption numeric">8/14 09:34</span></div>
+                <div class="mail-card-subject">回复：无锡佛吉亚 W34 周提货计划</div>
+                <div class="mail-card-preview">正文中包含数量新增说明，与附件中的原值需要合并判断。</div>
+              </button>
+            </div>
+          </aside>
+
+          <section class="panel scroll">
+            <div class="panel-head"><h2 class="panel-title"><i data-lucide="mail-open"></i>邮件原文</h2><span class="badge primary">SLP Mexico</span></div>
+            <div class="panel-body stack">
+              <div class="mail-header-card">
+                <div class="row"><strong class="truncate" data-selected-mail-title>Manifest(s) 0255898249 and 2 other(s)</strong><span class="badge warning">待核对物料</span></div>
+                <div class="card-meta">From: rociodelcarmen.silva@forvia.com · 收件：<span data-selected-mail-date>2026/8/20 23:23:05</span></div>
+              </div>
+              <div class="mail-body-copy">INTERNAL and PARTNERS
+
+Dear Madam or Sir,
+
+Please find enclosed to this email manifests corresponding to a delivery for the 01-09-26.
+
+Each manifest represents a truck shipment list. It must be completed by the supplier at loading time and attached to the delivery note.
+
+Best regards,
+Rocio Silva
+MATERIAL PLANNER · SLP Mexico</div>
+            </div>
+          </section>
+
+          <aside class="panel scroll">
+            <div class="panel-head"><h2 class="panel-title"><i data-lucide="paperclip"></i>本邮件解析结果</h2><span class="badge warning">3 待确认</span></div>
+            <div class="panel-body stack">
+              <article class="attachment-card">
+                <div class="row"><div class="attachment-name truncate"><i data-lucide="file-text"></i><span class="truncate">Manifest_0255898249_20260901.pdf</span></div><span class="badge warning">物料核对</span></div>
+                <div class="attachment-issue">1 个客户料号无法匹配</div>
+                <div class="row"><span class="caption">草稿 v3 · 5 行</span><div class="actions"><button class="btn small" data-demo-action="已重新触发该附件解析。">重新解析</button><a class="btn small primary" href="02-mail-parse-review.html?mail=manifest&amp;attachment=Manifest_0255898249.pdf">进入解析确认<i data-lucide="arrow-right"></i></a></div></div>
+              </article>
+              <article class="attachment-card">
+                <div class="row"><div class="attachment-name truncate"><i data-lucide="file-text"></i><span class="truncate">LPManifest_0255898249_20260901.pdf</span></div><span class="badge warning">物料核对</span></div>
+                <div class="attachment-issue">1 个客户料号无法匹配</div>
+                <div class="row"><span class="caption">草稿 v2 · 4 行</span><a class="btn small primary" href="02-mail-parse-review.html?mail=manifest&amp;attachment=LPManifest.pdf">进入解析确认<i data-lucide="arrow-right"></i></a></div>
+              </article>
+              <article class="attachment-card">
+                <div class="row"><div class="attachment-name truncate"><i data-lucide="file-check"></i><span class="truncate">PalletLabel_0255898249.pdf</span></div><span class="badge success">草稿就绪</span></div>
+                <div class="card-meta">6 行已提取 · 无阻塞问题 · 尚未 Merge</div>
+                <div class="row" style="margin-top:9px"><span class="caption">Draft only</span><a class="btn small" href="02-mail-parse-review.html?step=5">查看 Merge 预览</a></div>
+              </article>
+              <article class="attachment-card">
+                <div class="row"><div class="attachment-name truncate"><i data-lucide="archive"></i><span class="truncate">BoxLabel_0255898249.zip</span></div><span class="badge">不参与订单解析</span></div>
+                <div class="card-meta">已保留为邮件附件，可下载，不进入本次解析范围。</div>
+              </article>
+            </div>
+          </aside>
+        </div>
+
+        <!-- New customer-oriented timeline view -->
+        <div class="view-panel customer-view" data-workbench-panel="customer">
+          <aside class="panel scroll">
+            <div class="customer-list-header">
+              <input class="field" placeholder="搜索客户、邮件主题…" aria-label="搜索客户">
+              <div class="filter-grid" style="margin-top:8px"><input class="field" type="date" aria-label="开始日期"><input class="field" type="date" aria-label="结束日期"></div>
+              <div class="customer-stat-line"><span>20 mails</span><span>4 customers</span><span>9 pending</span></div>
+            </div>
+            <div class="panel-body stack">
+              <button class="customer-card selected" data-customer-select data-customer-name="全部客户">
+                <div class="customer-card-top"><span>全部客户</span><span class="caption">20 封</span></div>
+                <div class="customer-card-badges"><span class="badge warning">9 待处理</span><span class="badge">51 个附件</span></div>
+              </button>
+              <button class="customer-card" data-customer-select data-customer-name="Faurecia-Wuhan">
+                <div class="customer-card-top"><span>Faurecia-Wuhan</span><span class="caption">1d ago</span></div>
+                <div class="card-meta truncate">无锡佛吉亚 W35 周提货计划</div>
+                <div class="customer-card-badges"><span class="badge primary">7 个附件</span><span class="badge warning">4 待处理</span></div>
+              </button>
+              <button class="customer-card" data-customer-select data-customer-name="Pisek">
+                <div class="customer-card-top"><span>Pisek</span><span class="caption">4d ago</span></div>
+                <div class="card-meta truncate">Manifest(s) 0261716309</div>
+                <div class="customer-card-badges"><span class="badge primary">15 个附件</span><span class="badge warning">2 待处理</span></div>
+              </button>
+              <button class="customer-card" data-customer-select data-customer-name="SLP Mexico">
+                <div class="customer-card-top"><span>SLP Mexico</span><span class="caption">10d ago</span></div>
+                <div class="card-meta truncate">Manifest(s) 0255898249 and others</div>
+                <div class="customer-card-badges"><span class="badge primary">26 个附件</span><span class="badge warning">3 待处理</span></div>
+              </button>
+              <button class="customer-card" data-customer-select data-customer-name="天津旭阳">
+                <div class="customer-card-top"><span>天津旭阳</span><span class="caption">1mo ago</span></div>
+                <div class="card-meta truncate">BL4 Forecast update_2026CW20</div>
+                <div class="customer-card-badges"><span class="badge primary">1 个附件</span><span class="badge success">已完成</span></div>
+              </button>
+            </div>
+          </aside>
+
+          <section class="customer-workspace" data-mail-scope>
+            <div class="timeline-strip-panel">
+              <div class="timeline-strip-head"><div class="row-start"><i data-lucide="history"></i><strong><span data-customer-context>全部客户</span> · 邮件时间线</strong></div><span class="caption">横向滚动查看历史邮件</span></div>
+              <div class="timeline-scroll">
+                <button class="timeline-mail selected" data-mail-select data-mail-title="无锡佛吉亚 W35 周提货计划" data-mail-date="2026/8/20 17:27">
+                  <div class="timeline-mail-title">无锡佛吉亚 W35 周提货计划</div><div class="timeline-mail-meta">8/20 · 1 attachment</div><div class="attachment-dots"><span class="dot warning"></span></div>
+                </button>
+                <button class="timeline-mail" data-mail-select data-mail-title="Manifest(s) 0261716309" data-mail-date="2026/8/17 20:07">
+                  <div class="timeline-mail-title">Manifest(s) 0261716309</div><div class="timeline-mail-meta">8/17 · 4 attachments</div><div class="attachment-dots"><span class="dot primary"></span><span class="dot primary"></span><span class="dot warning"></span><span class="dot success"></span></div>
+                </button>
+                <button class="timeline-mail" data-mail-select data-mail-title="FAURECIA 1067 Release 1037000000" data-mail-date="2026/8/17 20:01">
+                  <div class="timeline-mail-title">FAURECIA 1067 Release 1037000000</div><div class="timeline-mail-meta">8/17 · 1 attachment</div><div class="attachment-dots"><span class="dot warning"></span></div>
+                </button>
+                <button class="timeline-mail" data-mail-select data-mail-title="回复：无锡佛吉亚 W34 周提货计划" data-mail-date="2026/8/14 09:34">
+                  <div class="timeline-mail-title">回复：无锡佛吉亚 W34 周提货计划</div><div class="timeline-mail-meta">8/14 · 1 attachment</div><div class="attachment-dots"><span class="dot warning"></span></div>
+                </button>
+                <button class="timeline-mail" data-mail-select data-mail-title="无锡佛吉亚 W34 周提货计划" data-mail-date="2026/8/13 16:13">
+                  <div class="timeline-mail-title">无锡佛吉亚 W34 周提货计划</div><div class="timeline-mail-meta">8/13 · 1 attachment</div><div class="attachment-dots"><span class="dot success"></span></div>
+                </button>
+                <button class="timeline-mail" data-mail-select data-mail-title="BL4 Forecast update_2026CW20" data-mail-date="2026/8/12 15:20">
+                  <div class="timeline-mail-title">BL4 Forecast update_2026CW20</div><div class="timeline-mail-meta">8/12 · 1 attachment</div><div class="attachment-dots"><span class="dot success"></span></div>
+                </button>
+              </div>
+            </div>
+
+            <div class="customer-detail-grid" data-detail-tabs-root>
+              <section class="panel scroll">
+                <div class="panel-head"><h2 class="panel-title"><i data-lucide="mail-open"></i><span class="truncate" data-selected-mail-title>无锡佛吉亚 W35 周提货计划</span></h2><span class="badge warning">待确认数据源</span></div>
+                <div class="mail-detail-tabs"><button class="active" data-detail-tab="body">邮件详情</button><button data-detail-tab="thread">往来线程</button></div>
+                <div class="panel-body" data-detail-panel="body">
+                  <div class="card-meta">From: ying.chen@forvia.com · 收件：<span data-selected-mail-date>2026/8/20 17:27</span></div>
+                  <div class="customer-mail-detail">INTERNAL and PARTNERS<br><br>Hello：<br><br>请查收无锡佛吉亚 W35 周提货计划，详情见附件。<br>如要货令与邮件不符，请与我司联系，谢谢。<br><br>陈莹 CHEN YING<br>Faurecia seating<br>佛吉亚（武汉）汽车部件系统有限公司<br>Wuhan, China</div>
+                </div>
+                <div class="panel-body" data-detail-panel="thread" hidden>
+                  <div class="stack"><div class="card"><div class="card-title">8/20 17:27 · CHEN Ying</div><div class="card-meta">发送 W35 周提货计划附件。</div></div><div class="card"><div class="card-title">8/14 09:34 · CHEN Ying</div><div class="card-meta">回复 W34 提货计划，新增 717X 数量。</div></div><div class="card"><div class="card-title">8/13 16:13 · CHEN Ying</div><div class="card-meta">发送 W34 周提货计划。</div></div></div>
+                </div>
+              </section>
+
+              <aside class="panel scroll">
+                <div class="panel-head"><h2 class="panel-title"><i data-lucide="paperclip"></i>本邮件附件</h2><span class="badge">1</span></div>
+                <div class="panel-body stack">
+                  <article class="attachment-card selected">
+                    <div class="attachment-name"><i data-lucide="file-spreadsheet"></i><span class="truncate">15WK35-无锡佛吉亚提货计划.xlsx</span></div>
+                    <div class="attachment-issue">检测到 3 个 Sheet，需要确认 Firm 与 Forecast 的解析范围。</div>
+                    <div class="row"><span class="badge warning">待确认数据源</span><a class="btn small primary" href="02-mail-parse-review.html?mail=w35&amp;attachment=15WK35.xlsx">进入解析确认<i data-lucide="arrow-right"></i></a></div>
+                  </article>
+                  <div class="callout">客户时间线只改变浏览和定位方式；进入解析后仍以一封邮件作为完整处理会话。</div>
+                </div>
+              </aside>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="assets/app.js"></script>
+</body>
+</html>
