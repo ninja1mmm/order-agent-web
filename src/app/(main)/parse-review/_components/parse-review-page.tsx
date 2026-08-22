@@ -589,6 +589,7 @@ export function ParseReviewPage() {
         <Link className="active" href="/parse-review">
           {t.parse}
         </Link>
+        <Link href="/mail-workbench">Mail Workbench</Link>
         <Link href="/orders">{t.order}</Link>
       </div>
       <div className="grid-3 screen-fill">

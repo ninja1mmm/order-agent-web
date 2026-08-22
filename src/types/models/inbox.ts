@@ -22,6 +22,13 @@ export type WorkspaceStats = {
   aiSummary?: AiSummary;
 };
 
+export type WorkspaceAttachmentTaskSummary = {
+  taskId: string;
+  status: string;
+  targetSheetName?: string | null;
+  pipelineStep?: string | null;
+};
+
 export type WorkspaceAttachment = {
   attachmentId: string;
   fileArtifactId: string | null;
@@ -30,6 +37,7 @@ export type WorkspaceAttachment = {
   status: string;
   taskId: string | null;
   documentType: string | null;
+  tasks?: WorkspaceAttachmentTaskSummary[];
 };
 
 export type InlineImage = {
@@ -76,6 +84,7 @@ export type WorkspaceTask = {
   id: string;
   mailMessageId: string;
   attachmentId: string | null;
+  targetSheetName?: string | null;
   taskType: string;
   status: string;
   pipelineStep: string | null;
@@ -98,4 +107,37 @@ export type InboxWorkspace = {
   mails: WorkspaceMail[];
   tasks: WorkspaceTask[];
   stats?: WorkspaceStats;
+};
+
+// --- Layered API types (mail-workbench) ---
+
+export type MailTaskSummary = {
+  id: string;
+  attachmentId: string | null;
+  attachmentFileName: string | null;
+  taskType: string;
+  status: string;
+  pipelineStep: string | null;
+  targetSheetName: string | null;
+  warnings: string[];
+  traceSteps: TraceStep[];
+  reviewSummary: ReviewSummary | null;
+  resultRevision: number;
+  customerId: string | null;
+  customerName: string | null;
+  requestedAt: string;
+  completedAt: string | null;
+};
+
+export type MailTaskListResponse = {
+  mailMessageId: string;
+  tasks: MailTaskSummary[];
+};
+
+export type InboxMailListResponse = {
+  page: number;
+  size: number;
+  total: number;
+  mails: WorkspaceMail[];
+  stats: WorkspaceStats | null;
 };

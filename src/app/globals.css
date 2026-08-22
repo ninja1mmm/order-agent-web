@@ -4552,6 +4552,7 @@ button.heat-cell {
   .grid-3,
   .grid-2,
   .inbox-grid,
+  .mail-workbench-grid,
   .recon-grid,
   .sc-agent-grid,
   .config-list,
@@ -4908,11 +4909,13 @@ button.heat-cell {
 
 .excel-sheet-tabs {
   display: flex;
+  align-items: center;
   gap: 0;
   border-bottom: 1px solid var(--line);
   background: white;
   overflow-x: auto;
   flex-shrink: 0;
+  padding-right: 8px;
 }
 
 .excel-tab {
@@ -4935,6 +4938,31 @@ button.heat-cell {
 .excel-tab.active {
   color: var(--forvia-blue);
   border-bottom-color: var(--forvia-blue);
+}
+
+.excel-parse-sheet-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--forvia-blue);
+  border-radius: 6px;
+  background: var(--forvia-blue-soft);
+  color: var(--forvia-blue);
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: center;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.excel-parse-sheet-btn:hover {
+  background: var(--forvia-blue);
+  color: white;
+}
+
+.excel-parse-sheet-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .excel-table-wrap {
@@ -7286,6 +7314,45 @@ span.stale::after {
 
 .recon-import-file-row.single {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.recon-receipt-type-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.recon-receipt-type-option {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.recon-receipt-type-option input[type="radio"] {
+  accent-color: var(--forvia-blue);
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  position: relative;
+  top: 1px;
+}
+
+.recon-receipt-type-option .receipt-type-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.recon-receipt-type-option .receipt-type-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.4;
+  width: 100%;
+  padding-left: 20px;
 }
 
 .recon-import-context-row {

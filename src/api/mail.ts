@@ -1,5 +1,6 @@
 import { apiRequest } from "./client";
 import type { ProcessMailResponseSchema } from "@/types/schemas/mail";
+import type { MailTaskListResponseSchema } from "@/types/schemas/inbox";
 
 export function processMailSchema(
   mailId: string,
@@ -16,4 +17,8 @@ export function createManualMailSchema(formData: FormData): Promise<unknown> {
     method: "POST",
     body: formData,
   });
+}
+
+export function getMailTasksSchema(mailId: string): Promise<MailTaskListResponseSchema> {
+  return apiRequest<MailTaskListResponseSchema>(`/api/mail-messages/${mailId}/tasks`);
 }

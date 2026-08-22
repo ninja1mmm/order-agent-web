@@ -73,3 +73,10 @@ export async function cancelTaskSchema(taskId: string): Promise<void> {
 export async function rerunTaskSchema(taskId: string): Promise<void> {
   await apiRequest(`/api/tasks/${taskId}/rerun`, { method: "POST" });
 }
+
+export async function parseSheetSchema(taskId: string, sheetName: string): Promise<void> {
+  await apiRequest(`/api/tasks/${taskId}/parse-sheet`, {
+    method: "POST",
+    body: JSON.stringify({ sheet_name: sheetName }),
+  });
+}

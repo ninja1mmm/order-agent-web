@@ -114,6 +114,7 @@ export function uploadReconciliationFileSchema(params: {
   file: File;
   fileType: "sap_shipment" | "delivery_mapping" | "customer_receipt";
   customerId?: string;
+  receiptType?: "internal" | "external";
 }): Promise<ReconciliationFileUploadResponseSchema> {
   const form = new FormData();
   form.set("file", params.file);
@@ -121,6 +122,7 @@ export function uploadReconciliationFileSchema(params: {
     `/api/reconciliation/files/upload${queryString({
       file_type: params.fileType,
       customer_id: params.customerId,
+      receipt_type: params.receiptType,
     })}`,
     { method: "POST", body: form },
   );

@@ -135,3 +135,106 @@ export type InboxWorkspaceSchema = {
     };
   };
 };
+
+// --- Layered API schemas (mail-workbench) ---
+
+export type InboxMailListRequestParams = {
+  page?: number;
+  size?: number;
+  customerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export type WorkspaceAttachmentTaskSummarySchema = {
+  task_id?: string;
+  taskId?: string;
+  status?: string;
+  target_sheet_name?: string | null;
+  targetSheetName?: string | null;
+  pipeline_step?: string | null;
+  pipelineStep?: string | null;
+};
+
+export type InboxMailListMailSchema = {
+  id?: string;
+  message_id?: string;
+  messageId?: string;
+  from_email?: string;
+  fromEmail?: string;
+  subject?: string;
+  body_text?: string;
+  bodyText?: string;
+  received_at?: string;
+  receivedAt?: string;
+  created_at?: string;
+  createdAt?: string;
+  customer_id?: string | null;
+  customerId?: string | null;
+  customer_name?: string | null;
+  customerName?: string | null;
+  attachments?: (WorkspaceAttachmentSchema & {
+    tasks?: WorkspaceAttachmentTaskSummarySchema[];
+  })[];
+  inline_images?: InlineImageSchema[];
+  inlineImages?: InlineImageSchema[];
+};
+
+export type InboxMailListResponseSchema = {
+  page: number;
+  size: number;
+  total: number;
+  mails: InboxMailListMailSchema[];
+  stats?: {
+    completedCount?: number;
+    completed_count?: number;
+    customerCount?: number;
+    customer_count?: number;
+    pendingCount?: number;
+    pending_count?: number;
+    followUpCount?: number;
+    follow_up_count?: number;
+    mailCount?: number;
+    mail_count?: number;
+    customerNames?: string[];
+    customer_names?: string[];
+  } | null;
+};
+
+export type MailTaskSummarySchema = {
+  id?: string;
+  task_id?: string;
+  taskId?: string;
+  attachment_id?: string | null;
+  attachmentId?: string | null;
+  attachment_file_name?: string | null;
+  attachmentFileName?: string | null;
+  task_type?: string;
+  taskType?: string;
+  status?: string;
+  pipeline_step?: string | null;
+  pipelineStep?: string | null;
+  target_sheet_name?: string | null;
+  targetSheetName?: string | null;
+  warnings?: string[];
+  trace_steps?: TraceStepSchema[];
+  traceSteps?: TraceStepSchema[];
+  review_summary?: ReviewSummarySchema | null;
+  reviewSummary?: ReviewSummarySchema | null;
+  result_revision?: number;
+  resultRevision?: number;
+  customer_id?: string | null;
+  customerId?: string | null;
+  customer_name?: string | null;
+  customerName?: string | null;
+  requested_at?: string;
+  requestedAt?: string;
+  completed_at?: string | null;
+  completedAt?: string | null;
+};
+
+export type MailTaskListResponseSchema = {
+  mail_message_id?: string;
+  mailMessageId?: string;
+  tasks: MailTaskSummarySchema[];
+};

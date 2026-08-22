@@ -133,7 +133,7 @@ function PreviewState({ label, error }: { label: string; error?: string }) {
   );
 }
 
-export function ExcelViewer({ fileArtifactId, locale }: { fileArtifactId: string; locale: Locale }) {
+export function ExcelViewer({ fileArtifactId, locale, onParseSheet, parsingSheet, onSheetChange }: { fileArtifactId: string; locale: Locale; onParseSheet?: (sheetName: string) => void; parsingSheet?: boolean; onSheetChange?: (sheetName: string) => void }) {
   const t = copy[locale];
   const [requestedSheet, setRequestedSheet] = React.useState("");
   const requestKey = `${fileArtifactId}:${requestedSheet}`;
@@ -183,6 +183,12 @@ export function ExcelViewer({ fileArtifactId, locale }: { fileArtifactId: string
     fetchSheet(requestedSheet || undefined);
   }, [fetchSheet, requestedSheet]);
 
+  React.useEffect(() => {
+    if (preview?.activeSheet && onSheetChange) {
+      onSheetChange(preview.activeSheet);
+    }
+  }, [preview?.activeSheet, onSheetChange]);
+
   const loading = preview?.key !== requestKey;
   const error = preview?.key === requestKey ? preview.error : null;
 
@@ -202,6 +208,18 @@ export function ExcelViewer({ fileArtifactId, locale }: { fileArtifactId: string
             {name}
           </button>
         ))}
+        {onParseSheet && preview?.activeSheet && (
+          <button
+            type="button"
+            className="excel-parse-sheet-btn"
+            disabled={parsingSheet}
+            onClick={() => onParseSheet(preview.activeSheet)}
+          >
+            {parsingSheet
+              ? (locale === "en" ? "Parsing..." : "解析中...")
+              : (locale === "en" ? "Parse this sheet" : "解析此Sheet")}
+          </button>
+        )}
       </div>
       <div className="excel-table-wrap">
         <table className="excel-table">

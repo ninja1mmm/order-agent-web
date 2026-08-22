@@ -1,21 +1,31 @@
 import type {
   InboxWorkspaceSchema,
   InlineImageSchema,
+  InboxMailListResponseSchema,
+  InboxMailListMailSchema,
+  MailTaskListResponseSchema,
+  MailTaskSummarySchema,
   PendingTaskSummarySchema,
   ReviewSummarySchema,
   TraceStepSchema,
   WorkspaceAttachmentSchema,
+  WorkspaceAttachmentTaskSummarySchema,
   WorkspaceMailSchema,
   WorkspaceTaskSchema,
 } from "@/types/schemas/inbox";
 import type {
+  InboxMailListResponse,
   InboxWorkspace,
   InlineImage,
+  MailTaskListResponse,
+  MailTaskSummary,
   PendingTaskSummary,
   ReviewSummary,
   TraceStep,
   WorkspaceAttachment,
+  WorkspaceAttachmentTaskSummary,
   WorkspaceMail,
+  WorkspaceStats,
   WorkspaceTask,
 } from "@/types/models/inbox";
 
@@ -122,5 +132,87 @@ export function normalizeInboxWorkspace(workspace: InboxWorkspaceSchema): InboxW
           pendingTasks: workspace.stats.pendingTasks?.map(normalizePendingTask),
         }
       : undefined,
+  };
+}
+
+// --- Layered API normalizers (mail-workbench) ---
+
+export function normalizeAttachmentTaskSummary(
+  raw: WorkspaceAttachmentTaskSummarySchema,
+): WorkspaceAttachmentTaskSummary {
+  return {
+    taskId: raw.taskId ?? raw.task_id ?? "",
+    status: raw.status ?? "",
+    targetSheetName: raw.targetSheetName ?? raw.target_sheet_name ?? null,
+    pipelineStep: raw.pipelineStep ?? raw.pipeline_step ?? null,
+  };
+}
+
+function normalizeMailListMail(raw: InboxMailListMailSchema): WorkspaceMail {
+  const receivedAt = raw.receivedAt ?? raw.received_at ?? raw.createdAt ?? raw.created_at ?? "";
+  const createdAt = raw.createdAt ?? raw.created_at ?? raw.receivedAt ?? raw.received_at ?? "";
+  return {
+    id: raw.id ?? "",
+    messageId: raw.messageId ?? raw.message_id ?? "",
+    fromEmail: raw.fromEmail ?? raw.from_email ?? "",
+    subject: raw.subject ?? "",
+    bodyText: raw.bodyText ?? raw.body_text ?? "",
+    receivedAt,
+    createdAt,
+    customerId: raw.customerId ?? raw.customer_id ?? null,
+    customerName: raw.customerName ?? raw.customer_name ?? null,
+    attachments: (raw.attachments ?? []).map((att) => ({
+      ...normalizeAttachment(att),
+      tasks: (att.tasks ?? []).map(normalizeAttachmentTaskSummary),
+    })),
+    inlineImages: (raw.inlineImages ?? raw.inline_images ?? []).map(normalizeInlineImage),
+  };
+}
+
+function normalizeMailListStats(raw: NonNullable<InboxMailListResponseSchema["stats"]>): WorkspaceStats {
+  return {
+    completedCount: raw.completedCount ?? raw.completed_count ?? 0,
+    customerCount: raw.customerCount ?? raw.customer_count ?? 0,
+    pendingCount: raw.pendingCount ?? raw.pending_count ?? 0,
+    followUpCount: raw.followUpCount ?? raw.follow_up_count ?? 0,
+    mailCount: raw.mailCount ?? raw.mail_count ?? 0,
+    customerNames: raw.customerNames ?? raw.customer_names,
+  };
+}
+
+export function normalizeInboxMailList(response: InboxMailListResponseSchema): InboxMailListResponse {
+  return {
+    page: response.page,
+    size: response.size,
+    total: response.total,
+    mails: response.mails.map(normalizeMailListMail),
+    stats: response.stats ? normalizeMailListStats(response.stats) : null,
+  };
+}
+
+export function normalizeMailTaskSummary(raw: MailTaskSummarySchema): MailTaskSummary {
+  return {
+    id: raw.id ?? raw.taskId ?? raw.task_id ?? "",
+    attachmentId: raw.attachmentId ?? raw.attachment_id ?? null,
+    attachmentFileName: raw.attachmentFileName ?? raw.attachment_file_name ?? null,
+    taskType: raw.taskType ?? raw.task_type ?? "",
+    status: raw.status ?? "",
+    pipelineStep: raw.pipelineStep ?? raw.pipeline_step ?? null,
+    targetSheetName: raw.targetSheetName ?? raw.target_sheet_name ?? null,
+    warnings: raw.warnings ?? [],
+    traceSteps: (raw.traceSteps ?? raw.trace_steps ?? []).map(normalizeTraceStep),
+    reviewSummary: normalizeReviewSummary(raw.reviewSummary ?? raw.review_summary),
+    resultRevision: raw.resultRevision ?? raw.result_revision ?? 1,
+    customerId: raw.customerId ?? raw.customer_id ?? null,
+    customerName: raw.customerName ?? raw.customer_name ?? null,
+    requestedAt: raw.requestedAt ?? raw.requested_at ?? "",
+    completedAt: raw.completedAt ?? raw.completed_at ?? null,
+  };
+}
+
+export function normalizeMailTaskList(response: MailTaskListResponseSchema): MailTaskListResponse {
+  return {
+    mailMessageId: response.mailMessageId ?? response.mail_message_id ?? "",
+    tasks: response.tasks.map(normalizeMailTaskSummary),
   };
 }

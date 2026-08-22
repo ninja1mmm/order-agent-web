@@ -110,6 +110,7 @@ export function TaskWorkbenchPage() {
           {t.inbox}
         </Link>
         <Link href="/parse-review">{t.parse}</Link>
+        <Link href="/mail-workbench">Mail Workbench</Link>
         <Link href="/orders">{t.order}</Link>
       </div>
       <div className="inbox-grid screen-fill">

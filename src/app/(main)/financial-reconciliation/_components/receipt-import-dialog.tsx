@@ -155,6 +155,7 @@ function groupCount(group: ReviewFilterGroup) {
 
 export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }: ReceiptImportDialogProps) {
   const [customerId, setCustomerId] = useState("");
+  const [receiptType, setReceiptType] = useState<"internal" | "external">("internal");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptUpload, setReceiptUpload] = useState<FileUploadResult | null>(null);
   const [review, setReview] = useState<ReceiptImportReview | null>(null);
@@ -187,6 +188,7 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
 
   function close() {
     onOpenChange(false);
+    setReceiptType("internal");
     setReceiptFile(null);
     setReceiptUpload(null);
     resetReview();
@@ -194,7 +196,7 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
 
   async function handleParse() {
     if (!receiptFile) {
-      toast.error("请先选择客户回传收货单");
+      toast.error(receiptType === "external" ? "请先选择外部客户对账单" : "请先选择客户回传收货单");
       return;
     }
     if (!customerId) {
@@ -209,7 +211,7 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
     resetReview();
     try {
       const uploaded = receiptUpload
-        ?? await uploadReconciliationFile({ file: receiptFile, fileType: "customer_receipt", customerId });
+        ?? await uploadReconciliationFile({ file: receiptFile, fileType: "customer_receipt", customerId, receiptType });
       setReceiptUpload(uploaded);
       const nextReview = await getReceiptImportReview(uploaded.id);
       setReview(nextReview);
@@ -314,18 +316,42 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                 }}
               />
             </div>
+            <div className="recon-receipt-type-group" role="radiogroup" aria-label="收货单类型">
+              <label className={`recon-receipt-type-option${receiptType === "internal" ? " active" : ""}`}>
+                <input
+                  type="radio"
+                  name="receiptType"
+                  value="internal"
+                  checked={receiptType === "internal"}
+                  onChange={() => { setReceiptType("internal"); setReceiptUpload(null); resetReview(); }}
+                />
+                <span className="receipt-type-label">内部客户</span>
+                <span className="receipt-type-desc">适用 BYD 等内部客户模版（收货数量 / 物料编码 / 收货日期）</span>
+              </label>
+              <label className={`recon-receipt-type-option${receiptType === "external" ? " active" : ""}`}>
+                <input
+                  type="radio"
+                  name="receiptType"
+                  value="external"
+                  checked={receiptType === "external"}
+                  onChange={() => { setReceiptType("external"); setReceiptUpload(null); resetReview(); }}
+                />
+                <span className="receipt-type-label">外部客户</span>
+                <span className="receipt-type-desc">适用外部客户对账单模版（物料编码 / 入库数量 / 过帐日期或到货时间）</span>
+              </label>
+            </div>
             <div className="recon-import-file-row single">
               <label className="recon-import-file-item required">
                 <FileSpreadsheet className="h-4 w-4 text-[var(--forvia-blue)]" />
                 <div>
-                  <strong>客户回传收货单</strong>
-                  <span>{receiptFile?.name ?? "客户回传收货单.xlsx"}</span>
+                  <strong>{receiptType === "external" ? "外部客户对账单" : "客户回传收货单"}</strong>
+                  <span>{receiptFile?.name ?? (receiptType === "external" ? "对账单.xlsx" : "客户回传收货单.xlsx")}</span>
                 </div>
                 <span className="recon-upload-picker">
                   <input
                     type="file"
                     accept=".xlsx"
-                    aria-label="上传客户回传收货单"
+                    aria-label={receiptType === "external" ? "上传外部客户对账单" : "上传客户回传收货单"}
                     onChange={(event) => {
                       setReceiptFile(event.target.files?.[0] ?? null);
                       setReceiptUpload(null);

@@ -3,6 +3,7 @@ import {
   cancelTaskSchema,
   deleteRowSchema,
   getEffectiveRowsSchema,
+  parseSheetSchema,
   patchRowSchema,
   proceedTaskSchema,
   publishTaskSchema,
@@ -117,4 +118,8 @@ export async function cancelTask(taskId: string): Promise<void> {
 
 export async function rerunTask(taskId: string): Promise<void> {
   await rerunTaskSchema(taskId);
+}
+
+export async function parseSheet(taskId: string, sheetName: string): Promise<void> {
+  await parseSheetSchema(taskId, sheetName);
 }

@@ -171,6 +171,7 @@ export async function uploadReconciliationFile(params: {
   file: File;
   fileType: "sap_shipment" | "delivery_mapping" | "customer_receipt";
   customerId?: string;
+  receiptType?: "internal" | "external";
 }): Promise<FileUploadResult> {
   const response = await uploadReconciliationFileSchema(params);
   return transformFileUploadToModel(response);
