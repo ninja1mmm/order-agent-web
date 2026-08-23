@@ -10,6 +10,10 @@ type AttachmentPreviewProps = {
   isBodyTextTask: boolean;
   selectedMail: WorkspaceMail | undefined;
   selectedAttachment: WorkspaceAttachment | undefined;
+  targetSheetName?: string | null;
+  parsedSheetNames: string[];
+  addingSource: boolean;
+  onAddSheetSource: (sheetName: string) => void;
 };
 
 export function AttachmentPreview({
@@ -17,6 +21,10 @@ export function AttachmentPreview({
   isBodyTextTask,
   selectedMail,
   selectedAttachment,
+  targetSheetName,
+  parsedSheetNames,
+  addingSource,
+  onAddSheetSource,
 }: AttachmentPreviewProps) {
   const t = copy[locale];
 
@@ -33,7 +41,7 @@ export function AttachmentPreview({
 
   if (selectedAttachment?.fileArtifactId) {
     return isExcelFile(selectedAttachment.fileName)
-      ? <ExcelViewer fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} />
+      ? <ExcelViewer key={`${selectedAttachment.fileArtifactId}:${targetSheetName ?? ""}`} fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} initialSheet={targetSheetName} parsedSheetNames={parsedSheetNames} parsingSheet={addingSource} parseSheetLabel="新增解析" onParseSheet={onAddSheetSource} />
       : <PdfViewer fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} />;
   }
 

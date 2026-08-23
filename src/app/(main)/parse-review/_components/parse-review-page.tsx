@@ -1,50 +1,44 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Download, GitMerge, LoaderCircle, Table2, X } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DialogBody, DialogContent, DialogHeader, DialogOverlay, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
-  copy,
   backendDateMs,
   customerLabel,
+  formatDateTime,
   taskStatusLabel,
-  translatePipelineSummary,
-  useLocale,
   useCustomerConfig,
+  useLocale,
   useWorkspacePolling,
 } from "../../_components/shared";
 import {
   proceedTask,
   patchRow,
   publishTask,
+  getEffectiveRows,
+  bulkMergeStrategy,
+  deleteSourceTask,
+  setTaskExcluded,
+  type BulkMergeStrategy,
   addRow as addRowApi,
   deleteRow as deleteRowApi,
   type TaskStaleState,
 } from "@/services/tasks";
-import { TaskListPanel } from "./left/task-list-panel";
+import { addMailSource, getMailTasks } from "@/services/mail";
+import type { MailTaskListResponse } from "@/services/inbox";
+import type { DemandKind } from "@/services/orders";
+import { OrdersFilters } from "../../orders/_components/orders-filters";
+import { MailSourcePanel } from "./left/mail-source-panel";
 import { MiddlePanel } from "./middle/middle-panel";
-import { AgentFlowPanel } from "./right/agent-flow-panel";
-import type { LocalNewRow, NewRowData, OrderType, TimelineEntry } from "./parse-review-types";
-
-const DEFAULT_STATUS_FILTER = "__all__";
-const ACTIVE_ONLY_FILTER = "__active__";
-const ACTIVE_STATUSES = new Set(["queued", "pending", "running", "processing", "waiting_human_decision"]);
-
-function taskTime(value: string | null | undefined): number {
-  return backendDateMs(value);
-}
-
-function statusFilterFromParam(status: string | null) {
-  if (!status) return DEFAULT_STATUS_FILTER;
-  if (status === "processing") return "running";
-  if (status === "published") return "completed";
-  return status;
-}
-
-function resultTabForTask(taskType: string | undefined): "forecast" | "shipping" {
-  return taskType === "extract_forecast" ? "forecast" : "shipping";
-}
+import type { LocalNewRow, NewRowData, OrderType } from "./parse-review-types";
 
 function detectDateFormat(input: string): { dateInfo: string; dateFormat: "day" | "week" | "month" } | null {
   const s = input.trim();
@@ -60,29 +54,15 @@ function detectDateFormat(input: string): { dateInfo: string; dateFormat: "day" 
   return null;
 }
 
-const PIPELINE_STEPS = ["extraction", "date_expansion", "conflict_resolution", "material_mapping", "ready_to_publish", "published"] as const;
-const STEP_LABELS: Record<string, string> = {
-  extraction: "AI 提取",
-  date_expansion: "日期扩展",
-  conflict_resolution: "冲突检测",
-  material_mapping: "料号匹配",
-  ready_to_publish: "确认发布",
-  published: "已发布",
-};
-
 export function ParseReviewPage() {
   const locale = useLocale();
+  const { customers } = useCustomerConfig();
   const params = useSearchParams();
   const { tasks, mails, refresh } = useWorkspacePolling();
-  const { customers } = useCustomerConfig();
-  const t = copy[locale];
   const targetTaskId = params.get("taskId");
+  const targetMailId = params.get("mailId");
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
   const [hasUserSelected, setHasUserSelected] = useState(false);
-  const [statusFilter, setStatusFilter] = useState(() => statusFilterFromParam(params.get("status")));
-  const [timeFilter, setTimeFilter] = useState("最近 30 天");
-  const [customerFilter, setCustomerFilter] = useState("__all__");
-  const [referenceTime] = useState(() => Date.now());
   const [orderTypeMap, setOrderTypeMap] = useState<Map<string, OrderType>>(new Map());
   const [isProceedLoading, setIsProceedLoading] = useState(false);
   const [isPublishLoading, setIsPublishLoading] = useState(false);
@@ -97,62 +77,33 @@ export function ParseReviewPage() {
   const [newRowData, setNewRowData] = useState<NewRowData>({ customerPartNumber: "", quantity: "", dateInfo: "" });
   const [newRowErrors, setNewRowErrors] = useState<Record<string, string>>({});
   const [localNewRows, setLocalNewRows] = useState<LocalNewRow[]>([]);
+  const [reviewStep, setReviewStep] = useState<1 | 2 | 3 | 4>(1);
+  const [dateOffset, setDateOffset] = useState("2");
+  const [mergeStrategy, setMergeStrategy] = useState<BulkMergeStrategy>("replace");
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false);
+  const [mailTaskList, setMailTaskList] = useState<MailTaskListResponse | null>(null);
+  const [mailTaskLoading, setMailTaskLoading] = useState(false);
+  const [scopeTaskId, setScopeTaskId] = useState<string | null>(null);
+  const [previewSource, setPreviewSource] = useState<{ kind: "body" } | { kind: "attachment"; attachmentId: string; sheetName?: string } | null>(null);
+  const [effectiveTaskRows, setEffectiveTaskRows] = useState<{ taskId: string; rows: Record<string, Record<string, unknown>>; resultRevision: number } | null>(null);
   const effectiveTaskId = hasUserSelected ? selectedTaskId : (targetTaskId ?? selectedTaskId);
   const prevRevisionRef = useRef<string | null>(null);
   const localRevRef = useRef<number | null>(null);
 
-  const taskCustomers = useMemo(
-    () => [
-      { value: "__all__", label: t.all },
-      ...customers.map((customer) => ({ value: customer.id, label: customerLabel(customer) })),
-    ],
-    [customers, t.all],
-  );
-  const statusOptions = useMemo(
-    () => [
-      { value: DEFAULT_STATUS_FILTER, label: t.all },
-      { value: ACTIVE_ONLY_FILTER, label: "进行中" },
-      { value: "queued", label: taskStatusLabel("queued", locale) },
-      { value: "waiting_human_decision", label: taskStatusLabel("waiting_human_decision", locale) },
-      { value: "completed", label: taskStatusLabel("completed", locale) },
-      { value: "failed", label: taskStatusLabel("failed", locale) },
-      { value: "cancelled", label: taskStatusLabel("cancelled", locale) },
-    ],
-    [locale, t.all],
-  );
-
   const filteredTasks = useMemo(() => {
-    const dayMs = 24 * 60 * 60 * 1000;
-    const timeLimit =
-      timeFilter === "今天"
-        ? dayMs
-        : timeFilter === "最近 7 天"
-          ? 7 * dayMs
-          : timeFilter === "最近 60 天"
-            ? 60 * dayMs
-            : 30 * dayMs;
     return tasks
       .filter((task) => {
+        if (targetMailId && task.mailMessageId !== targetMailId) return false;
         if (task.status === "skipped") return false;
-        if (customerFilter !== "__all__" && task.customerId !== customerFilter) return false;
-        if (statusFilter === DEFAULT_STATUS_FILTER) {
-          // show all (no status filter)
-        } else if (statusFilter === ACTIVE_ONLY_FILTER) {
-          if (!ACTIVE_STATUSES.has(task.status)) return false;
-        } else if (statusFilter === "running") {
-          if (task.status !== "running" && task.status !== "processing") return false;
-        } else if (task.status !== statusFilter) {
-          return false;
-        }
-        if (task.receivedAt && referenceTime - backendDateMs(task.receivedAt) > timeLimit) return false;
         return true;
       })
       .sort((a, b) => {
-        const taskTimeDelta = taskTime(b.requestedAt) - taskTime(a.requestedAt);
+        const taskTimeDelta = backendDateMs(b.requestedAt) - backendDateMs(a.requestedAt);
         if (taskTimeDelta !== 0) return taskTimeDelta;
-        return taskTime(b.receivedAt) - taskTime(a.receivedAt);
+        return backendDateMs(b.receivedAt) - backendDateMs(a.receivedAt);
       });
-  }, [customerFilter, referenceTime, statusFilter, tasks, timeFilter]);
+  }, [targetMailId, tasks]);
 
   const imageAttachmentIds = useMemo(() => {
     const ids = new Set<string>();
@@ -164,29 +115,48 @@ export function ParseReviewPage() {
     return ids;
   }, [mails]);
 
-  const instanceItems = useMemo(() => {
-    const grouped = new Map<string, typeof filteredTasks>();
-    for (const task of filteredTasks) {
-      if (task.attachmentId && imageAttachmentIds.has(task.attachmentId)) continue;
-      const key = `${task.mailMessageId}::${task.attachmentId ?? "__body__"}`;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(task);
-    }
-    return Array.from(grouped.values()).map((group) => group[0]);
-  }, [filteredTasks, imageAttachmentIds]);
+  const instanceItems = useMemo(
+    () => filteredTasks.filter((task) => !task.attachmentId || !imageAttachmentIds.has(task.attachmentId)),
+    [filteredTasks, imageAttachmentIds],
+  );
 
-  const selectedTask = (() => {
+  const workspaceSelectedTask = useMemo(() => {
     const fromEffective = filteredTasks.find((task) => task.id === effectiveTaskId);
     if (fromEffective) return fromEffective;
     if (!hasUserSelected && targetTaskId) {
       const fromAll = tasks.find((task) => task.id === targetTaskId);
-      if (fromAll) return fromAll;
+      if (fromAll && (!targetMailId || fromAll.mailMessageId === targetMailId)) return fromAll;
     }
     return instanceItems[0];
-  })();
-  const selectedMail = mails.find((mail) => mail.id === selectedTask?.mailMessageId);
-  const isBodyTextTask = selectedTask?.attachmentId === null;
-  const selectedAttachment = isBodyTextTask ? undefined : selectedMail?.attachments.find((a) => a.attachmentId === selectedTask?.attachmentId);
+  }, [effectiveTaskId, filteredTasks, hasUserSelected, instanceItems, targetMailId, targetTaskId, tasks]);
+  const selectedTask = useMemo(() => workspaceSelectedTask && effectiveTaskRows?.taskId === workspaceSelectedTask.id
+    ? { ...workspaceSelectedTask, resultRows: effectiveTaskRows.rows, resultRevision: effectiveTaskRows.resultRevision }
+    : workspaceSelectedTask, [effectiveTaskRows, workspaceSelectedTask]);
+  const selectedMail = mails.find((mail) => mail.id === targetMailId) ?? mails.find((mail) => mail.id === selectedTask?.mailMessageId);
+  const selectedMailTasks = useMemo(
+    () => instanceItems.filter((task) => task.mailMessageId === selectedMail?.id),
+    [instanceItems, selectedMail?.id],
+  );
+  const mergeCustomerOptions = useMemo(() => {
+    const options = customers.map((customer) => ({ value: customer.id, label: customerLabel(customer) }));
+    if (selectedMail?.customerId && !options.some((option) => option.value === selectedMail.customerId)) {
+      options.unshift({ value: selectedMail.customerId, label: selectedMail.customerName || selectedMail.customerId });
+    }
+    return [{ value: "__all__", label: "全部客户" }, ...options];
+  }, [customers, selectedMail]);
+  const selectedTaskIsBody = selectedTask?.attachmentId === null;
+  const selectedTaskAttachment = selectedTaskIsBody ? undefined : selectedMail?.attachments.find((a) => a.attachmentId === selectedTask?.attachmentId);
+  const isBodyTextTask = previewSource ? previewSource.kind === "body" : selectedTaskIsBody;
+  const selectedAttachment = previewSource?.kind === "attachment"
+    ? selectedMail?.attachments.find((attachment) => attachment.attachmentId === previewSource.attachmentId)
+    : selectedTaskAttachment;
+  const previewSheetName = previewSource?.kind === "attachment" ? previewSource.sheetName : selectedTask?.targetSheetName;
+  const parsedSheetNames = useMemo(
+    () => selectedMailTasks
+      .filter((task) => task.attachmentId === selectedAttachment?.attachmentId && task.targetSheetName)
+      .map((task) => task.targetSheetName as string),
+    [selectedAttachment?.attachmentId, selectedMailTasks],
+  );
   const rowEntries = useMemo(() => Object.entries(selectedTask?.resultRows ?? {}), [selectedTask?.resultRows]);
   const visibleRowEntries = useMemo(
     () => rowEntries.filter(([k]) => !deletedRowIds.has(k)),
@@ -233,10 +203,52 @@ export function ParseReviewPage() {
     return map;
   }, [displayRowEntries]);
 
-  const isTaskRunning = selectedTask?.status === "running" || selectedTask?.status === "processing";
-  const isTaskCompleted = selectedTask?.status === "completed" || selectedTask?.status === "published";
   const isWaitingHuman = selectedTask?.status === "waiting_human_decision";
-  const isTaskFailed = selectedTask?.status === "failed";
+  const selectedTaskExcluded = mailTaskList?.tasks.find((task) => task.id === selectedTask?.id)?.excluded ?? false;
+  const hasOrderTypeEdits = rowEntries.some(([rowId, row]) => {
+    const original = String(row.classification ?? "uncertain");
+    return (orderTypeMap.get(rowId) ?? "uncertain") !== original;
+  });
+  const needsRevalidation = Boolean(taskStaleState?.pendingReevalSteps.length || hasOrderTypeEdits || deletedRowIds.size || localNewRows.length);
+
+  const loadMailTaskList = useCallback(async () => {
+    if (!selectedMail) {
+      setMailTaskList(null);
+      return;
+    }
+    setMailTaskLoading(true);
+    try {
+      setMailTaskList(await getMailTasks(selectedMail.id));
+    } catch (error) {
+      console.error("Load mail tasks failed:", error);
+    } finally {
+      setMailTaskLoading(false);
+    }
+  }, [selectedMail]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void loadMailTaskList(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadMailTaskList]);
+
+  useEffect(() => {
+    const taskId = workspaceSelectedTask?.id;
+    if (!taskId) return;
+
+    let cancelled = false;
+    void getEffectiveRows(taskId)
+      .then((response) => {
+        if (cancelled) return;
+        setEffectiveTaskRows({ taskId, rows: response.rows, resultRevision: response.resultRevision });
+        setTaskStaleState(response.taskStaleState);
+        setDeletedRowIds(new Set(response.deletedRowIds));
+      })
+      .catch((error) => {
+        if (!cancelled) console.error("Load effective task rows failed:", error);
+      });
+
+    return () => { cancelled = true; };
+  }, [workspaceSelectedTask?.id]);
 
   const selectedRevision = selectedTask ? `${selectedTask.id}::${selectedTask.resultRevision ?? ""}` : null;
 
@@ -435,18 +447,21 @@ export function ParseReviewPage() {
     try {
       const revision = localResultRevision ?? selectedTask.resultRevision;
       await publishTask(selectedTask.id, revision);
+      setMergeConfirmOpen(false);
       setTaskStaleState(null);
       setLocalResultRevision(null);
       localRevRef.current = null;
       setLocalRowOverrides(new Map());
       setLocalNewRows([]);
       refresh();
+      void loadMailTaskList();
+      toast.success("当前解析任务已 Merge 到 Orders");
     } catch (err) {
       console.error("Publish failed:", err);
     } finally {
       setIsPublishLoading(false);
     }
-  }, [selectedTask, localResultRevision, refresh]);
+  }, [selectedTask, localResultRevision, refresh, loadMailTaskList]);
 
   const handleSaveNewRow = useCallback(async () => {
     if (!selectedTask) return;
@@ -510,9 +525,159 @@ export function ParseReviewPage() {
   }, []);
 
   const handleSelectTask = useCallback((taskId: string) => {
+    const task = selectedMailTasks.find((item) => item.id === taskId);
     setSelectedTaskId(taskId);
     setHasUserSelected(true);
-  }, []);
+    setReviewStep(1);
+    setPreviewSource(task?.attachmentId ? { kind: "attachment", attachmentId: task.attachmentId, sheetName: task.targetSheetName ?? undefined } : { kind: "body" });
+  }, [selectedMailTasks]);
+
+  const handleSelectBody = useCallback(() => {
+    const task = selectedMailTasks.find((item) => item.attachmentId === null);
+    if (task) {
+      setSelectedTaskId(task.id);
+      setHasUserSelected(true);
+      setReviewStep(1);
+    }
+    setPreviewSource({ kind: "body" });
+  }, [selectedMailTasks]);
+
+  const handleSelectAttachment = useCallback((attachmentId: string, sheetName?: string) => {
+    const attachmentTasks = selectedMailTasks.filter((item) => item.attachmentId === attachmentId);
+    const task = (sheetName ? attachmentTasks.find((item) => item.targetSheetName === sheetName) : undefined) ?? attachmentTasks[0];
+    if (task) {
+      setSelectedTaskId(task.id);
+      setHasUserSelected(true);
+      setReviewStep(1);
+    }
+    setPreviewSource({ kind: "attachment", attachmentId, sheetName: sheetName ?? task?.targetSheetName ?? undefined });
+  }, [selectedMailTasks]);
+
+  const handleAddSource = useCallback(async (attachmentId: string, sheetName: string) => {
+    if (!selectedMail) return;
+    setMailTaskLoading(true);
+    try {
+      await addMailSource(selectedMail.id, attachmentId, sheetName);
+      await Promise.all([refresh(), loadMailTaskList()]);
+      toast.success(`已新增 ${sheetName}，后台解析已启动`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "新增解析来源失败");
+    } finally {
+      setMailTaskLoading(false);
+    }
+  }, [loadMailTaskList, refresh, selectedMail]);
+
+  const handleAddPreviewSheet = useCallback((sheetName: string) => {
+    if (!selectedAttachment) return;
+    void handleAddSource(selectedAttachment.attachmentId, sheetName);
+  }, [handleAddSource, selectedAttachment]);
+
+  const handleDeleteSourceTask = useCallback(async (taskId: string) => {
+    setScopeTaskId(taskId);
+    try {
+      await deleteSourceTask(taskId);
+      if (selectedTask?.id === taskId) {
+        setSelectedTaskId("");
+        setHasUserSelected(false);
+      }
+      await Promise.all([refresh(), loadMailTaskList()]);
+      toast.success("Sheet 解析任务已删除");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "删除 Sheet 解析任务失败");
+    } finally {
+      setScopeTaskId(null);
+    }
+  }, [loadMailTaskList, refresh, selectedTask]);
+
+  const handleToggleExcluded = useCallback(async (taskId: string, excluded: boolean) => {
+    setScopeTaskId(taskId);
+    try {
+      await setTaskExcluded(taskId, excluded);
+      await Promise.all([refresh(), loadMailTaskList()]);
+      toast.success(excluded ? "该来源已从 Merge 范围排除" : "该来源已重新纳入 Merge 范围");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "更新来源范围失败");
+    } finally {
+      setScopeTaskId(null);
+    }
+  }, [loadMailTaskList, refresh]);
+
+  const handleApplyDateOffset = useCallback(async () => {
+    if (!selectedTask || !isWaitingHuman) return;
+    const days = Number.parseInt(dateOffset, 10);
+    if (!Number.isFinite(days) || days < 0) {
+      toast.error("请输入大于或等于 0 的提前天数");
+      return;
+    }
+    setBatchLoading(true);
+    try {
+      let revision = localResultRevision ?? selectedTask.resultRevision;
+      let latestStale: TaskStaleState | null = null;
+      const overrides = new Map(localRowOverrides);
+      let updatedCount = 0;
+      for (const [rowId, row] of visibleRowEntries) {
+        const current = String(getRowValue(rowId, "expandedDay", row.expandedDay) || getRowValue(rowId, "dateInfo", row.dateInfo) || "");
+        const shifted = shiftIsoDate(current, -days);
+        if (!shifted) continue;
+        const response = await patchRow(selectedTask.id, rowId, revision, { date_info: shifted });
+        revision = response.resultRevision;
+        latestStale = response.taskStaleState;
+        overrides.set(rowId, { ...overrides.get(rowId), ...response.row, dateInfo: shifted });
+        updatedCount += 1;
+      }
+      setLocalResultRevision(revision);
+      localRevRef.current = revision;
+      setTaskStaleState(latestStale);
+      setLocalRowOverrides(overrides);
+      toast.success(`已更新 ${updatedCount} 行提货日期`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "批量调整日期失败");
+      refresh();
+    } finally {
+      setBatchLoading(false);
+    }
+  }, [dateOffset, getRowValue, isWaitingHuman, localResultRevision, localRowOverrides, refresh, selectedTask, visibleRowEntries]);
+
+  const handleApplyMergeStrategy = useCallback(async () => {
+    if (!selectedTask || !isWaitingHuman || rowIds.length === 0) return;
+    setBatchLoading(true);
+    try {
+      const revision = localResultRevision ?? selectedTask.resultRevision;
+      const response = await bulkMergeStrategy(selectedTask.id, revision, rowIds, mergeStrategy);
+      setLocalResultRevision(response.resultRevision);
+      localRevRef.current = response.resultRevision;
+      setLocalRowOverrides((current) => {
+        const next = new Map(current);
+        rowIds.forEach((rowId) => next.set(rowId, { ...next.get(rowId), mergeStrategy }));
+        return next;
+      });
+      toast.success(`已将 ${response.updatedCount} 行设置为 ${strategyLabel(mergeStrategy)}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "更新数量策略失败");
+      refresh();
+    } finally {
+      setBatchLoading(false);
+    }
+  }, [isWaitingHuman, localResultRevision, mergeStrategy, refresh, rowIds, selectedTask]);
+
+  const handleRowMergeStrategy = useCallback(async (rowId: string, strategy: BulkMergeStrategy) => {
+    if (!selectedTask || !isWaitingHuman) return;
+    try {
+      const revision = localResultRevision ?? selectedTask.resultRevision;
+      const response = await patchRow(selectedTask.id, rowId, revision, { merge_strategy: strategy });
+      setLocalResultRevision(response.resultRevision);
+      localRevRef.current = response.resultRevision;
+      setTaskStaleState(response.taskStaleState);
+      setLocalRowOverrides((current) => {
+        const next = new Map(current);
+        next.set(rowId, { ...next.get(rowId), ...response.row, mergeStrategy: strategy });
+        return next;
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "更新数量策略失败");
+      refresh();
+    }
+  }, [isWaitingHuman, localResultRevision, refresh, selectedTask]);
 
   const handleStartAddingRow = useCallback(() => {
     setIsAddingRow(true);
@@ -531,136 +696,251 @@ export function ParseReviewPage() {
     });
   }, []);
 
-  const timeline: TimelineEntry[] = useMemo(() => {
-    if (!selectedTask) return [];
-    const traceMap = new Map<string, typeof selectedTask.traceSteps[number]>();
-    for (const step of selectedTask.traceSteps) {
-      traceMap.set(step.stepName, step);
-    }
-    const currentStep = selectedTask.pipelineStep;
-    const currentIdx = currentStep ? PIPELINE_STEPS.indexOf(currentStep as typeof PIPELINE_STEPS[number]) : -1;
-
-    return PIPELINE_STEPS.map((key, idx) => {
-      const traceEntry = traceMap.get(key);
-      const label = STEP_LABELS[key] ?? key;
-      let state: TimelineEntry["state"] = "pending";
-      let reviewReason: string | null = null;
-
-      const isBlockedHere = isWaitingHuman && selectedTask.reviewSummary?.blockedAtStep === key;
-
-      if (isBlockedHere) {
-        state = "review";
-        reviewReason = selectedTask.reviewSummary?.reason ?? null;
-      } else if (isTaskCompleted) {
-        state = "completed";
-      } else if (traceEntry) {
-        state = traceEntry.status === "completed" ? "completed"
-          : traceEntry.status === "completed_with_errors" ? "completed"
-          : traceEntry.status === "failed" ? "failed"
-          : traceEntry.status === "skipped" ? "completed"
-          : "current";
-      } else if (currentStep === key) {
-        if (isWaitingHuman) state = "review";
-        else if (isTaskFailed) state = "failed";
-        else state = "current";
-      } else if (currentIdx >= 0 && idx < currentIdx) {
-        state = "completed";
-      }
-
-      return { key, label, state, summary: translatePipelineSummary(traceEntry?.outputSummary), reviewReason: translatePipelineSummary(reviewReason) };
-    });
-  }, [selectedTask, isTaskCompleted, isWaitingHuman, isTaskFailed]);
-
-  const resultHref = (() => {
-    if (!selectedTask || !isTaskCompleted) return "";
-    const resultParams = new URLSearchParams();
-    const lang = params.get("lang");
-    if (lang) resultParams.set("lang", lang);
-    resultParams.set("tab", resultTabForTask(selectedTask.taskType));
-    resultParams.set("sourceTaskId", selectedTask.id);
-    if (selectedAttachment?.fileName) resultParams.set("sourceFile", selectedAttachment.fileName);
-    return `/orders?${resultParams.toString()}`;
-  })();
+  const reviewFooter = selectedTask && selectedTask.status !== "completed" && selectedTask.status !== "published"
+    ? <ReviewFooter step={reviewStep} needsRevalidation={needsRevalidation} revalidating={isProceedLoading} publishing={isPublishLoading} canPublish={isWaitingHuman && !selectedTaskExcluded} excluded={selectedTaskExcluded} onStepChange={setReviewStep} onRevalidate={handleProceed} onOpenMerge={() => setMergeConfirmOpen(true)} />
+    : null;
 
   return (
-    <>
-      <div className="subnav">
-        <Link href="/task-workbench">{t.inbox}</Link>
-        <Link className="active" href="/parse-review">
-          {t.parse}
-        </Link>
-        <Link href="/mail-workbench">Mail Workbench</Link>
-        <Link href="/orders">{t.order}</Link>
-      </div>
-      <div className="grid-3 screen-fill">
-        <TaskListPanel
+    <div className="mail-review-screen screen-fill">
+      <header className="mail-review-head">
+        <div className="mail-review-statusbar">
+          <Link className="mail-review-back" href="/task-workbench" aria-label="返回客户收件箱"><ArrowLeft className="h-4 w-4" /></Link>
+          {selectedTask ? <Badge variant="slate">{taskStatusLabel(selectedTask.status, locale)}</Badge> : null}
+        </div>
+        <ReviewStepper step={reviewStep} onChange={setReviewStep} />
+      </header>
+
+      <div className="mail-review-workspace">
+        <MailSourcePanel
           locale={locale}
-          tasks={instanceItems}
-          selectedTask={selectedTask}
-          customers={customers}
-          customerFilter={customerFilter}
-          statusFilter={statusFilter}
-          timeFilter={timeFilter}
-          customerOptions={taskCustomers}
-          statusOptions={statusOptions}
-          onCustomerFilterChange={setCustomerFilter}
-          onStatusFilterChange={setStatusFilter}
-          onTimeFilterChange={setTimeFilter}
+          mail={selectedMail}
+          tasks={selectedMailTasks}
+          selectedTaskId={selectedTask?.id}
+          activeBody={isBodyTextTask}
+          activeAttachmentId={selectedAttachment?.attachmentId ?? null}
+          taskList={mailTaskList}
+          busyTaskId={scopeTaskId}
+          onSelectBody={handleSelectBody}
+          onSelectAttachment={handleSelectAttachment}
           onSelectTask={handleSelectTask}
-          onRefresh={refresh}
+          onDeleteTask={handleDeleteSourceTask}
+          onToggleExcluded={handleToggleExcluded}
         />
-        <MiddlePanel
-          locale={locale}
-          selectedTask={selectedTask}
-          selectedMail={selectedMail}
-          selectedAttachment={selectedAttachment}
-          isBodyTextTask={isBodyTextTask}
-          rows={rows}
-          rowIds={rowIds}
-          orderTypeMap={orderTypeMap}
-          bulkOrderState={bulkOrderState}
-          mappingSortOrder={mappingSortOrder}
-          conflictColorMap={conflictColorMap}
-          isWaitingHuman={isWaitingHuman}
-          isAddingRow={isAddingRow}
-          editingCell={editingCell}
-          editValue={editValue}
-          localNewRows={localNewRows}
-          newRowData={newRowData}
-          newRowErrors={newRowErrors}
-          langParam={params.get("lang")}
-          getRowValue={getRowValue}
-          isFieldStale={isFieldStale}
-          onToggleMappingSort={toggleMappingSort}
-          onBulkToggleOrderType={bulkToggleOrderType}
-          onStartAddingRow={handleStartAddingRow}
-          onToggleOrderType={toggleOrderType}
-          onDeleteRow={handleDeleteRow}
-          onStartEditing={startEditing}
-          onEditValueChange={setEditValue}
-          onCommitEdit={commitEdit}
-          onCancelEditing={cancelEditing}
-          onRemoveLocalNewRow={handleRemoveLocalNewRow}
-          onNewRowFieldChange={handleNewRowFieldChange}
-          onSaveNewRow={handleSaveNewRow}
-          onCancelNewRow={handleCancelNewRow}
-        />
-        <AgentFlowPanel
-          locale={locale}
-          selectedTask={selectedTask}
-          timeline={timeline}
-          isTaskRunning={isTaskRunning}
-          isWaitingHuman={isWaitingHuman}
-          isProceedLoading={isProceedLoading}
-          isPublishLoading={isPublishLoading}
-          resultHref={resultHref}
-          taskStaleState={taskStaleState}
-          stepLabels={STEP_LABELS}
-          onProceed={handleProceed}
-          onPublish={handlePublish}
-          onRefresh={refresh}
-        />
+
+        <section className="parse-review-main">
+          {!selectedTask ? (
+            <div className="panel parse-empty-state">当前邮件没有可审查的解析任务。</div>
+          ) : selectedTask.status === "completed" || selectedTask.status === "published" ? (
+            <CompletedState />
+          ) : reviewStep === 4 ? (
+            <MergePreview
+              key={selectedTask.id}
+              rows={rows}
+              rowIds={rowIds}
+              getRowValue={getRowValue}
+              orderTypeMap={orderTypeMap}
+              customerName={selectedMail?.customerName ?? ""}
+              customerId={selectedMail?.customerId ?? null}
+              customerOptions={mergeCustomerOptions}
+              updatedAt={selectedTask.requestedAt || selectedTask.receivedAt}
+              footer={reviewFooter}
+            />
+          ) : (
+              <MiddlePanel
+                locale={locale}
+                actionBar={<ReviewActionBar step={reviewStep} dateOffset={dateOffset} mergeStrategy={mergeStrategy} disabled={!isWaitingHuman || batchLoading} loading={batchLoading} onDateOffsetChange={setDateOffset} onMergeStrategyChange={setMergeStrategy} onApplyDateOffset={handleApplyDateOffset} onApplyMergeStrategy={handleApplyMergeStrategy} />}
+                footer={reviewFooter}
+                selectedTask={selectedTask}
+                selectedMail={selectedMail}
+                selectedAttachment={selectedAttachment}
+                isBodyTextTask={isBodyTextTask}
+                targetSheetName={previewSheetName}
+                parsedSheetNames={parsedSheetNames}
+                addingSource={mailTaskLoading}
+                rows={rows}
+                rowIds={rowIds}
+                orderTypeMap={orderTypeMap}
+                bulkOrderState={bulkOrderState}
+                mappingSortOrder={mappingSortOrder}
+                conflictColorMap={conflictColorMap}
+                isWaitingHuman={isWaitingHuman}
+                isAddingRow={isAddingRow}
+                editingCell={editingCell}
+                editValue={editValue}
+                localNewRows={localNewRows}
+                newRowData={newRowData}
+                newRowErrors={newRowErrors}
+                langParam={params.get("lang")}
+                getRowValue={getRowValue}
+                isFieldStale={isFieldStale}
+                onToggleMappingSort={toggleMappingSort}
+                onBulkToggleOrderType={bulkToggleOrderType}
+                onStartAddingRow={handleStartAddingRow}
+                onToggleOrderType={toggleOrderType}
+                onMergeStrategyChange={handleRowMergeStrategy}
+                onDeleteRow={handleDeleteRow}
+                onStartEditing={startEditing}
+                onEditValueChange={setEditValue}
+                onCommitEdit={commitEdit}
+                onCancelEditing={cancelEditing}
+                onRemoveLocalNewRow={handleRemoveLocalNewRow}
+                onNewRowFieldChange={handleNewRowFieldChange}
+                onSaveNewRow={handleSaveNewRow}
+                onCancelNewRow={handleCancelNewRow}
+                onAddSheetSource={handleAddPreviewSheet}
+              />
+          )}
+        </section>
       </div>
-    </>
+      <DialogOverlay open={mergeConfirmOpen} onClose={() => setMergeConfirmOpen(false)} className="items-center pt-0">
+        <DialogContent className="w-[min(500px,calc(100vw-32px))] rounded-2xl">
+          <DialogHeader><DialogTitle>确认合并到 Orders？</DialogTitle><Button variant="ghost" size="icon" aria-label="关闭" onClick={() => setMergeConfirmOpen(false)}><X className="h-4 w-4" /></Button></DialogHeader>
+          <DialogBody><div className="merge-confirm-callout">确认后，当前审查结果将写入 Orders。请先核对预览中的物料、日期与数量。</div></DialogBody>
+          <div className="merge-confirm-actions"><Button variant="default" size="sm" onClick={() => setMergeConfirmOpen(false)}>取消</Button><Button variant="primary" size="sm" disabled={isPublishLoading} onClick={handlePublish}>{isPublishLoading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <GitMerge className="h-3.5 w-3.5" />}确认 Merge</Button></div>
+        </DialogContent>
+      </DialogOverlay>
+    </div>
   );
+}
+
+const REVIEW_STEPS = [
+  { id: 1 as const, title: "物料核对" },
+  { id: 2 as const, title: "日期语义" },
+  { id: 3 as const, title: "数量策略" },
+  { id: 4 as const, title: "合并预览" },
+];
+
+function ReviewFooter({ step, needsRevalidation, revalidating, publishing, canPublish, excluded, onStepChange, onRevalidate, onOpenMerge }: { step: 1 | 2 | 3 | 4; needsRevalidation: boolean; revalidating: boolean; publishing: boolean; canPublish: boolean; excluded: boolean; onStepChange: (step: 1 | 2 | 3 | 4) => void; onRevalidate: () => void; onOpenMerge: () => void }) {
+  const previousLabel = step === 2 ? "返回物料" : step === 3 ? "返回日期" : "返回数量";
+  const nextLabel = step === 1 ? "确认物料，继续日期" : step === 2 ? "确认日期，继续数量" : "生成 Orders 预览";
+  return (
+    <footer className="parse-review-footer">
+      <div>{step === 1 || step === 4 ? null : <Button variant="default" size="sm" onClick={() => onStepChange((step - 1) as 1 | 2 | 3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>}</div>
+      {step < 4 ? <Button variant="primary" size="sm" onClick={() => onStepChange((step + 1) as 2 | 3 | 4)}>{nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button> : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{needsRevalidation ? <Button variant="primary" size="sm" disabled={revalidating} onClick={onRevalidate}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}重新校验后生成预览</Button> : <Button variant="primary" size="sm" disabled={!canPublish || publishing} title={excluded ? "当前来源已排除，请先重新纳入 Merge 范围" : undefined} onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认 Merge</Button>}</div>}
+    </footer>
+  );
+}
+
+function CompletedState() {
+  return (
+    <section className="panel parse-complete-state">
+      <div className="parse-complete-icon"><Check className="h-5 w-5" /></div>
+      <h2>解析结果已合并</h2>
+      <p>审查后的结果已写入 Orders。</p>
+      <div><Link href="/task-workbench"><Button variant="default" size="sm">返回邮件</Button></Link><Link href="/orders"><Button variant="primary" size="sm"><Table2 className="h-3.5 w-3.5" />查看 Orders</Button></Link></div>
+    </section>
+  );
+}
+
+function ReviewStepper({ step, onChange }: { step: 1 | 2 | 3 | 4; onChange: (step: 1 | 2 | 3 | 4) => void }) {
+  return (
+    <nav className="review-stepper" aria-label="解析确认步骤">
+      {REVIEW_STEPS.map((item) => (
+        <button key={item.id} type="button" className={`${item.id === step ? "active" : ""}${item.id < step ? " complete" : ""}`} aria-current={item.id === step ? "step" : undefined} onClick={() => onChange(item.id)}>
+          <span>{item.id < step ? <Check className="h-3.5 w-3.5" /> : item.id}</span>
+          <span><strong>{item.title}</strong></span>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function ReviewActionBar({ step, dateOffset, mergeStrategy, disabled, loading, onDateOffsetChange, onMergeStrategyChange, onApplyDateOffset, onApplyMergeStrategy }: { step: 1 | 2 | 3; dateOffset: string; mergeStrategy: BulkMergeStrategy; disabled: boolean; loading: boolean; onDateOffsetChange: (value: string) => void; onMergeStrategyChange: (value: BulkMergeStrategy) => void; onApplyDateOffset: () => void; onApplyMergeStrategy: () => void }) {
+  if (step === 1) return <div className="review-actionbar"><div><strong>物料核对</strong></div></div>;
+  if (step === 2) return (
+    <div className="review-actionbar">
+      <div><strong>日期语义</strong></div>
+      <div className="review-action-controls"><span>到货日期统一提前</span><input value={dateOffset} inputMode="numeric" aria-label="提前天数" onChange={(event) => onDateOffsetChange(event.target.value)} /><span>天，转换为提货日期</span><Button variant="primary" size="sm" disabled={disabled} onClick={onApplyDateOffset}>{loading ? "应用中…" : "应用到全部"}</Button></div>
+    </div>
+  );
+  return (
+    <div className="review-actionbar">
+      <div><strong>数量策略</strong></div>
+      <div className="review-action-controls"><span>统一合并策略</span><Select value={mergeStrategy} onValueChange={(value) => onMergeStrategyChange(value as BulkMergeStrategy)}><SelectTrigger className="w-[112px]" aria-label="统一合并策略"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="replace">Replace</SelectItem><SelectItem value="increment">Increment</SelectItem><SelectItem value="decrement">Decrement</SelectItem></SelectContent></Select><Button variant="primary" size="sm" disabled={disabled} onClick={onApplyMergeStrategy}>{loading ? "应用中…" : "应用到全部"}</Button></div>
+    </div>
+  );
+}
+
+function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, customerId, customerOptions, updatedAt, footer }: { rows: Record<string, unknown>[]; rowIds: string[]; getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown; orderTypeMap: Map<string, OrderType>; customerName: string; customerId: string | null; customerOptions: { value: string; label: string }[]; updatedAt: string | null | undefined; footer: ReactNode }) {
+  const [materialQuery, setMaterialQuery] = useState("");
+  const allDates = Array.from(new Set(rows.map((row, index) => String(getRowValue(rowIds[index], "expandedDay", row.expandedDay) || getRowValue(rowIds[index], "dateInfo", row.dateInfo) || "")).filter(Boolean))).sort();
+  const [customerFilter, setCustomerFilter] = useState(customerId || "__all__");
+  const [visibleDemandKinds, setVisibleDemandKinds] = useState<DemandKind[]>(["forecast", "firm"]);
+  const [timeFrom, setTimeFrom] = useState(allDates[0] ?? "");
+  const [timeTo, setTimeTo] = useState(allDates.at(-1) ?? "");
+  const dates = allDates.filter((date) => (!timeFrom || date >= timeFrom) && (!timeTo || date <= timeTo));
+  const groups = new Map<string, { customerPartNumber: string; internalPartNumber: string; type: string; strategy: BulkMergeStrategy; quantities: Map<string, number> }>();
+  rows.forEach((row, index) => {
+    const rowId = rowIds[index];
+    const customerPartNumber = String(getRowValue(rowId, "customerPartNumber", row.customerPartNumber) ?? "");
+    const internalPartNumber = String(getRowValue(rowId, "internalPartNumber", row.internalPartNumber) ?? "—");
+    const type = (orderTypeMap.get(rowId) ?? String(row.classification ?? "uncertain")) === "confirmed" ? "Firm" : "Forecast";
+    const strategy = String(getRowValue(rowId, "mergeStrategy", row.mergeStrategy) ?? "replace") as BulkMergeStrategy;
+    const date = String(getRowValue(rowId, "expandedDay", row.expandedDay) || getRowValue(rowId, "dateInfo", row.dateInfo) || "");
+    const key = `${customerPartNumber}|${internalPartNumber}|${type}|${strategy}`;
+    const group = groups.get(key) ?? { customerPartNumber, internalPartNumber, type, strategy, quantities: new Map<string, number>() };
+    group.quantities.set(date, (group.quantities.get(date) ?? 0) + Number(getRowValue(rowId, "quantity", row.quantity) ?? 0));
+    groups.set(key, group);
+  });
+  const visibleGroups = Array.from(groups.entries()).filter(([, group]) => {
+    if (customerFilter !== "__all__" && customerFilter !== customerId) return false;
+    const query = materialQuery.trim().toLowerCase();
+    if (query && !`${group.customerPartNumber} ${group.internalPartNumber}`.toLowerCase().includes(query)) return false;
+    const kind: DemandKind = group.type === "Firm" ? "firm" : "forecast";
+    return visibleDemandKinds.includes(kind);
+  });
+  const toggleDemandKind = (kind: DemandKind) => {
+    setVisibleDemandKinds((current) => {
+      if (current.includes(kind)) return current.length === 1 ? current : current.filter((item) => item !== kind);
+      return kind === "forecast" ? ["forecast", ...current] : [...current, "firm"];
+    });
+  };
+  const exportPreview = () => {
+    const header = ["Customer", "Customer P/N", "Faurecia P/N", "Updated Time", "Type", "Merge Strategy", ...dates, "Total"];
+    const body = visibleGroups.map(([, group]) => [customerName, group.customerPartNumber, group.internalPartNumber, updatedAt ?? "", group.type, strategyLabel(group.strategy), ...dates.map((date) => group.quantities.get(date) ?? ""), dates.reduce((sum, date) => sum + (group.quantities.get(date) ?? 0), 0)]);
+    const csv = [header, ...body].map((cells) => cells.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "orders-merge-preview.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+  return (
+    <section className="panel scroll-panel merge-preview-panel">
+      <div className="panel-head">
+        <h2 className="panel-title"><Table2 className="h-4 w-4" />Sales Forecast Plus 2.0</h2>
+        <div className="panel-head-actions">{dates.length ? <Button variant="default" size="sm" disabled>当前窗口：{dates[0]} - {dates.at(-1)}</Button> : null}<Button variant="primary" size="sm" onClick={exportPreview}><Download className="h-3.5 w-3.5" />导出</Button></div>
+      </div>
+      <div className="panel-body orders-body merge-orders-preview-body">
+        <OrdersFilters customerLabel="客户" materialLabel="物料" customerFilter={customerFilter} materialFilter={materialQuery} timeFrom={timeFrom} timeTo={timeTo} visibleDemandKinds={visibleDemandKinds} customerOptions={customerOptions} onCustomerFilterChange={setCustomerFilter} onMaterialFilterChange={setMaterialQuery} onDemandKindToggle={toggleDemandKind} onTimeFromChange={setTimeFrom} onTimeToChange={setTimeTo} />
+        <div className="orders-table-fill">
+          <div className="scroll-x orders-table-scroll order2-scroll merge-preview-scroll">
+            <div className="order2-shell merge-preview-shell">
+              <table className="order2-table merge-preview-table" style={{ minWidth: Math.max(980, 650 + dates.length * 108) }}>
+                <thead><tr><th>Customer</th><th>Customer P/N</th><th>Faurecia P/N</th><th>Updated Time</th><th>Type</th><th>Merge Strategy</th>{dates.map((date) => <th key={date}>{date}</th>)}<th>Total</th></tr></thead>
+                <tbody>{visibleGroups.map(([key, group]) => { const total = dates.reduce((sum, date) => sum + (group.quantities.get(date) ?? 0), 0); return <tr key={key}><td>{customerName || "当前客户"}</td><td>{group.customerPartNumber}</td><td>{group.internalPartNumber}</td><td>{updatedAt ? formatDateTime(updatedAt, "zh-CN") : "—"}</td><td><span className={`orders-lane-badge ${group.type.toLowerCase()}`}>{group.type}</span></td><td>{strategyLabel(group.strategy)}</td>{dates.map((date) => <td key={date} className={group.quantities.has(date) ? `order-quantity-cell ${group.type.toLowerCase()}` : ""}>{group.quantities.has(date) ? group.quantities.get(date)?.toLocaleString() : ""}</td>)}<td><strong>{total.toLocaleString()}</strong></td></tr>; })}</tbody>
+              </table>
+              {visibleGroups.length === 0 ? <div className="orders-state"><strong>当前筛选条件下没有待合并数据</strong></div> : null}
+            </div>
+          </div>
+        </div>
+      </div>
+      {footer}
+    </section>
+  );
+}
+
+function shiftIsoDate(value: string, days: number) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function strategyLabel(strategy: BulkMergeStrategy) {
+  if (strategy === "increment") return "Increment";
+  if (strategy === "decrement") return "Decrement";
+  return "Replace";
 }

@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
 
 import { BACKEND_URL } from "@/api/client";
-import type { WorkspaceMail } from "@/services/inbox";
+import type { WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -32,10 +32,12 @@ function heatLevel(count: number) {
 
 export function CustomerHeatmap({
   mails,
+  tasks = [],
   customers,
   locale,
 }: {
   mails: WorkspaceMail[];
+  tasks?: WorkspaceTask[];
   customers: CustomerConfig[];
   locale: Locale;
 }) {
@@ -57,6 +59,19 @@ export function CustomerHeatmap({
     }
     return map;
   }, [customers, mails]);
+
+  const issueDays = useMemo(() => {
+    const issueMailIds = new Set(
+      tasks
+        .filter((task) => ["failed", "waiting_human_decision"].includes(task.status))
+        .map((task) => task.mailMessageId),
+    );
+    return new Set(
+      mails
+        .filter((mail) => issueMailIds.has(mail.id))
+        .map((mail) => `${customerLabelFromId(customers, mail.customerId, mail.customerName)}|${beijingDateKey(mail.receivedAt)}`),
+    );
+  }, [customers, mails, tasks]);
 
   const todayCards = useMemo(() => {
     const today = beijingDateKey(new Date());
@@ -102,7 +117,15 @@ export function CustomerHeatmap({
                   {columns.map((date) => {
                     const key = `${customer}|${date}`;
                     const count = countsByCustomerDay.get(key) ?? 0;
-                    return <span key={key} className={`heat-cell ${heatLevel(count)}`} aria-label={`${formatShortDate(date)} ${customer}`} />;
+                    const hasIssue = issueDays.has(key);
+                    return (
+                      <span
+                        key={key}
+                        className={`heat-cell ${heatLevel(count)}${hasIssue ? " issue" : ""}`}
+                        aria-label={`${formatShortDate(date)} ${customer}${hasIssue ? " 有待处理邮件" : ""}`}
+                        title={hasIssue ? `${formatShortDate(date)} · 有邮件需要处理` : undefined}
+                      >{hasIssue ? "!" : ""}</span>
+                    );
                   })}
                 </React.Fragment>
               ))
@@ -133,9 +156,9 @@ function PreviewState({ label, error }: { label: string; error?: string }) {
   );
 }
 
-export function ExcelViewer({ fileArtifactId, locale, onParseSheet, parsingSheet, onSheetChange }: { fileArtifactId: string; locale: Locale; onParseSheet?: (sheetName: string) => void; parsingSheet?: boolean; onSheetChange?: (sheetName: string) => void }) {
+export function ExcelViewer({ fileArtifactId, locale, initialSheet, onParseSheet, parsingSheet, parsedSheetNames = [], parseSheetLabel, onSheetChange, onSheetsLoaded }: { fileArtifactId: string; locale: Locale; initialSheet?: string | null; onParseSheet?: (sheetName: string) => void; parsingSheet?: boolean; parsedSheetNames?: string[]; parseSheetLabel?: string; onSheetChange?: (sheetName: string) => void; onSheetsLoaded?: (sheetNames: string[]) => void }) {
   const t = copy[locale];
-  const [requestedSheet, setRequestedSheet] = React.useState("");
+  const [requestedSheet, setRequestedSheet] = React.useState(initialSheet ?? "");
   const requestKey = `${fileArtifactId}:${requestedSheet}`;
   const [preview, setPreview] = React.useState<{
     key: string;
@@ -156,14 +179,16 @@ export function ExcelViewer({ fileArtifactId, locale, onParseSheet, parsingSheet
           return res.json();
         })
         .then((data) => {
+          const sheetNames = Array.isArray(data.sheetNames) ? data.sheetNames.map(String) : [];
           setPreview({
             key,
-            sheetNames: data.sheetNames ?? [],
+            sheetNames,
             activeSheet: data.activeSheet ?? "",
             rows: data.rows ?? [],
             truncated: data.truncated ?? false,
             error: null,
           });
+          onSheetsLoaded?.(sheetNames);
         })
         .catch((err) => {
           setPreview({
@@ -176,7 +201,7 @@ export function ExcelViewer({ fileArtifactId, locale, onParseSheet, parsingSheet
           });
         });
     },
-    [fileArtifactId, t.previewLoadFailed],
+    [fileArtifactId, onSheetsLoaded, t.previewLoadFailed],
   );
 
   React.useEffect(() => {
@@ -208,7 +233,7 @@ export function ExcelViewer({ fileArtifactId, locale, onParseSheet, parsingSheet
             {name}
           </button>
         ))}
-        {onParseSheet && preview?.activeSheet && (
+        {onParseSheet && preview?.activeSheet && !parsedSheetNames.includes(preview.activeSheet) && (
           <button
             type="button"
             className="excel-parse-sheet-btn"
@@ -217,7 +242,7 @@ export function ExcelViewer({ fileArtifactId, locale, onParseSheet, parsingSheet
           >
             {parsingSheet
               ? (locale === "en" ? "Parsing..." : "解析中...")
-              : (locale === "en" ? "Parse this sheet" : "解析此Sheet")}
+              : (parseSheetLabel ?? (locale === "en" ? "Parse this sheet" : "解析此Sheet"))}
           </button>
         )}
       </div>

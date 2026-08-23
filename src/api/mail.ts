@@ -22,3 +22,14 @@ export function createManualMailSchema(formData: FormData): Promise<unknown> {
 export function getMailTasksSchema(mailId: string): Promise<MailTaskListResponseSchema> {
   return apiRequest<MailTaskListResponseSchema>(`/api/mail-messages/${mailId}/tasks`);
 }
+
+export function addMailSourceSchema(
+  mailId: string,
+  attachmentId: string,
+  targetSheetName: string,
+): Promise<unknown> {
+  return apiRequest(`/api/mail-messages/${mailId}/tasks/add-source`, {
+    method: "POST",
+    body: JSON.stringify({ attachment_id: attachmentId, target_sheet_name: targetSheetName }),
+  });
+}

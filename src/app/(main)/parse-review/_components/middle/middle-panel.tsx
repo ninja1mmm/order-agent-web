@@ -1,6 +1,8 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { useState, type ReactNode } from "react";
+import { FileSearch, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { WorkspaceAttachment, WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import { type Locale, copy } from "../../../_components/shared";
 import type { EditingCell, LocalNewRow, NewRowData, OrderType } from "../parse-review-types";
@@ -9,10 +11,15 @@ import { ResultTable } from "./result-table";
 
 type MiddlePanelProps = {
   locale: Locale;
+  actionBar: ReactNode;
+  footer: ReactNode;
   selectedTask: WorkspaceTask | undefined;
   selectedMail: WorkspaceMail | undefined;
   selectedAttachment: WorkspaceAttachment | undefined;
   isBodyTextTask: boolean;
+  targetSheetName: string | null | undefined;
+  parsedSheetNames: string[];
+  addingSource: boolean;
   rows: Record<string, unknown>[];
   rowIds: string[];
   orderTypeMap: Map<string, OrderType>;
@@ -33,6 +40,7 @@ type MiddlePanelProps = {
   onBulkToggleOrderType: () => void;
   onStartAddingRow: () => void;
   onToggleOrderType: (rowId: string) => void;
+  onMergeStrategyChange: (rowId: string, strategy: "replace" | "increment" | "decrement") => void;
   onDeleteRow: (rowId: string) => void;
   onStartEditing: (rowId: string, field: string, currentValue: unknown) => void;
   onEditValueChange: (value: string) => void;
@@ -42,14 +50,20 @@ type MiddlePanelProps = {
   onNewRowFieldChange: (field: keyof NewRowData, value: string) => void;
   onSaveNewRow: () => void;
   onCancelNewRow: () => void;
+  onAddSheetSource: (sheetName: string) => void;
 };
 
 export function MiddlePanel({
   locale,
+  actionBar,
+  footer,
   selectedTask,
   selectedMail,
   selectedAttachment,
   isBodyTextTask,
+  targetSheetName,
+  parsedSheetNames,
+  addingSource,
   rows,
   rowIds,
   orderTypeMap,
@@ -70,6 +84,7 @@ export function MiddlePanel({
   onBulkToggleOrderType,
   onStartAddingRow,
   onToggleOrderType,
+  onMergeStrategyChange,
   onDeleteRow,
   onStartEditing,
   onEditValueChange,
@@ -79,25 +94,26 @@ export function MiddlePanel({
   onNewRowFieldChange,
   onSaveNewRow,
   onCancelNewRow,
+  onAddSheetSource,
 }: MiddlePanelProps) {
   const t = copy[locale];
+  const [resultCollapsed, setResultCollapsed] = useState(false);
 
   return (
-    <section className="panel scroll-panel">
-      <div className="panel-head">
-        <h2 className="panel-title truncate" title={isBodyTextTask ? "Email Body" : selectedAttachment?.fileName}>
-          {isBodyTextTask ? "Email Body" : (selectedAttachment?.fileName ?? t.attachmentPreview)}
-        </h2>
-        <Badge variant="slate">{t.readonly}</Badge>
-      </div>
-      <div className="panel-body stack">
-        <AttachmentPreview
-          locale={locale}
-          isBodyTextTask={isBodyTextTask}
-          selectedMail={selectedMail}
-          selectedAttachment={selectedAttachment}
-        />
-        <ResultTable
+    <div className={`parse-horizontal-workspace${resultCollapsed ? " result-collapsed" : ""}`}>
+      <section className="panel scroll-panel source-preview-panel">
+        <div className="panel-head">
+          <div className="source-preview-title"><FileSearch className="h-4 w-4" /><span><strong title={isBodyTextTask ? "Email Body" : selectedAttachment?.fileName}>{isBodyTextTask ? "Email Body" : (selectedAttachment?.fileName ?? t.attachmentPreview)}</strong></span></div>
+        </div>
+        <div className="panel-body source-preview-body"><AttachmentPreview locale={locale} isBodyTextTask={isBodyTextTask} selectedMail={selectedMail} selectedAttachment={selectedAttachment} targetSheetName={targetSheetName} parsedSheetNames={parsedSheetNames} addingSource={addingSource} onAddSheetSource={onAddSheetSource} /></div>
+      </section>
+      <section className="panel scroll-panel parse-edit-panel">
+        <div className="parse-result-toolbar">
+          {resultCollapsed ? null : actionBar}
+          <Button className={`parse-collapse-button${resultCollapsed ? " is-collapsed" : ""}`} variant="default" size={resultCollapsed ? "icon" : "sm"} aria-label={resultCollapsed ? "展开解析" : "收起解析"} title={resultCollapsed ? "展开解析" : undefined} onClick={() => setResultCollapsed((value) => !value)}>{resultCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-3.5 w-3.5" />}{resultCollapsed ? null : "收起解析"}</Button>
+        </div>
+        {!resultCollapsed ? <div className="parse-result-body">
+          <ResultTable
           selectedTask={selectedTask}
           rows={rows}
           rowIds={rowIds}
@@ -119,6 +135,7 @@ export function MiddlePanel({
           onBulkToggleOrderType={onBulkToggleOrderType}
           onStartAddingRow={onStartAddingRow}
           onToggleOrderType={onToggleOrderType}
+          onMergeStrategyChange={onMergeStrategyChange}
           onDeleteRow={onDeleteRow}
           onStartEditing={onStartEditing}
           onEditValueChange={onEditValueChange}
@@ -129,7 +146,9 @@ export function MiddlePanel({
           onSaveNewRow={onSaveNewRow}
           onCancelNewRow={onCancelNewRow}
         />
-      </div>
-    </section>
+        </div> : null}
+        {resultCollapsed ? null : footer}
+      </section>
+    </div>
   );
 }

@@ -48,6 +48,8 @@ export function normalizeAttachment(raw: WorkspaceAttachmentSchema): WorkspaceAt
     status: raw.status ?? "",
     taskId: raw.taskId ?? raw.task_id ?? null,
     documentType: raw.documentType ?? raw.document_type ?? null,
+    labels: raw.labels ?? [],
+    tasks: (raw.tasks ?? []).map(normalizeAttachmentTaskSummary),
   };
 }
 
@@ -72,6 +74,7 @@ export function normalizeMail(raw: WorkspaceMailSchema): WorkspaceMail {
     createdAt,
     customerId: raw.customerId ?? raw.customer_id ?? null,
     customerName: raw.customerName ?? raw.customer_name ?? null,
+    mailStatus: raw.mailStatus ?? raw.mail_status ?? "pending",
     attachments: (raw.attachments ?? []).map(normalizeAttachment),
     inlineImages: (raw.inlineImages ?? raw.inline_images ?? []).map(normalizeInlineImage),
   };
@@ -103,6 +106,7 @@ export function normalizeTask(raw: WorkspaceTaskSchema): WorkspaceTask {
     id: raw.id ?? raw.task_id ?? "",
     mailMessageId: raw.mailMessageId ?? raw.mail_id ?? "",
     attachmentId: raw.attachmentId ?? raw.attachment_id ?? null,
+    targetSheetName: raw.targetSheetName ?? raw.target_sheet_name ?? null,
     taskType: raw.taskType ?? raw.task_type ?? "",
     status: raw.status ?? "",
     pipelineStep: raw.pipelineStep ?? raw.pipeline_step ?? null,
@@ -145,6 +149,7 @@ export function normalizeAttachmentTaskSummary(
     status: raw.status ?? "",
     targetSheetName: raw.targetSheetName ?? raw.target_sheet_name ?? null,
     pipelineStep: raw.pipelineStep ?? raw.pipeline_step ?? null,
+    excluded: raw.excluded ?? false,
   };
 }
 
@@ -161,6 +166,7 @@ function normalizeMailListMail(raw: InboxMailListMailSchema): WorkspaceMail {
     createdAt,
     customerId: raw.customerId ?? raw.customer_id ?? null,
     customerName: raw.customerName ?? raw.customer_name ?? null,
+    mailStatus: raw.mailStatus ?? raw.mail_status ?? "pending",
     attachments: (raw.attachments ?? []).map((att) => ({
       ...normalizeAttachment(att),
       tasks: (att.tasks ?? []).map(normalizeAttachmentTaskSummary),
@@ -203,6 +209,7 @@ export function normalizeMailTaskSummary(raw: MailTaskSummarySchema): MailTaskSu
     traceSteps: (raw.traceSteps ?? raw.trace_steps ?? []).map(normalizeTraceStep),
     reviewSummary: normalizeReviewSummary(raw.reviewSummary ?? raw.review_summary),
     resultRevision: raw.resultRevision ?? raw.result_revision ?? 1,
+    excluded: raw.excluded ?? false,
     customerId: raw.customerId ?? raw.customer_id ?? null,
     customerName: raw.customerName ?? raw.customer_name ?? null,
     requestedAt: raw.requestedAt ?? raw.requested_at ?? "",
@@ -214,5 +221,11 @@ export function normalizeMailTaskList(response: MailTaskListResponseSchema): Mai
   return {
     mailMessageId: response.mailMessageId ?? response.mail_message_id ?? "",
     tasks: response.tasks.map(normalizeMailTaskSummary),
+    total: response.total ?? response.tasks.length,
+    attachmentSheets: (response.attachmentSheets ?? response.attachment_sheets ?? []).map((sheet) => ({
+      attachmentId: sheet.attachmentId ?? sheet.attachment_id ?? "",
+      fileName: sheet.fileName ?? sheet.file_name ?? "",
+      availableSheets: sheet.availableSheets ?? sheet.available_sheets ?? [],
+    })),
   };
 }

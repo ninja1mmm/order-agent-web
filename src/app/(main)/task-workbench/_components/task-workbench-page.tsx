@@ -2,12 +2,16 @@
 
 import Link from "next/link";
 import React, { useCallback, useMemo, useState } from "react";
+import { History, Mail, Plus, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
 
 import { createManualMail, processMail } from "@/services/mail";
 import {
   copy,
   customerLabel,
   backendDateMs,
+  beijingDateKey,
   useLocale,
   useCustomerConfig,
   useWorkspacePolling,
@@ -19,12 +23,14 @@ import { RightPanel } from "./right/right-panel";
 
 export function TaskWorkbenchPage() {
   const locale = useLocale();
+  const params = useSearchParams();
   const { mails, tasks, refresh } = useWorkspacePolling();
   const { customers } = useCustomerConfig();
-  const [selectedMailId, setSelectedMailId] = useState<string>("");
+  const [selectedMailId, setSelectedMailId] = useState<string>(() => params.get("mailId") ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [parsingIds, setParsingIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<"mail" | "customer">(() => params.get("view") === "customer" ? "customer" : "mail");
 
   const handleParse = useCallback(async (mailId: string, attachmentIds: string[]) => {
     for (const id of attachmentIds) setParsingIds((prev) => new Set(prev).add(id));
@@ -41,11 +47,11 @@ export function TaskWorkbenchPage() {
   const [timeFilter, setTimeFilter] = useState("最近 30 天");
   const [attachmentFilter, setAttachmentFilter] = useState("全部邮件");
   const [statusFilter, setStatusFilter] = useState("全部状态");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [timelineStartDate, setTimelineStartDate] = useState("");
+  const [timelineEndDate, setTimelineEndDate] = useState("");
   const [referenceTime] = useState(() => Date.now());
   const t = copy[locale];
-
-  const selectedMail = mails.find((mail) => mail.id === selectedMailId) ?? mails[0];
-  const selectedTasks = tasks.filter((task) => task.mailMessageId === selectedMail?.id);
 
   const customerOptions = useMemo(
     () => [
@@ -88,6 +94,22 @@ export function TaskWorkbenchPage() {
     });
   }, [attachmentFilter, customerFilter, mails, referenceTime, statusFilter, tasks, timeFilter]);
 
+  const timelineMails = useMemo(() => mails.filter((mail) => {
+    const date = beijingDateKey(mail.receivedAt);
+    if (timelineStartDate && date < timelineStartDate) return false;
+    if (timelineEndDate && date > timelineEndDate) return false;
+    return true;
+  }), [mails, timelineEndDate, timelineStartDate]);
+  const selectedCustomerMails = customerFilter === "__all__" ? timelineMails : timelineMails.filter((mail) => mail.customerId === customerFilter || (!mail.customerId && mail.customerName === customerFilter));
+  const activeMails = viewMode === "customer" ? selectedCustomerMails : filteredMails;
+  const selectedMail = activeMails.find((mail) => mail.id === selectedMailId) ?? activeMails[0] ?? (viewMode === "mail" ? mails[0] : undefined);
+  const selectedTasks = tasks.filter((task) => task.mailMessageId === selectedMail?.id);
+
+  const handleSelectCustomer = useCallback((customerId: string, firstMailId?: string) => {
+    setCustomerFilter(customerId);
+    if (firstMailId) setSelectedMailId(firstMailId);
+  }, []);
+
   const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
@@ -105,34 +127,47 @@ export function TaskWorkbenchPage() {
 
   return (
     <>
-      <div className="subnav">
-        <Link className="active" href="/task-workbench">
-          {t.inbox}
-        </Link>
-        <Link href="/parse-review">{t.parse}</Link>
-        <Link href="/mail-workbench">Mail Workbench</Link>
-        <Link href="/orders">{t.order}</Link>
+      <div className="workbench-toolbar-row">
+        <nav className="subnav workbench-subnav" aria-label="工作台模块">
+          <Link className="active" href="/task-workbench">{t.inbox}</Link>
+          <Link href="/orders">{t.order}</Link>
+        </nav>
+        <div className="workbench-page-actions">
+          <div className="workbench-view-controls" role="group" aria-label="工作台视图">
+            <Button variant="default" size="icon-sm" className={viewMode === "mail" ? "is-active" : ""} aria-label="邮件视图" aria-pressed={viewMode === "mail"} title="邮件视图" onClick={() => setViewMode("mail")}><Mail className="h-3.5 w-3.5" /></Button>
+            <Button variant="default" size="icon-sm" className={viewMode === "customer" ? "is-active" : ""} aria-label="客户时间轴" aria-pressed={viewMode === "customer"} title="客户时间轴" onClick={() => setViewMode("customer")}><History className="h-3.5 w-3.5" /></Button>
+          </div>
+          <Button variant="default" size="icon-sm" aria-label="刷新" title="刷新" onClick={() => refresh()}><RefreshCw className="h-3.5 w-3.5" /></Button>
+          <Button variant="default" size="sm" onClick={() => setModalOpen(true)}><Plus className="h-3.5 w-3.5" />新增邮件</Button>
+        </div>
       </div>
       <div className="inbox-grid screen-fill">
         <LeftPanel
           locale={locale}
-          mails={filteredMails}
+          viewMode={viewMode}
+          mails={viewMode === "mail" ? filteredMails : timelineMails}
+          tasks={tasks}
           customers={customers}
           selectedMailId={selectedMail?.id}
           customerFilter={customerFilter}
           timeFilter={timeFilter}
           attachmentFilter={attachmentFilter}
           statusFilter={statusFilter}
+          customerSearch={customerSearch}
+          timelineStartDate={timelineStartDate}
+          timelineEndDate={timelineEndDate}
           customerOptions={customerOptions}
           onCustomerFilterChange={setCustomerFilter}
           onTimeFilterChange={setTimeFilter}
           onAttachmentFilterChange={setAttachmentFilter}
           onStatusFilterChange={setStatusFilter}
+          onCustomerSearchChange={setCustomerSearch}
+          onTimelineStartDateChange={setTimelineStartDate}
+          onTimelineEndDateChange={setTimelineEndDate}
+          onSelectCustomer={handleSelectCustomer}
           onSelectMail={setSelectedMailId}
-          onRefresh={refresh}
-          onAddMail={() => setModalOpen(true)}
         />
-        <MiddlePanel locale={locale} mail={selectedMail} customers={customers} />
+        <MiddlePanel locale={locale} viewMode={viewMode} mail={selectedMail} timelineMails={selectedCustomerMails} tasks={tasks} customers={customers} onSelectMail={setSelectedMailId} />
         <RightPanel
           locale={locale}
           mail={selectedMail}

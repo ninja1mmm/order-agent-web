@@ -24,15 +24,42 @@ type RightPanelProps = {
 
 export function RightPanel({ locale, mail, tasks, parsingIds, onParse }: RightPanelProps) {
   const t = copy[locale];
+  const mailId = mail?.id;
+  const bodyTasks = tasks.filter((task) => task.attachmentId === null);
+  const visibleAttachments = [...(mail?.attachments.filter((attachment) => !attachment.contentType?.startsWith("image/")) ?? [])]
+    .sort((a, b) => Number(isArchiveAttachment(a.fileName, a.contentType)) - Number(isArchiveAttachment(b.fileName, b.contentType)));
+  const archiveAttachmentIds = new Set(visibleAttachments.filter((attachment) => isArchiveAttachment(attachment.fileName, attachment.contentType)).map((attachment) => attachment.attachmentId));
+  const pendingCount = tasks.filter((task) => !task.attachmentId || !archiveAttachmentIds.has(task.attachmentId)).filter((task) => task.status === "waiting_human_decision" || task.status === "failed").length;
 
   return (
     <aside className="panel scroll-panel">
       <div className="panel-head">
-        <h2 className="panel-title">{t.aiAttachmentResults}</h2>
+        <h2 className="panel-title"><Paperclip className="h-4 w-4" />本邮件解析结果</h2>
+        <Badge variant={pendingCount ? "amber" : "slate"}>{pendingCount ? `${pendingCount} 待确认` : `${tasks.length} 个任务`}</Badge>
       </div>
       <div className="panel-body stack">
-        {mail?.attachments.filter((attachment) => !attachment.contentType?.startsWith("image/")).map((attachment) => {
+        {bodyTasks.length ? bodyTasks.map((task) => (
+            <BodyTaskResult key={task.id} locale={locale} mailId={mail?.id} task={task} onParse={onParse} />
+          )) : mail ? <BodySourceResult bodyText={mail.bodyText} /> : null}
+        {visibleAttachments.map((attachment) => {
           const task = tasks.find((item) => item.attachmentId === attachment.attachmentId);
+          const archive = isArchiveAttachment(attachment.fileName, attachment.contentType);
+          if (archive) {
+            return (
+              <div className="result-block archive-result-block" key={attachment.attachmentId}>
+                <div className="result-title">
+                  <Paperclip className="result-type-icon" aria-hidden="true" />
+                  <span className="result-name" title={attachment.fileName}>{truncateMiddle(attachment.fileName)}</span>
+                </div>
+                <div className="result-footer archive-result-footer">
+                  <span className="item-meta">压缩附件</span>
+                  {attachment.fileArtifactId ? (
+                    <a className="archive-download-button" href={`${BACKEND_URL}/api/files/${attachment.fileArtifactId}/content`} download={attachment.fileName} aria-label={`${t.download} ${attachment.fileName}`}><Download className="h-3.5 w-3.5" />{t.download}</a>
+                  ) : <span className="item-meta">文件不可下载</span>}
+                </div>
+              </div>
+            );
+          }
           const dtype = attachment.documentType || task?.taskType?.replace("extract_", "") || null;
           const isSkipped = attachment.status === "skipped" || task?.status === "skipped";
           const targetLabel = dtype && docTypeLabel[dtype] ? docTypeLabel[dtype][locale] : null;
@@ -41,10 +68,10 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse }: RightPa
           const canStartParse = task?.status === "waiting_human_decision";
           const canReparse = task?.status === "completed" || attachment.status === "published" || task?.status === "failed" || task?.status === "cancelled";
           const showParseButton = canStartParse || canReparse || isParsing;
-          const reviewHref = task?.id
-            ? `/parse-review?taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
+          const reviewHref = task?.id && mailId
+            ? `/parse-review?mailId=${encodeURIComponent(mailId)}&attachmentId=${encodeURIComponent(attachment.attachmentId)}&taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
             : "";
-          const reviewLabel = task?.status === "completed" || task?.status === "published" ? t.review : t.view;
+          const reviewLabel = task?.status === "completed" || task?.status === "published" ? "查看 Merge 结果" : "进入解析确认";
 
           return (
             <div className="result-block" key={attachment.attachmentId}>
@@ -68,22 +95,23 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse }: RightPa
               {task?.status === "waiting_human_decision" && task.reviewSummary?.reason ? (
                 <div className="review-reason-hint">{translatePipelineSummary(task.reviewSummary.reason)}</div>
               ) : null}
+              {isSkipped ? <div className="result-scope-note">已保留为邮件附件，可下载，不参与本次订单解析。</div> : null}
               <div className="result-footer">
-                <Badge variant="slate">{task ? taskStatusLabel(task.status, locale) : attachment.status}</Badge>
+                <span className="item-meta">{taskStatusLabel(task?.status ?? attachment.status, locale)}</span>
                 <div className="result-actions">
-                  {showParseButton ? (
+                  {showParseButton && mailId ? (
                     <Button
                       variant={isParsing ? "primary" : "default"}
                       size="sm"
                       className={isParsing ? "btn-parsing" : ""}
-                      onClick={() => onParse(mail.id, [attachment.attachmentId])}
+                      onClick={() => onParse(mailId, [attachment.attachmentId])}
                     >
                       {isParsing ? "解析中..." : canReparse ? t.reparse : t.trigger}
                     </Button>
                   ) : null}
                   {reviewHref ? (
                     <Link href={reviewHref}>
-                      <Button variant="default" size="sm">{reviewLabel}</Button>
+                      <Button variant={task?.status === "waiting_human_decision" ? "primary" : "default"} size="sm">{reviewLabel}</Button>
                     </Link>
                   ) : null}
                 </div>
@@ -91,14 +119,27 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse }: RightPa
             </div>
           );
         })}
-        {tasks
-          .filter((task) => task.attachmentId === null)
-          .map((task) => (
-            <BodyTaskResult key={task.id} locale={locale} mailId={mail?.id} task={task} onParse={onParse} />
-          ))}
       </div>
     </aside>
   );
+}
+
+function BodySourceResult({ bodyText }: { bodyText: string | null | undefined }) {
+  return (
+    <div className="result-block body-source-result">
+      <div className="result-title">
+        <FileText className="result-type-icon" aria-hidden="true" />
+        <span className="result-name">Email Body</span>
+      </div>
+      <div className="result-footer">
+        <span className="item-meta">{bodyText?.trim() ? "未生成解析任务" : "正文为空"}</span>
+      </div>
+    </div>
+  );
+}
+
+function isArchiveAttachment(fileName: string, contentType: string | null | undefined) {
+  return /\.(zip|rar|7z|tar|gz)$/i.test(fileName) || /(zip|compressed|archive|x-7z|x-rar)/i.test(contentType ?? "");
 }
 
 function BodyTaskResult({
@@ -120,9 +161,9 @@ function BodyTaskResult({
   const canStartParse = task.status === "waiting_human_decision";
   const showParseButton = canStartParse || canReparse;
   const reviewHref = task.id
-    ? `/parse-review?taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
+    ? `/parse-review?mailId=${encodeURIComponent(mailId ?? "")}&taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
     : "";
-  const reviewLabel = task.status === "completed" || task.status === "published" ? t.review : t.view;
+  const reviewLabel = task.status === "completed" || task.status === "published" ? "查看 Merge 结果" : "进入解析确认";
 
   return (
     <div className="result-block">
@@ -137,7 +178,7 @@ function BodyTaskResult({
         <div className="review-reason-hint">{translatePipelineSummary(task.reviewSummary.reason)}</div>
       ) : null}
       <div className="result-footer">
-        <Badge variant="slate">{taskStatusLabel(task.status, locale)}</Badge>
+        <span className="item-meta">{taskStatusLabel(task.status, locale)}</span>
         <div className="result-actions">
           {showParseButton && mailId ? (
             <Button variant="default" size="sm" onClick={() => onParse(mailId, [])}>
@@ -146,7 +187,7 @@ function BodyTaskResult({
           ) : null}
           {reviewHref ? (
             <Link href={reviewHref}>
-              <Button variant="default" size="sm">{reviewLabel}</Button>
+              <Button variant={task.status === "waiting_human_decision" ? "primary" : "default"} size="sm">{reviewLabel}</Button>
             </Link>
           ) : null}
         </div>

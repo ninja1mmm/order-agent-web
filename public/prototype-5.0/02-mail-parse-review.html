@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>任务级邮件解析 · Prototype 5.0</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="brand-mark">SC</span><span>Supply Chain Agent</span></a>
+    <nav class="nav-group" aria-label="主导航">
+      <a class="nav-link" href="../prototype-4.0/00-intelligent-service.html"><i data-lucide="headphones"></i><span>智能客服</span></a>
+      <a class="nav-link active" href="../prototype-4.0/01-task-workbench.html"><i data-lucide="workflow"></i><span>智能供应链</span></a>
+      <a class="nav-link" href="../prototype-3.0/05-customer-profile.html"><i data-lucide="users"></i><span>客户画像</span></a>
+      <a class="nav-link" href="../prototype-3.0/06-financial-reconciliation-2.0.html"><i data-lucide="scale"></i><span>财务对账</span></a>
+      <a class="nav-link" href="../prototype-3.0/07-system-settings.html"><i data-lucide="settings"></i><span>系统配置</span></a>
+    </nav>
+    <div class="top-actions"><button class="icon-button" aria-label="打开智能助手"><i data-lucide="bot"></i></button><span class="avatar">A</span></div>
+  </header>
+
+  <header class="context-header">
+    <div class="context-left">
+      <a class="back-button" href="../prototype-4.0/01-task-workbench.html?view=customer" aria-label="返回邮件工作台"><i data-lucide="arrow-left"></i></a>
+      <span class="prototype-tag">5.0</span>
+      <div class="context-title">
+        <h1>无锡佛吉亚 W35 周提货计划</h1>
+        <p>Faurecia-Wuhan · 2026/08/20 17:27 · 当前任务 <strong data-active-task-id>T-1042</strong> · 来源 <span data-active-source-label>Shipping Plan</span></p>
+      </div>
+    </div>
+    <div class="context-actions">
+      <span class="badge warning" data-task-status><span class="dot"></span>待核对物料</span>
+      <button class="btn" data-demo-action="当前任务修改已保存。"><i data-lucide="save"></i>保存任务</button>
+    </div>
+  </header>
+
+  <main class="review-shell">
+    <aside class="source-tree" aria-label="本邮件解析来源与任务">
+      <div class="tree-head"><div><strong>邮件内容与解析任务</strong><br><span>一个来源对应一个独立 Task</span></div><span class="badge primary">4 Tasks</span></div>
+      <div class="tree-scroll">
+        <div class="tree-section-label">邮件正文</div>
+        <button class="tree-node" data-source-select="body" data-source-label="Email Body" data-task-id="T-1039">
+          <i data-lucide="mail"></i><span class="tree-copy"><strong>Email Body</strong><small>正文可查看，也可单独解析</small></span>
+        </button>
+        <div class="tree-branch">
+          <button class="tree-task" data-task-select="T-1039" data-task-id="T-1039" data-task-source="body" data-source-label="Email Body">
+            <i data-lucide="bot"></i><span class="tree-copy"><span class="task-id">Task T-1039 · 正文解析</span><span class="task-state done"><span class="dot"></span>已完成</span></span>
+          </button>
+        </div>
+
+        <div class="tree-section-label">附件 · 2</div>
+        <button class="tree-node selected" data-branch-toggle="excel-branch" aria-expanded="true">
+          <i data-lucide="file-spreadsheet"></i><span class="tree-copy"><strong>15WK35-无锡佛吉亚提货计划.xlsx</strong><small>Excel · 3 Sheets</small></span><i data-lucide="chevron-down"></i>
+        </button>
+        <div class="tree-branch" id="excel-branch">
+          <div class="sheet-row">
+            <button class="tree-node selected" data-source-select="shipping" data-source-label="Shipping Plan" data-task-id="T-1042">
+              <i data-lucide="table-2"></i><span class="tree-copy"><strong>Shipping Plan</strong><small>已有解析任务</small></span><span class="badge warning">1</span>
+            </button>
+            <button class="tree-task selected" data-task-select="T-1042" data-task-id="T-1042" data-task-source="shipping" data-source-label="Shipping Plan">
+              <i data-lucide="bot"></i><span class="tree-copy"><span class="task-id">Task T-1042</span><span class="task-state waiting"><span class="dot"></span>待人工确认</span></span>
+            </button>
+          </div>
+          <div class="sheet-row">
+            <button class="tree-node" data-source-select="forecast" data-source-label="Forecast">
+              <i data-lucide="table-2"></i><span class="tree-copy"><strong>Forecast</strong><small>尚未创建任务</small></span>
+            </button>
+            <div class="empty-task" data-task-slot="forecast">尚未创建解析任务</div>
+          </div>
+          <div class="sheet-row">
+            <button class="tree-node" data-source-select="summary" data-source-label="Summary">
+              <i data-lucide="table-2"></i><span class="tree-copy"><strong>Summary</strong><small>尚未创建任务</small></span>
+            </button>
+            <div class="empty-task" data-task-slot="summary">尚未创建解析任务</div>
+          </div>
+        </div>
+
+        <button class="tree-node" data-source-select="pdf" data-source-label="W35 Delivery Note.pdf" data-task-id="T-1041">
+          <i data-lucide="file-text"></i><span class="tree-copy"><strong>W35 Delivery Note.pdf</strong><small>PDF · 已创建任务</small></span>
+        </button>
+        <div class="tree-branch">
+          <button class="tree-task" data-task-select="T-1041" data-task-id="T-1041" data-task-source="pdf" data-source-label="W35 Delivery Note.pdf">
+            <i data-lucide="bot"></i><span class="tree-copy"><span class="task-id">Task T-1041 · PDF 解析</span><span class="task-state done"><span class="dot"></span>等待 Merge</span></span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="work-area">
+      <nav class="step-bar" aria-label="当前任务处理步骤">
+        <button class="step-button active" data-review-step="1" aria-current="step"><span class="step-index">1</span><span class="step-copy"><strong>物料核对</strong><small>完整性、映射与类型</small></span></button>
+        <button class="step-button" data-review-step="2"><span class="step-index">2</span><span class="step-copy"><strong>日期语义</strong><small>确认提货日期</small></span></button>
+        <button class="step-button" data-review-step="3"><span class="step-index">3</span><span class="step-copy"><strong>数量策略</strong><small>新增、扣减、覆盖</small></span></button>
+        <button class="step-button" data-review-step="4"><span class="step-index">4</span><span class="step-copy"><strong>合并预览</strong><small>Orders 页面预览</small></span></button>
+      </nav>
+
+      <div class="workspace-page active" data-step-page="edit">
+        <div class="vertical-workspace" data-vertical-workspace>
+          <section class="workspace-panel source-panel">
+            <div class="panel-head">
+              <div class="panel-title"><i data-lucide="file-search"></i><strong data-source-file>15WK35-无锡佛吉亚提货计划.xlsx</strong><span>只读来源 · <span data-source-label-inline>Shipping Plan</span></span></div>
+              <div class="actions">
+                <button class="btn small primary" data-create-task data-source="shipping" disabled><i data-lucide="bot"></i><span>已有解析任务</span></button>
+                <button class="btn small" data-toggle-preview><i data-lucide="panel-top-close"></i><span>收起来源</span></button>
+              </div>
+            </div>
+            <div class="source-view-body">
+              <div class="source-content" data-source-content="body">
+                <div class="mail-body"><p><strong>INTERNAL and PARTNERS</strong></p><p>Hello:</p><p>请查收无锡佛吉亚 W35 周提货计划，详情见附件。请注意，本次新增 717X 物料，收货日期为 8 月 28 日。</p><p>如要货令与邮件不符，请与我司联系，谢谢。</p><p>陈莹 CHEN YING<br>Faurecia seating<br>ying.chen@forvia.com</p></div>
+              </div>
+              <div class="source-content active" data-source-content="shipping">
+                <div class="sheet-tabs"><button class="sheet-tab" data-sheet-tab="summary">Summary</button><button class="sheet-tab active" data-sheet-tab="shipping">Shipping Plan</button><button class="sheet-tab" data-sheet-tab="forecast">Forecast</button></div>
+                <div class="source-table-scroll">
+                  <table class="excel-table">
+                    <thead><tr><th class="row-num"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th></tr></thead>
+                    <tbody>
+                      <tr><td class="row-num">1</td><td>Customer PN</td><td>Description</td><td>Arrival Date</td><td>Firm Qty</td><td>Plant</td><td>Dock</td><td>Week</td><td>Remark</td></tr>
+                      <tr><td class="row-num">2</td><td class="hit">537736001X</td><td>TRACK ASSY</td><td class="detected">2026-08-26</td><td class="detected">192</td><td>Wuhan</td><td>W35</td><td>2026-W35</td><td></td></tr>
+                      <tr><td class="row-num">3</td><td>471532101X</td><td>FRAME ASSY</td><td class="detected">2026-08-27</td><td class="detected">384</td><td>Wuhan</td><td>W35</td><td>2026-W35</td><td></td></tr>
+                      <tr><td class="row-num">4</td><td>2172717X</td><td>RECLINER</td><td class="detected">2026-08-28</td><td class="detected">4032</td><td>Wuhan</td><td>W35</td><td>2026-W35</td><td>New</td></tr>
+                      <tr><td class="row-num">5</td><td>1868640X</td><td>MECHANISM</td><td class="detected">2026-08-29</td><td class="detected">960</td><td>Wuhan</td><td>W35</td><td>2026-W35</td><td></td></tr>
+                      <tr><td class="row-num">6</td><td>990X</td><td>COMMON PART</td><td class="detected">2026-08-31</td><td class="detected">480</td><td>Wuhan</td><td>W35</td><td>2026-W36</td><td>Changed</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="source-content" data-source-content="forecast">
+                <div class="sheet-tabs"><button class="sheet-tab" data-sheet-tab="summary">Summary</button><button class="sheet-tab" data-sheet-tab="shipping">Shipping Plan</button><button class="sheet-tab active" data-sheet-tab="forecast">Forecast</button></div>
+                <div class="source-table-scroll">
+                  <table class="excel-table">
+                    <thead><tr><th class="row-num"></th><th>A</th><th>B</th><th>CW35</th><th>CW36</th><th>CW37</th><th>CW38</th><th>CW39</th><th>Plant</th></tr></thead>
+                    <tbody>
+                      <tr><td class="row-num">1</td><td>Customer PN</td><td>Description</td><td>Forecast</td><td>Forecast</td><td>Forecast</td><td>Forecast</td><td>Forecast</td><td></td></tr>
+                      <tr><td class="row-num">2</td><td>537736001X</td><td>TRACK ASSY</td><td class="detected">960</td><td>960</td><td>480</td><td>480</td><td>240</td><td>Wuhan</td></tr>
+                      <tr><td class="row-num">3</td><td>471532101X</td><td>FRAME ASSY</td><td class="detected">768</td><td>768</td><td>384</td><td>384</td><td>192</td><td>Wuhan</td></tr>
+                      <tr><td class="row-num">4</td><td>2172717X</td><td>RECLINER</td><td class="detected">4032</td><td>4032</td><td>2016</td><td>2016</td><td>1008</td><td>Wuhan</td></tr>
+                      <tr><td class="row-num">5</td><td>1868640X</td><td>MECHANISM</td><td class="detected">1440</td><td>1440</td><td>960</td><td>960</td><td>480</td><td>Wuhan</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="source-content" data-source-content="summary">
+                <div class="sheet-tabs"><button class="sheet-tab active" data-sheet-tab="summary">Summary</button><button class="sheet-tab" data-sheet-tab="shipping">Shipping Plan</button><button class="sheet-tab" data-sheet-tab="forecast">Forecast</button></div>
+                <div class="source-table-scroll">
+                  <table class="excel-table">
+                    <thead><tr><th class="row-num"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th></tr></thead>
+                    <tbody><tr><td class="row-num">1</td><td>Plan Version</td><td>2026-W35</td><td>Customer</td><td>Faurecia-Wuhan</td><td>Status</td></tr><tr><td class="row-num">2</td><td>Created At</td><td>2026-08-20</td><td>Rows</td><td>128</td><td>Released</td></tr><tr><td class="row-num">3</td><td>Notes</td><td colspan="4">This sheet contains summary information only.</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="source-content" data-source-content="pdf"><div class="mail-body"><div class="callout">PDF 预览占位 · W35 Delivery Note.pdf</div><h2>DELIVERY NOTE</h2><p>Customer: Faurecia-Wuhan<br>Plant: W35<br>Delivery week: 2026-W35</p></div></div>
+            </div>
+          </section>
+
+          <section class="workspace-panel edit-panel">
+            <div class="edit-stage active" data-edit-stage="1">
+              <div class="table-toolbar">
+                <div class="toolbar-title"><strong>物料核对</strong><span>核对客户物料与系统匹配结果</span></div>
+              </div>
+              <div class="table-scroll">
+                <table class="edit-table result-table">
+                  <colgroup><col style="width:150px"><col style="width:135px"><col style="width:105px"><col style="width:145px"><col style="width:105px"><col style="width:105px"><col style="width:145px"><col style="width:145px"><col style="width:90px"><col style="width:46px"></colgroup>
+                  <thead><tr><th>Customer P/N</th><th>Faurecia P/N</th><th class="number">Quantity</th><th>Collection Date</th><th>Week</th><th>Mapping</th><th class="order-type-header" data-bulk-order-type><span>Firm / Forecast</span><span class="order-type-switch order-type-header-control"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></span></th><th>Merge Strategy</th><th>Conflict</th><th></th></tr></thead>
+                  <tbody>
+                    <tr data-row-key="537736001X"><td><input class="field" data-field="customer_part_number" value="537736001X"></td><td class="readonly-value">537736001</td><td><input class="field number-input" type="number" data-field="quantity" value="192"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-26" value="2026-08-26"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="471532101X"><td><input class="field" data-field="customer_part_number" value="471532101X"></td><td class="readonly-value">471532101</td><td><input class="field number-input" type="number" data-field="quantity" value="384"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-27" value="2026-08-27"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="2172717X"><td><input class="field" data-field="customer_part_number" value="2172717X"></td><td class="readonly-value">2172717</td><td><input class="field number-input" type="number" data-field="quantity" value="4032"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-28" value="2026-08-28"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment" selected>Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="1868640X"><td><input class="field" data-field="customer_part_number" value="1868640X"></td><td class="readonly-value muted-value">—</td><td><input class="field number-input" type="number" data-field="quantity" value="960"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-29" value="2026-08-29"></td><td data-derived-week>2026-W35</td><td><span class="badge warning">unmapped</span></td><td><button class="order-type-switch" type="button" data-order-type="uncertain"><span class="order-type-option">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="990X"><td><input class="field" data-field="customer_part_number" value="990X"></td><td class="readonly-value">990</td><td><input class="field number-input" type="number" data-field="quantity" value="480"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-31" value="2026-08-31"></td><td data-derived-week>2026-W36</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement" selected>Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-footer"><span class="caption">Faurecia P/N 与 Mapping 为系统匹配结果，只读。</span><button class="btn primary" data-next-step="2">确认物料，继续日期<i data-lucide="arrow-right"></i></button></div>
+            </div>
+
+            <div class="edit-stage" data-edit-stage="2">
+              <div class="table-toolbar">
+                <div class="toolbar-title"><strong>日期语义</strong><span>表格日期统一表示 Collection Date（提货日期）</span></div>
+                <div class="bulk-bar"><span class="bulk-label">到货日期统一提前</span><input class="field compact" type="number" min="0" step="1" value="2" data-date-days aria-label="统一提前天数"><span class="bulk-label">天，转换为提货日期</span><button class="btn small primary" data-apply-dates>应用到全部</button></div>
+              </div>
+              <div class="table-scroll">
+                <table class="edit-table result-table">
+                  <colgroup><col style="width:150px"><col style="width:135px"><col style="width:105px"><col style="width:145px"><col style="width:105px"><col style="width:105px"><col style="width:145px"><col style="width:145px"><col style="width:90px"><col style="width:46px"></colgroup>
+                  <thead><tr><th>Customer P/N</th><th>Faurecia P/N</th><th class="number">Quantity</th><th>Collection Date</th><th>Week</th><th>Mapping</th><th class="order-type-header" data-bulk-order-type><span>Firm / Forecast</span><span class="order-type-switch order-type-header-control"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></span></th><th>Merge Strategy</th><th>Conflict</th><th></th></tr></thead>
+                  <tbody>
+                    <tr data-row-key="537736001X"><td><input class="field" data-field="customer_part_number" value="537736001X"></td><td class="readonly-value">537736001</td><td><input class="field number-input" type="number" data-field="quantity" value="192"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-26" value="2026-08-26"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="471532101X"><td><input class="field" data-field="customer_part_number" value="471532101X"></td><td class="readonly-value">471532101</td><td><input class="field number-input" type="number" data-field="quantity" value="384"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-27" value="2026-08-27"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="2172717X"><td><input class="field" data-field="customer_part_number" value="2172717X"></td><td class="readonly-value">2172717</td><td><input class="field number-input" type="number" data-field="quantity" value="4032"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-28" value="2026-08-28"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment" selected>Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="1868640X"><td><input class="field" data-field="customer_part_number" value="1868640X"></td><td class="readonly-value muted-value">—</td><td><input class="field number-input" type="number" data-field="quantity" value="960"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-29" value="2026-08-29"></td><td data-derived-week>2026-W35</td><td><span class="badge warning">unmapped</span></td><td><button class="order-type-switch" type="button" data-order-type="uncertain"><span class="order-type-option">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="990X"><td><input class="field" data-field="customer_part_number" value="990X"></td><td class="readonly-value">990</td><td><input class="field number-input" type="number" data-field="quantity" value="480"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-31" value="2026-08-31"></td><td data-derived-week>2026-W36</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement" selected>Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-footer"><button class="btn" data-prev-step="1"><i data-lucide="arrow-left"></i>返回物料</button><button class="btn primary" data-next-step="3">确认日期，继续数量<i data-lucide="arrow-right"></i></button></div>
+            </div>
+
+            <div class="edit-stage" data-edit-stage="3">
+              <div class="table-toolbar">
+                <div class="toolbar-title"><strong>数量策略</strong><span>数量与合并策略均可逐行修改</span></div>
+                <div class="bulk-bar"><span class="bulk-label">统一合并策略</span><select class="mini-select" data-bulk-quantity-strategy><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select><button class="btn small primary" data-apply-quantity>应用到全部</button></div>
+              </div>
+              <div class="table-scroll">
+                <table class="edit-table result-table">
+                  <colgroup><col style="width:150px"><col style="width:135px"><col style="width:105px"><col style="width:145px"><col style="width:105px"><col style="width:105px"><col style="width:145px"><col style="width:145px"><col style="width:90px"><col style="width:46px"></colgroup>
+                  <thead><tr><th>Customer P/N</th><th>Faurecia P/N</th><th class="number">Quantity</th><th>Collection Date</th><th>Week</th><th>Mapping</th><th class="order-type-header" data-bulk-order-type><span>Firm / Forecast</span><span class="order-type-switch order-type-header-control"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></span></th><th>Merge Strategy</th><th>Conflict</th><th></th></tr></thead>
+                  <tbody>
+                    <tr data-row-key="537736001X"><td><input class="field" data-field="customer_part_number" value="537736001X"></td><td class="readonly-value">537736001</td><td><input class="field number-input" type="number" data-field="quantity" value="192"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-26" value="2026-08-26"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="471532101X"><td><input class="field" data-field="customer_part_number" value="471532101X"></td><td class="readonly-value">471532101</td><td><input class="field number-input" type="number" data-field="quantity" value="384"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-27" value="2026-08-27"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="2172717X"><td><input class="field" data-field="customer_part_number" value="2172717X"></td><td class="readonly-value">2172717</td><td><input class="field number-input" type="number" data-field="quantity" value="4032"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-28" value="2026-08-28"></td><td data-derived-week>2026-W35</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment" selected>Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="1868640X"><td><input class="field" data-field="customer_part_number" value="1868640X"></td><td class="readonly-value muted-value">—</td><td><input class="field number-input" type="number" data-field="quantity" value="960"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-29" value="2026-08-29"></td><td data-derived-week>2026-W35</td><td><span class="badge warning">unmapped</span></td><td><button class="order-type-switch" type="button" data-order-type="uncertain"><span class="order-type-option">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement">Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                    <tr data-row-key="990X"><td><input class="field" data-field="customer_part_number" value="990X"></td><td class="readonly-value">990</td><td><input class="field number-input" type="number" data-field="quantity" value="480"></td><td><input class="field" type="date" data-field="date_info" data-base-date="2026-08-31" value="2026-08-31"></td><td data-derived-week>2026-W36</td><td><span class="badge success">mapped</span></td><td><button class="order-type-switch" type="button" data-order-type="confirmed"><span class="order-type-option active-confirmed">Firm</span><span class="order-type-option">Forecast</span></button></td><td><select class="mini-select" data-field="merge_strategy"><option value="replace">Replace</option><option value="increment">Increment</option><option value="decrement" selected>Decrement</option></select></td><td>—</td><td><button class="icon-button row-delete" data-delete-row aria-label="删除此行"><i data-lucide="trash-2"></i></button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-footer"><button class="btn" data-prev-step="2"><i data-lucide="arrow-left"></i>返回日期</button><button class="btn primary" data-next-step="4">生成 Orders 预览<i data-lucide="arrow-right"></i></button></div>
+            </div>
+
+            <div class="edit-stage" data-edit-stage="empty">
+              <div class="complete-state"><div class="complete-card"><div class="complete-icon" style="color:var(--primary);background:var(--primary-soft)"><i data-lucide="table-2"></i></div><h2>此 Sheet 尚未创建解析任务</h2><p>上方仅用于检查原始 Sheet。点击右上角“新增解析此 Sheet”后，系统会创建一个独立 Task；它不会加入当前 Task，也不会与其他 Sheet 一起 Merge。</p></div></div>
+            </div>
+
+            <div class="edit-stage" data-edit-stage="processing">
+              <div class="complete-state"><div class="complete-card"><div class="complete-icon" style="color:var(--primary);background:var(--primary-soft)"><i data-lucide="loader-circle"></i></div><h2>独立 Task 正在解析</h2><p>AI 正在提取当前 Sheet。完成后，该 Task 会从“物料核对”开始审查，并单独生成 Orders 合并预览。</p><span class="badge primary">解析中</span></div></div>
+            </div>
+
+            <div class="edit-stage" data-edit-stage="readonly">
+              <div class="complete-state"><div class="complete-card"><div class="complete-icon"><i data-lucide="check"></i></div><h2>该来源已有独立解析结果</h2><p>邮件正文或 PDF 以独立 Task 保存。此原型重点演示 Excel Sheet 的任务级审查，正式实现中这里使用相同的物料、日期和数量编辑表格。</p><span class="badge success">结果可追溯</span></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="workspace-page" data-step-page="orders">
+        <div class="orders-workspace">
+          <section class="orders-panel">
+            <div class="panel-head">
+              <div class="panel-title"><i data-lucide="table-2"></i><strong>Sales Forecast Plus 2.0</strong></div>
+              <div class="actions"><button class="btn small" disabled>当前窗口：2026-08-24 - 2026-09-30</button><button class="btn small primary" data-demo-action="已导出当前 Orders 视图。"><i data-lucide="download"></i>导出</button></div>
+            </div>
+            <div class="orders-filter-stack">
+              <div class="orders-filter-grid">
+                <label><span>客户</span><select class="mini-select"><option>Faurecia-Wuhan</option><option>全部客户</option></select></label>
+                <label><span>物料</span><input class="field" placeholder="Faurecia P/N"></label>
+                <label><span>开始</span><input class="field" type="date" value="2026-08-24"></label>
+                <label><span>结束</span><input class="field" type="date" value="2026-09-30"></label>
+              </div>
+              <div class="orders-lane-tabs" aria-label="需求类型行显示"><button type="button" class="orders-lane-toggle forecast active" aria-pressed="true">Forecast</button><button type="button" class="orders-lane-toggle firm active" aria-pressed="true">Firm</button></div>
+            </div>
+            <div class="orders-scroll">
+              <table class="orders-table">
+                <colgroup><col style="width:118px"><col style="width:130px"><col style="width:120px"><col style="width:110px"><col style="width:84px"><col span="8" style="width:112px"><col style="width:110px"></colgroup>
+                <thead><tr><th class="sticky customer">客户</th><th class="sticky customer-pn">Customer P/N</th><th class="sticky forvia-pn">Faurecia P/N</th><th class="sticky updated">Updated Time</th><th class="sticky type">类型</th><th>08/24<br>周一</th><th>08/25<br>周二</th><th>08/26<br>周三</th><th>08/27<br>周四</th><th>08/28<br>周五</th><th>W36</th><th>W37</th><th>W38</th><th>合计</th></tr></thead>
+                <tbody>
+                  <tr><td class="sticky customer" rowspan="2"><strong>Faurecia-Wuhan</strong><small>FWUH · TRACK ASSY</small></td><td class="sticky customer-pn" rowspan="2">537736001X</td><td class="sticky forvia-pn" rowspan="2">537736001</td><td class="sticky updated" rowspan="2">2026/08/23<br>10:32</td><td class="sticky type"><span class="lane-badge forecast">Forecast</span></td><td></td><td></td><td></td><td></td><td></td><td><span class="order-cell forecast">960</span></td><td><span class="order-cell forecast">480</span></td><td><span class="order-cell forecast">480</span></td><td class="number">1,920</td></tr>
+                  <tr><td class="sticky type"><span class="lane-badge firm">Firm</span></td><td><span class="order-cell firm">192</span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="number">192</td></tr>
+                  <tr><td class="sticky customer" rowspan="2"><strong>Faurecia-Wuhan</strong><small>FWUH · FRAME ASSY</small></td><td class="sticky customer-pn" rowspan="2">471532101X</td><td class="sticky forvia-pn" rowspan="2">471532101</td><td class="sticky updated" rowspan="2">2026/08/23<br>10:31</td><td class="sticky type"><span class="lane-badge forecast">Forecast</span></td><td></td><td></td><td></td><td></td><td></td><td><span class="order-cell forecast">768</span></td><td><span class="order-cell forecast">384</span></td><td><span class="order-cell forecast">384</span></td><td class="number">1,536</td></tr>
+                  <tr><td class="sticky type"><span class="lane-badge firm">Firm</span></td><td></td><td><span class="order-cell firm">384</span></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="number">384</td></tr>
+                  <tr><td class="sticky customer" rowspan="2"><strong>Faurecia-Wuhan</strong><small>FWUH · RECLINER</small></td><td class="sticky customer-pn" rowspan="2">2172717X</td><td class="sticky forvia-pn" rowspan="2">2172717</td><td class="sticky updated" rowspan="2">2026/08/23<br>10:29</td><td class="sticky type"><span class="lane-badge forecast">Forecast</span></td><td></td><td></td><td></td><td></td><td></td><td><span class="order-cell forecast">4,032</span></td><td><span class="order-cell forecast">2,016</span></td><td><span class="order-cell forecast">2,016</span></td><td class="number">8,064</td></tr>
+                  <tr><td class="sticky type"><span class="lane-badge firm">Firm</span></td><td></td><td></td><td><span class="order-cell firm">4,032</span></td><td></td><td></td><td></td><td></td><td></td><td class="number">4,032</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="orders-footer">
+              <span class="caption">确认后，当前审查结果将写入 Orders。</span>
+              <div class="actions"><button class="btn" data-prev-step="3"><i data-lucide="arrow-left"></i>返回数量</button><button class="btn primary" data-open-modal="#merge-modal"><i data-lucide="git-merge"></i>确认 Merge</button></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="workspace-page" data-step-page="complete">
+        <div class="complete-state"><div class="complete-card"><div class="complete-icon"><i data-lucide="check"></i></div><h2>解析结果已合并</h2><p>审查后的结果已写入 Orders。</p><div class="actions" style="justify-content:center;margin-top:16px"><a class="btn" href="../prototype-4.0/01-task-workbench.html?view=customer">返回邮件</a><button class="btn primary" data-demo-action="已打开 Orders。"><i data-lucide="table-2"></i>查看 Orders</button></div></div></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="merge-modal" role="dialog" aria-modal="true" aria-labelledby="merge-title">
+    <div class="modal">
+      <div class="modal-head"><strong id="merge-title">确认合并到 Orders？</strong><button class="icon-button" data-close-modal aria-label="关闭"><i data-lucide="x"></i></button></div>
+      <div class="modal-body"><div class="callout warning">确认后，当前审查结果将写入 Orders。请先核对预览中的物料、日期与数量。</div></div>
+      <div class="modal-foot"><button class="btn" data-close-modal>取消</button><button class="btn primary" data-confirm-merge><i data-lucide="git-merge"></i>确认 Merge</button></div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

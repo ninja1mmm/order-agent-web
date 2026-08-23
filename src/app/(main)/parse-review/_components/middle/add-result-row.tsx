@@ -50,6 +50,7 @@ export function AddResultRow({
       <td><span className="readonly-cell">—</span></td>
       <td><span className="readonly-cell">—</span></td>
       <td>—</td>
+      <td>Replace</td>
       <td>—</td>
       <td>
         <div className="add-row-actions">

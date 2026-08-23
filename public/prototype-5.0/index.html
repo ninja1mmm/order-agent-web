@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Supply Chain Agent · Prototype 5.0</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <main class="index-page">
+    <div class="index-shell">
+      <header class="index-header"><span class="prototype-tag">PROTOTYPE 5.0</span><h1>Task 级解析与大工作区</h1><p>一个 Excel Sheet 对应一个独立解析 Task。操作区采用上方来源预览、下方全宽结果表；完成审查后使用 Orders 页面确认 Merge。</p></header>
+      <article class="index-card">
+        <h2>邮件解析确认 · 5.0</h2>
+        <p>本轮集中验证解析页面的信息架构与密度，不修改正式 Web 页面；智能客服与邮件工作台继续沿用 Prototype 4.0。</p>
+        <div class="index-points">
+          <div class="index-point">邮件正文、附件、Sheet 与 Task 分层展示</div>
+          <div class="index-point">未解析 Sheet 可创建独立 Task</div>
+          <div class="index-point">三步均显示完整解析结果，修改跨步骤同步</div>
+          <div class="index-point">直接复用 Orders 信息结构确认 Merge</div>
+        </div>
+        <a class="btn primary" href="02-mail-parse-review.html"><i data-lucide="panel-top"></i>打开解析工作区</a>
+      </article>
+    </div>
+  </main>
+  <script>if (window.lucide) window.lucide.createIcons();</script>
+</body>
+</html>

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { WorkspaceTask } from "@/services/inbox";
 import type { EditingCell, OrderType } from "../parse-review-types";
 import { ConflictBadge } from "./conflict-badge";
@@ -21,6 +22,7 @@ type ExistingResultRowProps = {
   getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown;
   isFieldStale: (fieldName: string) => boolean;
   onToggleOrderType: (rowId: string) => void;
+  onMergeStrategyChange: (rowId: string, strategy: "replace" | "increment" | "decrement") => void;
   onDeleteRow: (rowId: string) => void;
   onStartEditing: (rowId: string, field: string, currentValue: unknown) => void;
   onEditValueChange: (value: string) => void;
@@ -41,6 +43,7 @@ export function ExistingResultRow({
   getRowValue,
   isFieldStale,
   onToggleOrderType,
+  onMergeStrategyChange,
   onDeleteRow,
   onStartEditing,
   onEditValueChange,
@@ -105,10 +108,24 @@ export function ExistingResultRow({
         ))}
       </td>
       <td>
-        <div className="order-type-switch" onClick={() => onToggleOrderType(rowId)}>
+        <button type="button" className="order-type-switch" aria-label="切换 Firm / Forecast" onClick={() => onToggleOrderType(rowId)}>
           <span className={`order-type-option${orderType === "confirmed" ? " active-confirmed" : ""}`}>Firm</span>
           <span className={`order-type-option${orderType === "forecast" ? " active-forecast" : ""}`}>Forecast</span>
-        </div>
+        </button>
+      </td>
+      <td>
+        <Select
+          value={String(cellValue("mergeStrategy") ?? "replace")}
+          disabled={!isWaitingHuman}
+          onValueChange={(value) => onMergeStrategyChange(rowId, value as "replace" | "increment" | "decrement")}
+        >
+          <SelectTrigger className="merge-strategy-trigger" aria-label="Merge Strategy"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="replace">Replace</SelectItem>
+            <SelectItem value="increment">Increment</SelectItem>
+            <SelectItem value="decrement">Decrement</SelectItem>
+          </SelectContent>
+        </Select>
       </td>
       <td>{derivedCell("conflictFlag", <ConflictBadge conflict={conflict} details={String(row.conflictDetails ?? "")} />)}</td>
       <td>

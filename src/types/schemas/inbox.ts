@@ -25,6 +25,8 @@ export type WorkspaceAttachmentSchema = {
   taskId?: string | null;
   document_type?: string | null;
   documentType?: string | null;
+  labels?: string[];
+  tasks?: WorkspaceAttachmentTaskSummarySchema[];
 };
 
 export type InlineImageSchema = {
@@ -54,6 +56,8 @@ export type WorkspaceMailSchema = {
   customerId?: string | null;
   customer_name?: string | null;
   customerName?: string | null;
+  mail_status?: string;
+  mailStatus?: string;
   attachments?: WorkspaceAttachmentSchema[];
   inline_images?: InlineImageSchema[];
   inlineImages?: InlineImageSchema[];
@@ -86,6 +90,8 @@ export type WorkspaceTaskSchema = {
   mailMessageId?: string;
   attachment_id?: string | null;
   attachmentId?: string | null;
+  target_sheet_name?: string | null;
+  targetSheetName?: string | null;
   task_type?: string;
   taskType?: string;
   status?: string;
@@ -154,6 +160,7 @@ export type WorkspaceAttachmentTaskSummarySchema = {
   targetSheetName?: string | null;
   pipeline_step?: string | null;
   pipelineStep?: string | null;
+  excluded?: boolean;
 };
 
 export type InboxMailListMailSchema = {
@@ -173,6 +180,8 @@ export type InboxMailListMailSchema = {
   customerId?: string | null;
   customer_name?: string | null;
   customerName?: string | null;
+  mail_status?: string;
+  mailStatus?: string;
   attachments?: (WorkspaceAttachmentSchema & {
     tasks?: WorkspaceAttachmentTaskSummarySchema[];
   })[];
@@ -223,6 +232,7 @@ export type MailTaskSummarySchema = {
   reviewSummary?: ReviewSummarySchema | null;
   result_revision?: number;
   resultRevision?: number;
+  excluded?: boolean;
   customer_id?: string | null;
   customerId?: string | null;
   customer_name?: string | null;
@@ -233,8 +243,20 @@ export type MailTaskSummarySchema = {
   completedAt?: string | null;
 };
 
+export type AttachmentSheetInfoSchema = {
+  attachment_id?: string;
+  attachmentId?: string;
+  file_name?: string;
+  fileName?: string;
+  available_sheets?: string[];
+  availableSheets?: string[];
+};
+
 export type MailTaskListResponseSchema = {
   mail_message_id?: string;
   mailMessageId?: string;
   tasks: MailTaskSummarySchema[];
+  total?: number;
+  attachment_sheets?: AttachmentSheetInfoSchema[];
+  attachmentSheets?: AttachmentSheetInfoSchema[];
 };

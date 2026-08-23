@@ -70,6 +70,10 @@ export async function cancelTaskSchema(taskId: string): Promise<void> {
   await apiRequest(`/api/tasks/${taskId}/cancel`, { method: "POST" });
 }
 
+export async function deleteSourceTaskSchema(taskId: string): Promise<void> {
+  await apiRequest(`/api/tasks/${taskId}`, { method: "DELETE" });
+}
+
 export async function rerunTaskSchema(taskId: string): Promise<void> {
   await apiRequest(`/api/tasks/${taskId}/rerun`, { method: "POST" });
 }
@@ -78,5 +82,27 @@ export async function parseSheetSchema(taskId: string, sheetName: string): Promi
   await apiRequest(`/api/tasks/${taskId}/parse-sheet`, {
     method: "POST",
     body: JSON.stringify({ sheet_name: sheetName }),
+  });
+}
+
+export async function setTaskExcludedSchema(taskId: string, excluded: boolean): Promise<void> {
+  await apiRequest(`/api/tasks/${taskId}/${excluded ? "exclude" : "include"}`, { method: "POST" });
+}
+
+export type BulkMergeStrategy = "replace" | "increment" | "decrement";
+
+export function bulkMergeStrategySchema(
+  taskId: string,
+  resultRevision: number,
+  rowIds: string[],
+  mergeStrategy: BulkMergeStrategy,
+): Promise<{ resultRevision?: number; result_revision?: number; updatedCount?: number; updated_count?: number }> {
+  return apiRequest(`/api/tasks/${taskId}/rows/bulk-strategy`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      result_revision: resultRevision,
+      row_ids: rowIds,
+      merge_strategy: mergeStrategy,
+    }),
   });
 }

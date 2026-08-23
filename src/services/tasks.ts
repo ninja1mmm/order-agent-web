@@ -1,6 +1,7 @@
 import {
   addRowSchema,
   cancelTaskSchema,
+  deleteSourceTaskSchema,
   deleteRowSchema,
   getEffectiveRowsSchema,
   parseSheetSchema,
@@ -8,6 +9,9 @@ import {
   proceedTaskSchema,
   publishTaskSchema,
   rerunTaskSchema,
+  setTaskExcludedSchema,
+  bulkMergeStrategySchema,
+  type BulkMergeStrategy,
 } from "@/api/tasks";
 import {
   transformEffectiveRowsResponseToModel,
@@ -116,6 +120,10 @@ export async function cancelTask(taskId: string): Promise<void> {
   await cancelTaskSchema(taskId);
 }
 
+export async function deleteSourceTask(taskId: string): Promise<void> {
+  await deleteSourceTaskSchema(taskId);
+}
+
 export async function rerunTask(taskId: string): Promise<void> {
   await rerunTaskSchema(taskId);
 }
@@ -123,3 +131,22 @@ export async function rerunTask(taskId: string): Promise<void> {
 export async function parseSheet(taskId: string, sheetName: string): Promise<void> {
   await parseSheetSchema(taskId, sheetName);
 }
+
+export async function setTaskExcluded(taskId: string, excluded: boolean): Promise<void> {
+  await setTaskExcludedSchema(taskId, excluded);
+}
+
+export async function bulkMergeStrategy(
+  taskId: string,
+  resultRevision: number,
+  rowIds: string[],
+  mergeStrategy: BulkMergeStrategy,
+): Promise<{ resultRevision: number; updatedCount: number }> {
+  const response = await bulkMergeStrategySchema(taskId, resultRevision, rowIds, mergeStrategy);
+  return {
+    resultRevision: response.resultRevision ?? response.result_revision ?? resultRevision,
+    updatedCount: response.updatedCount ?? response.updated_count ?? 0,
+  };
+}
+
+export type { BulkMergeStrategy } from "@/api/tasks";

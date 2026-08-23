@@ -1,4 +1,4 @@
-import { createManualMailSchema, getMailTasksSchema, processMailSchema } from "@/api/mail";
+import { addMailSourceSchema, createManualMailSchema, getMailTasksSchema, processMailSchema } from "@/api/mail";
 import { transformProcessMailResponseToModel } from "@/lib/transforms/mail";
 import { normalizeMailTaskList } from "@/lib/transforms/inbox";
 import type { ProcessMailResponse } from "@/types/models/mail";
@@ -20,4 +20,8 @@ export function createManualMail(formData: FormData): Promise<unknown> {
 
 export function getMailTasks(mailId: string): Promise<MailTaskListResponse> {
   return getMailTasksSchema(mailId).then(normalizeMailTaskList);
+}
+
+export function addMailSource(mailId: string, attachmentId: string, targetSheetName: string): Promise<unknown> {
+  return addMailSourceSchema(mailId, attachmentId, targetSheetName);
 }

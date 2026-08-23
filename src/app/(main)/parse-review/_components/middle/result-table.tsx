@@ -29,6 +29,7 @@ type ResultTableProps = {
   onBulkToggleOrderType: () => void;
   onStartAddingRow: () => void;
   onToggleOrderType: (rowId: string) => void;
+  onMergeStrategyChange?: (rowId: string, strategy: "replace" | "increment" | "decrement") => void;
   onDeleteRow: (rowId: string) => void;
   onStartEditing: (rowId: string, field: string, currentValue: unknown) => void;
   onEditValueChange: (value: string) => void;
@@ -62,6 +63,7 @@ export function ResultTable({
   onBulkToggleOrderType,
   onStartAddingRow,
   onToggleOrderType,
+  onMergeStrategyChange,
   onDeleteRow,
   onStartEditing,
   onEditValueChange,
@@ -95,7 +97,7 @@ export function ResultTable({
             <th>Customer P/N{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
             <th>Faurecia P/N</th>
             <th>Quantity{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
-            <th>Date{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
+            <th>Collection Date{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
             <th>Week</th>
             <th
               style={{ cursor: "pointer", userSelect: "none" }}
@@ -104,16 +106,12 @@ export function ResultTable({
             >
               Mapping{mappingSortOrder === "asc" ? " ▲" : mappingSortOrder === "desc" ? " ▼" : ""}
             </th>
-            <th
-              className="order-type-header"
-              title="Click to toggle all"
-              onClick={onBulkToggleOrderType}
-            >
-              <div className="order-type-switch order-type-header-control">
-                <span className={`order-type-option${bulkOrderState === "firm" ? " active-confirmed" : ""}`}>Firm</span>
-                <span className={`order-type-option${bulkOrderState === "forecast" ? " active-forecast" : ""}`}>Forecast</span>
-              </div>
+            <th className="order-type-header">
+              <button type="button" className={`order-type-bulk-pill ${bulkOrderState}`} title="切换全部 Firm / Forecast" onClick={onBulkToggleOrderType}>
+                {bulkOrderState === "firm" ? "Firm" : bulkOrderState === "forecast" ? "Forecast" : "Firm / Forecast"}
+              </button>
             </th>
+            <th>Merge Strategy</th>
             <th>Conflict</th>
             <th style={{ width: 36 }}>
               {isWaitingHuman && !isAddingRow && (
@@ -147,6 +145,7 @@ export function ResultTable({
                 getRowValue={getRowValue}
                 isFieldStale={isFieldStale}
                 onToggleOrderType={onToggleOrderType}
+                onMergeStrategyChange={(rowId, strategy) => onMergeStrategyChange?.(rowId, strategy)}
                 onDeleteRow={onDeleteRow}
                 onStartEditing={onStartEditing}
                 onEditValueChange={onEditValueChange}

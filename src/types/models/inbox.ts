@@ -27,6 +27,7 @@ export type WorkspaceAttachmentTaskSummary = {
   status: string;
   targetSheetName?: string | null;
   pipelineStep?: string | null;
+  excluded: boolean;
 };
 
 export type WorkspaceAttachment = {
@@ -37,6 +38,7 @@ export type WorkspaceAttachment = {
   status: string;
   taskId: string | null;
   documentType: string | null;
+  labels: string[];
   tasks?: WorkspaceAttachmentTaskSummary[];
 };
 
@@ -56,6 +58,7 @@ export type WorkspaceMail = {
   createdAt: string;
   customerId: string | null;
   customerName: string | null;
+  mailStatus: string;
   attachments: WorkspaceAttachment[];
   inlineImages: InlineImage[];
 };
@@ -123,15 +126,24 @@ export type MailTaskSummary = {
   traceSteps: TraceStep[];
   reviewSummary: ReviewSummary | null;
   resultRevision: number;
+  excluded: boolean;
   customerId: string | null;
   customerName: string | null;
   requestedAt: string;
   completedAt: string | null;
 };
 
+export type AttachmentSheetInfo = {
+  attachmentId: string;
+  fileName: string;
+  availableSheets: string[];
+};
+
 export type MailTaskListResponse = {
   mailMessageId: string;
   tasks: MailTaskSummary[];
+  total: number;
+  attachmentSheets: AttachmentSheetInfo[];
 };
 
 export type InboxMailListResponse = {
