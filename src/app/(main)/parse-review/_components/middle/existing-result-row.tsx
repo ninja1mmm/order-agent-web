@@ -18,9 +18,9 @@ type ExistingResultRowProps = {
   isWaitingHuman: boolean;
   editingCell: EditingCell;
   editValue: string;
+  preferEditedDate: boolean;
   langParam: string | null;
   getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown;
-  isFieldStale: (fieldName: string) => boolean;
   onToggleOrderType: (rowId: string) => void;
   onMergeStrategyChange: (rowId: string, strategy: "replace" | "increment" | "decrement") => void;
   onDeleteRow: (rowId: string) => void;
@@ -39,9 +39,9 @@ export function ExistingResultRow({
   isWaitingHuman,
   editingCell,
   editValue,
+  preferEditedDate,
   langParam,
   getRowValue,
-  isFieldStale,
   onToggleOrderType,
   onMergeStrategyChange,
   onDeleteRow,
@@ -52,12 +52,13 @@ export function ExistingResultRow({
 }: ExistingResultRowProps) {
   const cellValue = (field: string) => getRowValue(rowId, field, row[field]);
   const conflict = String(row.conflictFlag ?? "none");
+  const collectionDate = preferEditedDate
+    ? cellValue("dateInfo") ?? cellValue("expandedDay")
+    : cellValue("expandedDay") ?? cellValue("dateInfo");
 
   const editableCell = (field: string, displayValue?: string) => {
     const value = cellValue(field);
     const display = displayValue ?? String(value ?? "");
-    const stale = isFieldStale(field);
-
     if (editingCell?.rowId === rowId && editingCell?.field === field) {
       return (
         <InlineEditInput
@@ -72,30 +73,23 @@ export function ExistingResultRow({
 
     return (
       <span
-        className={`editable-cell${isWaitingHuman ? " editable" : ""}${stale ? " stale" : ""}`}
+        className={`editable-cell${isWaitingHuman ? " editable" : ""}`}
         onClick={() => onStartEditing(rowId, field, value)}
-        title={stale ? "此字段将在继续流程后重新计算" : isWaitingHuman ? "点击编辑" : undefined}
+        title={isWaitingHuman ? "点击编辑" : undefined}
       >
         {display || <span className="cell-placeholder">—</span>}
       </span>
     );
   };
 
-  const derivedCell = (field: string, content: ReactNode) => {
-    const stale = isFieldStale(field);
-    return (
-      <span className={`readonly-cell${stale ? " stale" : ""}`} title={stale ? "待重新计算" : undefined}>
-        {content}
-      </span>
-    );
-  };
+  const derivedCell = (_field: string, content: ReactNode) => <span className="readonly-cell">{content}</span>;
 
   return (
     <tr className={conflictClass}>
       <td>{editableCell("customerPartNumber")}</td>
       <td>{derivedCell("internalPartNumber", String(cellValue("internalPartNumber") ?? ""))}</td>
       <td>{editableCell("quantity")}</td>
-      <td>{editableCell("dateInfo", String(cellValue("expandedDay") ?? cellValue("dateInfo") ?? ""))}</td>
+      <td>{editableCell("dateInfo", String(collectionDate ?? ""))}</td>
       <td>{derivedCell("expandedWeek", String(cellValue("expandedWeek") ?? ""))}</td>
       <td>
         {derivedCell("mappingStatus", (
@@ -119,11 +113,11 @@ export function ExistingResultRow({
           disabled={!isWaitingHuman}
           onValueChange={(value) => onMergeStrategyChange(rowId, value as "replace" | "increment" | "decrement")}
         >
-          <SelectTrigger className="merge-strategy-trigger" aria-label="Merge Strategy"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="merge-strategy-trigger" aria-label="合并策略"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="replace">Replace</SelectItem>
-            <SelectItem value="increment">Increment</SelectItem>
-            <SelectItem value="decrement">Decrement</SelectItem>
+            <SelectItem value="replace">替换</SelectItem>
+            <SelectItem value="increment">增加</SelectItem>
+            <SelectItem value="decrement">减少</SelectItem>
           </SelectContent>
         </Select>
       </td>

@@ -112,7 +112,7 @@ export type InboxWorkspace = {
   stats?: WorkspaceStats;
 };
 
-// --- Layered API types (mail-workbench) ---
+// --- Layered inbox API types ---
 
 export type MailTaskSummary = {
   id: string;

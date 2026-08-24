@@ -128,7 +128,7 @@ export function TaskWorkbenchPage() {
   return (
     <>
       <div className="workbench-toolbar-row">
-        <nav className="subnav workbench-subnav" aria-label="工作台模块">
+        <nav className="subnav" aria-label="工作台模块">
           <Link className="active" href="/task-workbench">{t.inbox}</Link>
           <Link href="/orders">{t.order}</Link>
         </nav>

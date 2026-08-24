@@ -75,7 +75,7 @@ function SourceGroup({ title, subtitle, statusLabel, status, icon, active, defau
   const [open, setOpen] = useState(defaultOpen);
   return (
     <section className={`source-group${active ? " active" : ""}`}>
-      <button type="button" className="source-group-head" aria-expanded={open} onClick={() => { onActivate(); setOpen((value) => !value); }}>{icon}<span><strong title={title}>{title}</strong>{subtitle ? <small>{subtitle}</small> : null}</span><span className={`source-group-status ${status ?? ""}${statusLabel ? "" : " empty"}`}>{statusLabel}</span><ChevronDown className={`h-3.5 w-3.5${open ? " is-open" : ""}`} /></button>
+      <button type="button" className="source-group-head" aria-expanded={open} onClick={() => { onActivate(); setOpen((value) => !value); }}>{icon}<span className="source-group-copy"><strong title={title}>{title}</strong><span className="source-group-meta">{subtitle ? <small>{subtitle}</small> : null}<span className={`source-group-status ${status ?? ""}${statusLabel ? "" : " empty"}`}>{statusLabel}</span></span></span><ChevronDown className={`h-3.5 w-3.5${open ? " is-open" : ""}`} /></button>
       {open ? <div className="source-group-body">{children}</div> : null}
     </section>
   );

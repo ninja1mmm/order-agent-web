@@ -62,6 +62,16 @@ export async function publishTaskSchema(
   });
 }
 
+export function resetTaskReviewSchema(
+  taskId: string,
+  resultRevision: number,
+): Promise<{ resultRevision: number }> {
+  return apiRequest<{ resultRevision: number }>(`/api/tasks/${taskId}/review/reset`, {
+    method: "POST",
+    body: JSON.stringify({ result_revision: resultRevision }),
+  });
+}
+
 export function getEffectiveRowsSchema(taskId: string): Promise<EffectiveRowsResponseSchema> {
   return apiRequest<EffectiveRowsResponseSchema>(`/api/tasks/${taskId}/rows`, { method: "GET" });
 }
@@ -97,7 +107,7 @@ export function bulkMergeStrategySchema(
   rowIds: string[],
   mergeStrategy: BulkMergeStrategy,
 ): Promise<{ resultRevision?: number; result_revision?: number; updatedCount?: number; updated_count?: number }> {
-  return apiRequest(`/api/tasks/${taskId}/rows/bulk-strategy`, {
+  return apiRequest(`/api/tasks/${taskId}/rows/actions/bulk-strategy`, {
     method: "PATCH",
     body: JSON.stringify({
       result_revision: resultRevision,

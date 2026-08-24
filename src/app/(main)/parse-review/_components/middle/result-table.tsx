@@ -22,9 +22,9 @@ type ResultTableProps = {
   localNewRows: LocalNewRow[];
   newRowData: NewRowData;
   newRowErrors: Record<string, string>;
+  preferEditedDate: boolean;
   langParam: string | null;
   getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown;
-  isFieldStale: (fieldName: string) => boolean;
   onToggleMappingSort: () => void;
   onBulkToggleOrderType: () => void;
   onStartAddingRow: () => void;
@@ -56,9 +56,9 @@ export function ResultTable({
   localNewRows,
   newRowData,
   newRowErrors,
+  preferEditedDate,
   langParam,
   getRowValue,
-  isFieldStale,
   onToggleMappingSort,
   onBulkToggleOrderType,
   onStartAddingRow,
@@ -111,7 +111,7 @@ export function ResultTable({
                 {bulkOrderState === "firm" ? "Firm" : bulkOrderState === "forecast" ? "Forecast" : "Firm / Forecast"}
               </button>
             </th>
-            <th>Merge Strategy</th>
+            <th>合并策略</th>
             <th>Conflict</th>
             <th style={{ width: 36 }}>
               {isWaitingHuman && !isAddingRow && (
@@ -141,9 +141,9 @@ export function ResultTable({
                 isWaitingHuman={isWaitingHuman}
                 editingCell={editingCell}
                 editValue={editValue}
+                preferEditedDate={preferEditedDate}
                 langParam={langParam}
                 getRowValue={getRowValue}
-                isFieldStale={isFieldStale}
                 onToggleOrderType={onToggleOrderType}
                 onMergeStrategyChange={(rowId, strategy) => onMergeStrategyChange?.(rowId, strategy)}
                 onDeleteRow={onDeleteRow}

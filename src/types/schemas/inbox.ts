@@ -142,7 +142,7 @@ export type InboxWorkspaceSchema = {
   };
 };
 
-// --- Layered API schemas (mail-workbench) ---
+// --- Layered inbox API schemas ---
 
 export type InboxMailListRequestParams = {
   page?: number;

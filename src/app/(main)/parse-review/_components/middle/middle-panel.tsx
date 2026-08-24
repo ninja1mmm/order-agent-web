@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { FileSearch, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { AlertTriangle, FileSearch, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { WorkspaceAttachment, WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import { type Locale, copy } from "../../../_components/shared";
@@ -33,9 +33,11 @@ type MiddlePanelProps = {
   localNewRows: LocalNewRow[];
   newRowData: NewRowData;
   newRowErrors: Record<string, string>;
+  reviewReason: string | null;
+  actionError: string | null;
+  preferEditedDate: boolean;
   langParam: string | null;
   getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown;
-  isFieldStale: (fieldName: string) => boolean;
   onToggleMappingSort: () => void;
   onBulkToggleOrderType: () => void;
   onStartAddingRow: () => void;
@@ -77,9 +79,11 @@ export function MiddlePanel({
   localNewRows,
   newRowData,
   newRowErrors,
+  reviewReason,
+  actionError,
+  preferEditedDate,
   langParam,
   getRowValue,
-  isFieldStale,
   onToggleMappingSort,
   onBulkToggleOrderType,
   onStartAddingRow,
@@ -110,9 +114,21 @@ export function MiddlePanel({
       <section className="panel scroll-panel parse-edit-panel">
         <div className="parse-result-toolbar">
           {resultCollapsed ? null : actionBar}
-          <Button className={`parse-collapse-button${resultCollapsed ? " is-collapsed" : ""}`} variant="default" size={resultCollapsed ? "icon" : "sm"} aria-label={resultCollapsed ? "展开解析" : "收起解析"} title={resultCollapsed ? "展开解析" : undefined} onClick={() => setResultCollapsed((value) => !value)}>{resultCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-3.5 w-3.5" />}{resultCollapsed ? null : "收起解析"}</Button>
+          <Button className={`parse-collapse-button${resultCollapsed ? " is-collapsed" : ""}`} variant="default" size="icon-sm" aria-label={resultCollapsed ? "展开解析" : "收起解析"} title={resultCollapsed ? "展开解析" : "收起解析"} onClick={() => setResultCollapsed((value) => !value)}>{resultCollapsed ? <PanelRightOpen className="h-3.5 w-3.5" /> : <PanelRightClose className="h-3.5 w-3.5" />}</Button>
         </div>
         {!resultCollapsed ? <div className="parse-result-body">
+          {actionError ? (
+            <div className="review-feedback error" role="alert">
+              <AlertTriangle className="h-4 w-4" />
+              <div><strong>操作未完成</strong><span>{actionError}</span></div>
+            </div>
+          ) : null}
+          {reviewReason ? (
+            <div className="review-feedback warning">
+              <AlertTriangle className="h-4 w-4" />
+              <div><strong>需要人工确认</strong><span>{reviewReason}</span></div>
+            </div>
+          ) : null}
           <ResultTable
           selectedTask={selectedTask}
           rows={rows}
@@ -128,9 +144,9 @@ export function MiddlePanel({
           localNewRows={localNewRows}
           newRowData={newRowData}
           newRowErrors={newRowErrors}
+          preferEditedDate={preferEditedDate}
           langParam={langParam}
           getRowValue={getRowValue}
-          isFieldStale={isFieldStale}
           onToggleMappingSort={onToggleMappingSort}
           onBulkToggleOrderType={onBulkToggleOrderType}
           onStartAddingRow={onStartAddingRow}

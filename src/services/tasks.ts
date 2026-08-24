@@ -8,6 +8,7 @@ import {
   patchRowSchema,
   proceedTaskSchema,
   publishTaskSchema,
+  resetTaskReviewSchema,
   rerunTaskSchema,
   setTaskExcludedSchema,
   bulkMergeStrategySchema,
@@ -114,6 +115,13 @@ export async function publishTask(
   resultRevision: number,
 ): Promise<void> {
   await publishTaskSchema(taskId, { result_revision: resultRevision });
+}
+
+export async function resetTaskReview(
+  taskId: string,
+  resultRevision: number,
+): Promise<{ resultRevision: number }> {
+  return resetTaskReviewSchema(taskId, resultRevision);
 }
 
 export async function cancelTask(taskId: string): Promise<void> {

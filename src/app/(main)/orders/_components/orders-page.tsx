@@ -258,8 +258,6 @@ export function OrdersPage() {
     <>
       <div className="subnav">
         <Link href="/task-workbench">{t.inbox}</Link>
-        <Link href="/parse-review">{t.parse}</Link>
-        <Link href="/mail-workbench">Mail Workbench</Link>
         <Link className="active" href="/orders">
           {t.order}
         </Link>

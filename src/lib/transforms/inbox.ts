@@ -139,7 +139,7 @@ export function normalizeInboxWorkspace(workspace: InboxWorkspaceSchema): InboxW
   };
 }
 
-// --- Layered API normalizers (mail-workbench) ---
+// --- Layered inbox API normalizers ---
 
 export function normalizeAttachmentTaskSummary(
   raw: WorkspaceAttachmentTaskSummarySchema,
