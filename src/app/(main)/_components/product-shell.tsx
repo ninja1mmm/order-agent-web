@@ -73,24 +73,26 @@ function UserMenu() {
               {user?.displayName ?? "User"}
             </div>
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-              {user?.email ?? user?.username}
+              {user?.username}
             </div>
-            <div
-              style={{
-                display: "inline-block",
-                marginTop: 6,
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-                padding: "2px 8px",
-                borderRadius: 4,
-                background: "var(--forvia-blue-soft)",
-                color: "var(--forvia-blue)",
-              }}
-            >
-              {user?.role}
-            </div>
+            {user?.roles && user.roles.length > 0 && (
+              <div
+                style={{
+                  display: "inline-block",
+                  marginTop: 6,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  padding: "2px 8px",
+                  borderRadius: 4,
+                  background: "var(--forvia-blue-soft)",
+                  color: "var(--forvia-blue)",
+                }}
+              >
+                {user.roles.join(", ")}
+              </div>
+            )}
           </div>
           <button
             onClick={() => { void handleLogout(); }}
