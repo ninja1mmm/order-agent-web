@@ -69,3 +69,7 @@ export function updateMailboxSettingsSchema(
 export function testMailboxConnectionSchema(): Promise<MailboxTestResponseSchema> {
   return apiRequest<MailboxTestResponseSchema>("/api/settings/mailbox/test", { method: "POST" });
 }
+
+export function triggerMailboxSyncSchema(): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>("/api/settings/mailbox/sync", { method: "POST" });
+}

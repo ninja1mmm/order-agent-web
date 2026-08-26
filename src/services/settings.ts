@@ -4,6 +4,7 @@ import {
   getMailboxSettingsSchema,
   listCustomerSchemas,
   testMailboxConnectionSchema,
+  triggerMailboxSyncSchema,
   updateCustomerSchema,
   updateMailboxSettingsSchema,
 } from "@/api/settings";
@@ -71,4 +72,8 @@ export async function updateMailboxSettings(
 
 export function testMailboxConnection(): Promise<MailboxTestResponse> {
   return testMailboxConnectionSchema();
+}
+
+export function triggerMailboxSync(): Promise<{ message: string }> {
+  return triggerMailboxSyncSchema();
 }

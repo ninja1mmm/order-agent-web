@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import React, { useCallback, useMemo, useState } from "react";
-import { History, Mail, Plus, RefreshCw } from "lucide-react";
+import { CloudDownload, History, Mail, Plus, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 
 import { createManualMail, processMail } from "@/services/mail";
+import { triggerMailboxSync } from "@/services/settings";
 import {
   copy,
   customerLabel,
@@ -30,6 +32,7 @@ export function TaskWorkbenchPage() {
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [parsingIds, setParsingIds] = useState<Set<string>>(new Set());
+  const [isSyncingMailbox, setIsSyncingMailbox] = useState(false);
   const [viewMode, setViewMode] = useState<"mail" | "customer">(() => params.get("view") === "customer" ? "customer" : "mail");
 
   const handleParse = useCallback(async (mailId: string, attachmentIds: string[]) => {
@@ -38,11 +41,26 @@ export function TaskWorkbenchPage() {
       await processMail(mailId, attachmentIds.length > 0 ? attachmentIds : undefined);
       await refresh();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Parse failed");
+      toast.error(err instanceof Error ? err.message : "Parse failed");
     } finally {
       setParsingIds((prev) => { const next = new Set(prev); for (const id of attachmentIds) next.delete(id); return next; });
     }
   }, [refresh]);
+
+  const handleMailboxSync = useCallback(async () => {
+    if (isSyncingMailbox) return;
+    setIsSyncingMailbox(true);
+    try {
+      await triggerMailboxSync();
+      toast.success("同步已触发，稍后自动刷新");
+      refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "同步失败");
+    } finally {
+      setIsSyncingMailbox(false);
+    }
+  }, [isSyncingMailbox, refresh]);
+
   const [customerFilter, setCustomerFilter] = useState("__all__");
   const [timeFilter, setTimeFilter] = useState("最近 30 天");
   const [attachmentFilter, setAttachmentFilter] = useState("全部邮件");
@@ -137,6 +155,7 @@ export function TaskWorkbenchPage() {
             <Button variant="default" size="icon-sm" className={viewMode === "mail" ? "is-active" : ""} aria-label="邮件视图" aria-pressed={viewMode === "mail"} title="邮件视图" onClick={() => setViewMode("mail")}><Mail className="h-3.5 w-3.5" /></Button>
             <Button variant="default" size="icon-sm" className={viewMode === "customer" ? "is-active" : ""} aria-label="客户时间轴" aria-pressed={viewMode === "customer"} title="客户时间轴" onClick={() => setViewMode("customer")}><History className="h-3.5 w-3.5" /></Button>
           </div>
+          <Button variant="default" size="sm" aria-label="同步邮箱" title="从邮件服务器拉取新邮件" disabled={isSyncingMailbox} onClick={handleMailboxSync}><CloudDownload className={`h-3.5 w-3.5 ${isSyncingMailbox ? "animate-spin" : ""}`} />同步邮箱</Button>
           <Button variant="default" size="icon-sm" aria-label="刷新" title="刷新" onClick={() => refresh()}><RefreshCw className="h-3.5 w-3.5" /></Button>
           <Button variant="default" size="sm" onClick={() => setModalOpen(true)}><Plus className="h-3.5 w-3.5" />新增邮件</Button>
         </div>
@@ -174,6 +193,7 @@ export function TaskWorkbenchPage() {
           tasks={selectedTasks}
           parsingIds={parsingIds}
           onParse={handleParse}
+          onRefresh={refresh}
         />
       </div>
       <NewMailModal

@@ -181,25 +181,41 @@ export function ParseReviewPage() {
   const conflictColorMap = useMemo(() => {
     const GRANULARITY_COLORS = ["conflict-group-orange", "conflict-group-purple", "conflict-group-teal", "conflict-group-pink"];
     const QUANTITY_COLORS = ["conflict-group-red", "conflict-group-crimson", "conflict-group-rose", "conflict-group-brick"];
+    const TOTAL_COLORS = ["conflict-group-slate"];
+    const INCOMPLETE_COLORS = ["conflict-group-amber"];
+    const CONFLICT_FLAGS = new Set(["granularity_mismatch", "quantity_conflict", "suspected_total", "potentially_incomplete"]);
     const partGroups: Record<string, string[]> = {};
     for (const [, row] of displayRowEntries) {
       const flag = String(row.conflictFlag ?? "none");
-      if (flag !== "granularity_mismatch" && flag !== "quantity_conflict") continue;
+      if (!CONFLICT_FLAGS.has(flag)) continue;
       const pn = String(row.customerPartNumber ?? "");
       const key = `${flag}::${pn}`;
       if (!partGroups[key]) partGroups[key] = [];
     }
     const map = new Map<string, string>();
-    let granIdx = 0, qtyIdx = 0;
+    let granIdx = 0, qtyIdx = 0, totalIdx = 0, incompleteIdx = 0;
     for (const key of Object.keys(partGroups)) {
       const [flag] = key.split("::");
-      const palette = flag === "granularity_mismatch" ? GRANULARITY_COLORS : QUANTITY_COLORS;
-      const idx = flag === "granularity_mismatch" ? granIdx++ : qtyIdx++;
+      let palette: string[];
+      let idx: number;
+      if (flag === "granularity_mismatch") {
+        palette = GRANULARITY_COLORS;
+        idx = granIdx++;
+      } else if (flag === "suspected_total") {
+        palette = TOTAL_COLORS;
+        idx = totalIdx++;
+      } else if (flag === "potentially_incomplete") {
+        palette = INCOMPLETE_COLORS;
+        idx = incompleteIdx++;
+      } else {
+        palette = QUANTITY_COLORS;
+        idx = qtyIdx++;
+      }
       partGroups[key] = [palette[idx % palette.length]];
     }
     for (const [, row] of displayRowEntries) {
       const flag = String(row.conflictFlag ?? "none");
-      if (flag !== "granularity_mismatch" && flag !== "quantity_conflict") continue;
+      if (!CONFLICT_FLAGS.has(flag)) continue;
       const pn = String(row.customerPartNumber ?? "");
       const key = `${flag}::${pn}`;
       const cls = partGroups[key]?.[0] ?? "";
@@ -346,6 +362,31 @@ export function ParseReviewPage() {
   const handleDeleteRow = useCallback(async (rowId: string) => {
     if (!selectedTask) return;
     const revision = localResultRevision ?? selectedTask.resultRevision;
+
+    const cqMatch = rowId.match(/^(.+)::cq(\d+)$/);
+    if (cqMatch) {
+      const realRowId = cqMatch[1];
+      const deletedIdx = Number(cqMatch[2]);
+      const realRow = rows.find((_, i) => rowIds[i] === realRowId);
+      const merged = (realRow?.mergedQuantities as number[] | undefined) ?? [];
+      const kept = merged.filter((_, i) => i !== deletedIdx);
+      const keptQty = kept[0] ?? merged[0];
+      try {
+        const res = await patchRow(selectedTask.id, realRowId, revision, {
+          quantity: keptQty,
+          conflict_flag: "none",
+          merged_quantities: null,
+        });
+        setLocalResultRevision(res.resultRevision);
+        localRevRef.current = res.resultRevision;
+        setTaskStaleState(res.taskStaleState);
+        await syncEffectiveTask(selectedTask.id);
+      } catch (err) {
+        console.error("Resolve conflict failed:", err);
+      }
+      return;
+    }
+
     try {
       const res = await deleteRowApi(selectedTask.id, rowId, revision);
       setLocalResultRevision(res.resultRevision);
@@ -360,7 +401,7 @@ export function ParseReviewPage() {
         return next;
       });
     }
-  }, [selectedTask, localResultRevision, refresh]);
+  }, [selectedTask, localResultRevision, refresh, rows, rowIds, syncEffectiveTask]);
 
   const startEditing = useCallback((rowId: string, field: string, currentValue: unknown) => {
     if (!isWaitingHuman) return;

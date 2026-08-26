@@ -14,5 +14,11 @@ export function ConflictBadge({ conflict, details }: ConflictBadgeProps) {
   if (conflict === "quantity_conflict") {
     return <Badge variant="red" title={details}>数量冲突</Badge>;
   }
+  if (conflict === "suspected_total") {
+    return <Badge variant="slate" title={details}>疑似合计</Badge>;
+  }
+  if (conflict === "potentially_incomplete") {
+    return <Badge variant="amber" title={details}>疑似不完整</Badge>;
+  }
   return null;
 }

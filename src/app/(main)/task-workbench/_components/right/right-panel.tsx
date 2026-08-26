@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Download, FileText, Paperclip } from "lucide-react";
+import { Download, FileText, Paperclip, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { BACKEND_URL } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { WorkspaceMail, WorkspaceTask } from "@/services/inbox";
+import { resyncMail } from "@/services/mail";
 import {
   type Locale,
   copy,
@@ -20,22 +23,45 @@ type RightPanelProps = {
   tasks: WorkspaceTask[];
   parsingIds: Set<string>;
   onParse: (mailId: string, attachmentIds: string[]) => void;
+  onRefresh: () => void;
 };
 
-export function RightPanel({ locale, mail, tasks, parsingIds, onParse }: RightPanelProps) {
+export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh }: RightPanelProps) {
   const t = copy[locale];
   const mailId = mail?.id;
+  const [isSyncing, setIsSyncing] = useState(false);
   const bodyTasks = tasks.filter((task) => task.attachmentId === null);
   const visibleAttachments = [...(mail?.attachments.filter((attachment) => !attachment.contentType?.startsWith("image/")) ?? [])]
     .sort((a, b) => Number(isArchiveAttachment(a.fileName, a.contentType)) - Number(isArchiveAttachment(b.fileName, b.contentType)));
   const archiveAttachmentIds = new Set(visibleAttachments.filter((attachment) => isArchiveAttachment(attachment.fileName, attachment.contentType)).map((attachment) => attachment.attachmentId));
   const pendingCount = tasks.filter((task) => !task.attachmentId || !archiveAttachmentIds.has(task.attachmentId)).filter((task) => task.status === "waiting_human_decision" || task.status === "failed").length;
 
+  const handleResync = async () => {
+    if (!mailId || isSyncing) return;
+    setIsSyncing(true);
+    try {
+      const result = await resyncMail(mailId);
+      toast.success(result.message);
+      onRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "同步失败");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <aside className="panel scroll-panel">
       <div className="panel-head">
         <h2 className="panel-title"><Paperclip className="h-4 w-4" />本邮件解析结果</h2>
-        <Badge variant={pendingCount ? "amber" : "slate"}>{pendingCount ? `${pendingCount} 待确认` : `${tasks.length} 个任务`}</Badge>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Badge variant={pendingCount ? "amber" : "slate"}>{pendingCount ? `${pendingCount} 待确认` : `${tasks.length} 个任务`}</Badge>
+          {mailId ? (
+            <Button variant="ghost" size="icon-sm" aria-label="同步邮件" title="从邮件服务器重新同步" disabled={isSyncing} onClick={handleResync}>
+              <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+            </Button>
+          ) : null}
+        </span>
       </div>
       <div className="panel-body stack">
         {bodyTasks.length ? bodyTasks.map((task) => (

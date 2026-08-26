@@ -6572,18 +6572,24 @@ tr.conflict-group-teal > td:first-child { border-left: 3px solid #14b8a6; }
 tr.conflict-group-pink > td { background-color: #fdf2f8 !important; }
 tr.conflict-group-pink > td:first-child { border-left: 3px solid #ec4899; }
 
-/* Quantity conflict palette */
-tr.conflict-group-red > td { background-color: var(--danger-soft) !important; }
-tr.conflict-group-red > td:first-child { border-left: 3px solid var(--danger); }
+/* Quantity conflict palette — each color must be visually distinct */
+tr.conflict-group-red > td { background-color: #fee2e2 !important; }
+tr.conflict-group-red > td:first-child { border-left: 3px solid #dc2626; }
 
-tr.conflict-group-crimson > td { background-color: var(--danger-soft) !important; }
-tr.conflict-group-crimson > td:first-child { border-left: 3px solid var(--danger); }
+tr.conflict-group-crimson > td { background-color: #fce4ec !important; }
+tr.conflict-group-crimson > td:first-child { border-left: 3px solid #c62828; }
 
-tr.conflict-group-rose > td { background-color: var(--danger-soft) !important; }
-tr.conflict-group-rose > td:first-child { border-left: 3px solid var(--danger); }
+tr.conflict-group-rose > td { background-color: #fff1f2 !important; }
+tr.conflict-group-rose > td:first-child { border-left: 3px solid #e11d48; }
 
-tr.conflict-group-brick > td { background-color: var(--danger-soft) !important; }
-tr.conflict-group-brick > td:first-child { border-left: 3px solid var(--danger); }
+tr.conflict-group-brick > td { background-color: #fef3c7 !important; }
+tr.conflict-group-brick > td:first-child { border-left: 3px solid #d97706; }
+
+tr.conflict-group-slate > td { background-color: #f1f5f9 !important; }
+tr.conflict-group-slate > td:first-child { border-left: 3px solid #64748b; }
+
+tr.conflict-group-amber > td { background-color: #fef9c3 !important; }
+tr.conflict-group-amber > td:first-child { border-left: 3px solid #ca8a04; }
 
 /* Row delete button */
 .row-delete-btn {

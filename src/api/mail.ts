@@ -33,3 +33,19 @@ export function addMailSourceSchema(
     body: JSON.stringify({ attachment_id: attachmentId, target_sheet_name: targetSheetName }),
   });
 }
+
+export type ResyncResponseSchema = {
+  customer_changed: boolean;
+  previous_customer_id: string | null;
+  new_customer_id: string | null;
+  new_attachment_count: number;
+  new_attachment_names: string[];
+  tasks_created: number;
+  message: string;
+};
+
+export function resyncMailSchema(mailId: string): Promise<ResyncResponseSchema> {
+  return apiRequest<ResyncResponseSchema>(`/api/mail-messages/${mailId}/resync`, {
+    method: "POST",
+  });
+}

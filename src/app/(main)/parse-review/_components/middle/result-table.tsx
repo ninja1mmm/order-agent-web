@@ -128,8 +128,40 @@ export function ResultTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, index) => {
+          {rows.flatMap((row, index) => {
             const rowId = rowIds[index];
+            const conflict = String(row.conflictFlag ?? "none");
+            const merged = row.mergedQuantities as number[] | undefined;
+
+            if (conflict === "quantity_conflict" && merged && merged.length > 1) {
+              return merged.map((qty, qi) => {
+                const syntheticId = `${rowId}::cq${qi}`;
+                return (
+                  <ExistingResultRow
+                    key={syntheticId}
+                    row={{ ...row, quantity: qty }}
+                    rowId={syntheticId}
+                    selectedTask={selectedTask}
+                    orderType={orderTypeMap.get(rowId) ?? "uncertain"}
+                    conflictClass={conflictClassForRow(row, conflictColorMap)}
+                    isWaitingHuman={isWaitingHuman}
+                    editingCell={editingCell}
+                    editValue={editValue}
+                    preferEditedDate={preferEditedDate}
+                    langParam={langParam}
+                    getRowValue={getRowValue}
+                    onToggleOrderType={onToggleOrderType}
+                    onMergeStrategyChange={(id, strategy) => onMergeStrategyChange?.(id, strategy)}
+                    onDeleteRow={onDeleteRow}
+                    onStartEditing={onStartEditing}
+                    onEditValueChange={onEditValueChange}
+                    onCommitEdit={onCommitEdit}
+                    onCancelEditing={onCancelEditing}
+                  />
+                );
+              });
+            }
+
             return (
               <ExistingResultRow
                 key={rowId}
@@ -145,7 +177,7 @@ export function ResultTable({
                 langParam={langParam}
                 getRowValue={getRowValue}
                 onToggleOrderType={onToggleOrderType}
-                onMergeStrategyChange={(rowId, strategy) => onMergeStrategyChange?.(rowId, strategy)}
+                onMergeStrategyChange={(id, strategy) => onMergeStrategyChange?.(id, strategy)}
                 onDeleteRow={onDeleteRow}
                 onStartEditing={onStartEditing}
                 onEditValueChange={onEditValueChange}
@@ -185,7 +217,7 @@ export function ResultTable({
 function conflictClassForRow(row: Record<string, unknown>, conflictColorMap: Map<string, string>) {
   const conflict = String(row.conflictFlag ?? "none");
   const pn = String(row.customerPartNumber ?? "");
-  return (conflict === "granularity_mismatch" || conflict === "quantity_conflict")
+  return (conflict === "granularity_mismatch" || conflict === "quantity_conflict" || conflict === "suspected_total" || conflict === "potentially_incomplete")
     ? (conflictColorMap.get(`${conflict}::${pn}`) ?? "")
     : "";
 }
