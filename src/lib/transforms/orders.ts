@@ -49,11 +49,11 @@ export function transformRollingForecastCellUpdateToSchema(
   params: RollingForecastCellUpdate,
 ): RollingForecastCellUpdateSchema {
   return {
-    row_key: params.rowKey,
-    col_key: params.colKey,
+    rowKey: params.rowKey,
+    colKey: params.colKey,
     value: params.value,
     classification: params.classification,
-    time_granularity: params.timeGranularity,
+    timeGranularity: params.timeGranularity,
     reason: params.reason,
   };
 }

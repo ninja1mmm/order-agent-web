@@ -20,6 +20,7 @@ export type AddedTaskRow = {
   customer_part_number: string;
   quantity: number;
   date_info: string;
+  date_format?: string | null;
 };
 
 export type ProceedTaskRequest = {
@@ -27,6 +28,7 @@ export type ProceedTaskRequest = {
   orderTypeOverrides?: Record<string, string>;
   deletedRowIds?: string[];
   addedRows?: AddedTaskRow[];
+  restartFromStep?: string | null;
 };
 
 export type RowPatchRequest = {

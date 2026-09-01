@@ -3,12 +3,14 @@ import type {
   BulkConfirmRequestSchema,
   BulkConfirmResponseSchema,
   MappingSuggestionAcceptSchema,
+  ManualMatchCreateSchema,
   MatchConfirmRequestSchema,
   MatchReceiptRemapRequestSchema,
   MatchListResponseSchema,
   MatchSummaryResponseSchema,
   MergeReviewResponseSchema,
   MergeSummaryResponseSchema,
+  ParsedReconciliationRecordSchema,
   ReceiptRecordCreateSchema,
   ReceiptImportReviewResponseSchema,
   ReceiptRecordListParamsSchema,
@@ -16,6 +18,7 @@ import type {
   ReceiptRecordResponseSchema,
   ReceiptRecordUpdateSchema,
   ReconciliationFileUploadResponseSchema,
+  ReconciliationMatchResponseSchema,
   ReconciliationScheduleCreateSchema,
   ReconciliationScheduleResponseSchema,
   ReconciliationScheduleUpdateSchema,
@@ -138,8 +141,8 @@ export function updateParsedRecordResolutionSchema(
   fileId: string,
   recordId: string,
   payload: { resolution: string; resolutionRemark?: string | null },
-) {
-  return apiRequest(
+): Promise<ParsedReconciliationRecordSchema> {
+  return apiRequest<ParsedReconciliationRecordSchema>(
     `/api/reconciliation/files/${encodeURIComponent(fileId)}/parsed-records/${encodeURIComponent(recordId)}/resolution`,
     {
       method: "PATCH",
@@ -155,8 +158,8 @@ export function acceptParsedRecordMappingSchema(
   fileId: string,
   recordId: string,
   payload: MappingSuggestionAcceptSchema,
-) {
-  return apiRequest(
+): Promise<ParsedReconciliationRecordSchema> {
+  return apiRequest<ParsedReconciliationRecordSchema>(
     `/api/reconciliation/files/${encodeURIComponent(fileId)}/parsed-records/${encodeURIComponent(recordId)}/accept-mapping`,
     { method: "POST", body: JSON.stringify(payload) },
   );
@@ -278,22 +281,28 @@ export function confirmReconciliationMatchSchema(
   taskId: string,
   matchId: string,
   payload?: MatchConfirmRequestSchema,
-) {
-  return apiRequest(
+): Promise<ReconciliationMatchResponseSchema> {
+  return apiRequest<ReconciliationMatchResponseSchema>(
     `/api/reconciliation/tasks/${encodeURIComponent(taskId)}/matches/${encodeURIComponent(matchId)}/confirm`,
     { method: "POST", body: JSON.stringify(payload ?? {}) },
   );
 }
 
-export function rejectReconciliationMatchSchema(taskId: string, matchId: string) {
-  return apiRequest(
+export function rejectReconciliationMatchSchema(
+  taskId: string,
+  matchId: string,
+): Promise<ReconciliationMatchResponseSchema> {
+  return apiRequest<ReconciliationMatchResponseSchema>(
     `/api/reconciliation/tasks/${encodeURIComponent(taskId)}/matches/${encodeURIComponent(matchId)}/reject`,
     { method: "POST" },
   );
 }
 
-export function unconfirmReconciliationMatchSchema(taskId: string, matchId: string) {
-  return apiRequest(
+export function unconfirmReconciliationMatchSchema(
+  taskId: string,
+  matchId: string,
+): Promise<ReconciliationMatchResponseSchema> {
+  return apiRequest<ReconciliationMatchResponseSchema>(
     `/api/reconciliation/tasks/${encodeURIComponent(taskId)}/matches/${encodeURIComponent(matchId)}/unconfirm`,
     { method: "POST" },
   );
@@ -303,20 +312,18 @@ export function remapReconciliationMatchReceiptSchema(
   taskId: string,
   matchId: string,
   payload: MatchReceiptRemapRequestSchema,
-) {
-  return apiRequest(
+): Promise<ReconciliationMatchResponseSchema> {
+  return apiRequest<ReconciliationMatchResponseSchema>(
     `/api/reconciliation/tasks/${encodeURIComponent(taskId)}/matches/${encodeURIComponent(matchId)}/receipt`,
     { method: "PATCH", body: JSON.stringify(payload) },
   );
 }
 
-export function createManualReconciliationMatchSchema(taskId: string, payload: {
-  shipmentRecordId: string;
-  receiptRecordId?: string | null;
-  matchedQty: number;
-  remark?: string | null;
-}) {
-  return apiRequest(
+export function createManualReconciliationMatchSchema(
+  taskId: string,
+  payload: ManualMatchCreateSchema,
+): Promise<ReconciliationMatchResponseSchema> {
+  return apiRequest<ReconciliationMatchResponseSchema>(
     `/api/reconciliation/tasks/${encodeURIComponent(taskId)}/matches/manual`,
     { method: "POST", body: JSON.stringify(payload) },
   );

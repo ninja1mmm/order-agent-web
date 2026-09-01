@@ -283,6 +283,10 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
 
   async function handleMerge() {
     if (!review) return;
+    if (!review.mappingFileId) {
+      toast.error("交货-要货令映射文件标识缺失，请重新上传后解析");
+      return;
+    }
     if (!review.rows.some(isEffectivelyImportable)) {
       toast.error("当前批次没有可入池数据，请先处理红色问题后重新解析");
       return;

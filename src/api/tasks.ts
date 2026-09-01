@@ -2,10 +2,13 @@ import { apiRequest } from "./client";
 import type {
   AddRowRequestSchema,
   AddRowResponseSchema,
+  BulkStrategyResponseSchema,
   DeleteRowResponseSchema,
   EffectiveRowsResponseSchema,
+  ProcessingTaskDetailResponseSchema,
   ProceedTaskRequestSchema,
   PublishTaskRequestSchema,
+  ReviewResetResponseSchema,
   RowPatchRequestSchema,
   RowPatchResponseSchema,
 } from "@/types/schemas/tasks";
@@ -13,8 +16,8 @@ import type {
 export async function proceedTaskSchema(
   taskId: string,
   payload: ProceedTaskRequestSchema,
-): Promise<void> {
-  await apiRequest(`/api/tasks/${taskId}/proceed`, {
+): Promise<ProcessingTaskDetailResponseSchema> {
+  return apiRequest<ProcessingTaskDetailResponseSchema>(`/api/tasks/${taskId}/proceed`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -55,8 +58,8 @@ export function deleteRowSchema(
 export async function publishTaskSchema(
   taskId: string,
   payload: PublishTaskRequestSchema,
-): Promise<void> {
-  await apiRequest(`/api/tasks/${taskId}/publish`, {
+): Promise<ProcessingTaskDetailResponseSchema> {
+  return apiRequest<ProcessingTaskDetailResponseSchema>(`/api/tasks/${taskId}/publish`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -65,10 +68,10 @@ export async function publishTaskSchema(
 export function resetTaskReviewSchema(
   taskId: string,
   resultRevision: number,
-): Promise<{ resultRevision: number }> {
-  return apiRequest<{ resultRevision: number }>(`/api/tasks/${taskId}/review/reset`, {
+): Promise<ReviewResetResponseSchema> {
+  return apiRequest<ReviewResetResponseSchema>(`/api/tasks/${taskId}/review/reset`, {
     method: "POST",
-    body: JSON.stringify({ result_revision: resultRevision }),
+    body: JSON.stringify({ resultRevision }),
   });
 }
 
@@ -76,27 +79,22 @@ export function getEffectiveRowsSchema(taskId: string): Promise<EffectiveRowsRes
   return apiRequest<EffectiveRowsResponseSchema>(`/api/tasks/${taskId}/rows`, { method: "GET" });
 }
 
-export async function cancelTaskSchema(taskId: string): Promise<void> {
-  await apiRequest(`/api/tasks/${taskId}/cancel`, { method: "POST" });
+export function cancelTaskSchema(taskId: string): Promise<ProcessingTaskDetailResponseSchema> {
+  return apiRequest<ProcessingTaskDetailResponseSchema>(`/api/tasks/${taskId}/cancel`, { method: "POST" });
 }
 
-export async function deleteSourceTaskSchema(taskId: string): Promise<void> {
-  await apiRequest(`/api/tasks/${taskId}`, { method: "DELETE" });
+export function rerunTaskSchema(taskId: string): Promise<ProcessingTaskDetailResponseSchema> {
+  return apiRequest<ProcessingTaskDetailResponseSchema>(`/api/tasks/${taskId}/rerun`, { method: "POST" });
 }
 
-export async function rerunTaskSchema(taskId: string): Promise<void> {
-  await apiRequest(`/api/tasks/${taskId}/rerun`, { method: "POST" });
-}
-
-export async function parseSheetSchema(taskId: string, sheetName: string): Promise<void> {
-  await apiRequest(`/api/tasks/${taskId}/parse-sheet`, {
-    method: "POST",
-    body: JSON.stringify({ sheet_name: sheetName }),
-  });
-}
-
-export async function setTaskExcludedSchema(taskId: string, excluded: boolean): Promise<void> {
-  await apiRequest(`/api/tasks/${taskId}/${excluded ? "exclude" : "include"}`, { method: "POST" });
+export function setTaskExcludedSchema(
+  taskId: string,
+  excluded: boolean,
+): Promise<ProcessingTaskDetailResponseSchema> {
+  return apiRequest<ProcessingTaskDetailResponseSchema>(
+    `/api/tasks/${taskId}/${excluded ? "exclude" : "include"}`,
+    { method: "POST" },
+  );
 }
 
 export type BulkMergeStrategy = "replace" | "increment" | "decrement";
@@ -106,13 +104,13 @@ export function bulkMergeStrategySchema(
   resultRevision: number,
   rowIds: string[],
   mergeStrategy: BulkMergeStrategy,
-): Promise<{ resultRevision?: number; result_revision?: number; updatedCount?: number; updated_count?: number }> {
-  return apiRequest(`/api/tasks/${taskId}/rows/actions/bulk-strategy`, {
+): Promise<BulkStrategyResponseSchema> {
+  return apiRequest<BulkStrategyResponseSchema>(`/api/tasks/${taskId}/rows/actions/bulk-strategy`, {
     method: "PATCH",
     body: JSON.stringify({
-      result_revision: resultRevision,
-      row_ids: rowIds,
-      merge_strategy: mergeStrategy,
+      resultRevision,
+      rowIds,
+      mergeStrategy,
     }),
   });
 }

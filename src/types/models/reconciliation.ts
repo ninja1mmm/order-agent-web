@@ -5,21 +5,23 @@ export type ReconciliationTaskStatus =
   | "in_progress"
   | "closed"
   | "voided"
-  | "cancelled"
-  | string;
+  | "cancelled";
 
 export type ReconciliationRecordStatus =
   | "unmatched"
   | "partial"
   | "fully_matched"
-  | string;
+  | "in_transit"
+  | "closed";
 
 export type EffectiveReconciliationRecordStatus =
-  | ReconciliationRecordStatus
+  | "unmatched"
   | "partial_confirmed_pending_writeback"
-  | "confirmed_pending_writeback";
+  | "confirmed_pending_writeback"
+  | "partial"
+  | "fully_matched";
 
-export type ReconciliationMatchStatus = "candidate" | "confirmed" | "rejected" | string;
+export type ReconciliationMatchStatus = "candidate" | "confirmed" | "rejected";
 
 export type ReconciliationTask = {
   id: string;
@@ -38,6 +40,9 @@ export type ReconciliationTask = {
   matchedRecordCount: number;
   exceptionRecordCount: number;
   remark: string | null;
+  createdBy: string | null;
+  closedBy: string | null;
+  reopenedAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   closedAt: string | null;
@@ -61,7 +66,7 @@ export type ReconciliationTaskCreate = {
 export type ReconciliationSchedule = {
   scheduleId: string;
   enabled: boolean;
-  periodType: "monthly" | "weekly" | string;
+  periodType: "monthly" | "weekly";
   periodStartDay: number;
   periodEndDay: number | null;
   triggerDay: number;
@@ -110,7 +115,10 @@ export type ShipmentRecord = {
   statusVariant: "blue" | "green" | "amber" | "red" | "slate";
   locked: boolean;
   remark: string | null;
+  lastReconciledTaskId: string | null;
+  status: string;
   sourceFileId: string | null;
+  createdAt: string | null;
   updatedAt: string | null;
 };
 
@@ -135,7 +143,10 @@ export type ReceiptRecord = {
   statusVariant: "blue" | "green" | "amber" | "red" | "slate";
   locked: boolean;
   remark: string | null;
+  lastReconciledTaskId: string | null;
+  status: string;
   sourceFileId: string | null;
+  createdAt: string | null;
   updatedAt: string | null;
 };
 
@@ -223,7 +234,7 @@ export type ShipmentImportReviewRow = {
   qty: number | null;
   deliveryNo: string | null;
   demandOrderNo: string | null;
-  validationStatus: string;
+  validationStatus: string | null;
   resolution: string | null;
   issueText: string | null;
 };
@@ -248,7 +259,7 @@ export type ShipmentCustomerResolutionSummary = {
 
 export type ShipmentImportReview = {
   shipmentFileId: string;
-  mappingFileId: string;
+  mappingFileId: string | null;
   totalRows: number;
   linkedCount: number;
   missingMappingCount: number;
@@ -270,7 +281,7 @@ export type ReceiptImportReviewRow = {
   materialName: string | null;
   qty: number | null;
   demandOrderNo: string | null;
-  validationStatus: string;
+  validationStatus: string | null;
   resolution: string | null;
   issueText: string | null;
 };
@@ -304,6 +315,8 @@ export type ReconciliationMatch = {
   receipt: ReceiptRecord | null;
   differenceQty: number | null;
   noDifference: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
 };
 
 export type MatchDetailRow = {
@@ -346,6 +359,7 @@ export type MatchGroup = {
 export type MatchList = {
   matches: ReconciliationMatch[];
   groups: MatchGroup[];
+  returnAnnotations: Array<Record<string, unknown>>;
 };
 
 export type MatchSummary = {

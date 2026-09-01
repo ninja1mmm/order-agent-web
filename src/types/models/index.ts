@@ -1,4 +1,6 @@
+export * from "./auth";
 export * from "./customer-profile";
+export * from "./files";
 export * from "./inbox";
 export * from "./mail";
 export * from "./orders";

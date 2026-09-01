@@ -42,6 +42,8 @@ export type CellRevisionSchema = {
   sourceFile: string | null;
   mailSubject: string | null;
   mailMessageId: string | null;
+  mergeStrategy: string | null;
+  inputQuantity: number | null;
   createdAt: string;
 };
 
@@ -82,10 +84,10 @@ export type RowDetailQuerySchema = {
 };
 
 export type RollingForecastCellUpdateSchema = {
-  row_key: string;
-  col_key: string;
+  rowKey: string;
+  colKey: string;
   value: number;
   classification: DemandClassificationSchema;
-  time_granularity: TimeGranularitySchema;
+  timeGranularity: TimeGranularitySchema;
   reason: string;
 };

@@ -3,21 +3,23 @@ export type ReconciliationTaskStatusSchema =
   | "in_progress"
   | "closed"
   | "voided"
-  | "cancelled"
-  | string;
+  | "cancelled";
 
 export type ReconciliationRecordStatusSchema =
   | "unmatched"
   | "partial"
   | "fully_matched"
-  | string;
+  | "in_transit"
+  | "closed";
 
 export type EffectiveReconciliationRecordStatusSchema =
-  | ReconciliationRecordStatusSchema
+  | "unmatched"
   | "partial_confirmed_pending_writeback"
-  | "confirmed_pending_writeback";
+  | "confirmed_pending_writeback"
+  | "partial"
+  | "fully_matched";
 
-export type ReconciliationMatchStatusSchema = "candidate" | "confirmed" | "rejected" | string;
+export type ReconciliationMatchStatusSchema = "candidate" | "confirmed" | "rejected";
 
 export type ReconciliationTaskCreateSchema = {
   customerId: string;
@@ -120,7 +122,7 @@ export type ShipmentImportReviewRowSchema = {
   qty: number | null;
   deliveryNo: string | null;
   demandOrderNo: string | null;
-  validationStatus: string;
+  validationStatus: string | null;
   resolution: string | null;
   issueText: string | null;
 };
@@ -145,7 +147,7 @@ export type ShipmentCustomerResolutionSummarySchema = {
 
 export type ShipmentImportReviewResponseSchema = {
   shipmentFileId: string;
-  mappingFileId: string;
+  mappingFileId: string | null;
   totalRows: number;
   linkedCount: number;
   missingMappingCount: number;
@@ -167,7 +169,7 @@ export type ReceiptImportReviewRowSchema = {
   materialName: string | null;
   qty: number | null;
   demandOrderNo: string | null;
-  validationStatus: string;
+  validationStatus: string | null;
   resolution: string | null;
   issueText: string | null;
 };
@@ -360,7 +362,7 @@ export type ReconciliationScheduleUpdateSchema = Partial<ReconciliationScheduleC
 export type ReconciliationScheduleResponseSchema = {
   scheduleId: string;
   enabled: boolean;
-  periodType: "monthly" | "weekly" | string;
+  periodType: "monthly" | "weekly";
   periodStartDay: number;
   periodEndDay: number | null;
   triggerDay: number;

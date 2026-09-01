@@ -26,7 +26,6 @@ import {
   resetTaskReview,
   getEffectiveRows,
   bulkMergeStrategy,
-  deleteSourceTask,
   setTaskExcluded,
   type BulkMergeStrategy,
   addRow as addRowApi,
@@ -388,7 +387,11 @@ export function ParseReviewPage() {
     }
 
     try {
-      const res = await deleteRowApi(selectedTask.id, rowId, revision);
+      const res = await runWithFreshRevision(
+        selectedTask.id,
+        revision,
+        (currentRevision) => deleteRowApi(selectedTask.id, rowId, currentRevision),
+      );
       setLocalResultRevision(res.resultRevision);
       localRevRef.current = res.resultRevision;
       setTaskStaleState(res.taskStaleState);
@@ -549,7 +552,11 @@ export function ParseReviewPage() {
     setReviewActionError(null);
     try {
       const revision = localResultRevision ?? selectedTask.resultRevision;
-      await resetTaskReview(selectedTask.id, revision);
+      await runWithFreshRevision(
+        selectedTask.id,
+        revision,
+        (currentRevision) => resetTaskReview(selectedTask.id, currentRevision),
+      );
       const effective = await getEffectiveRows(selectedTask.id);
       setEffectiveTaskRows({ taskId: selectedTask.id, rows: effective.rows, resultRevision: effective.resultRevision });
       setTaskStaleState(effective.taskStaleState);
@@ -568,7 +575,7 @@ export function ParseReviewPage() {
     } finally {
       setIsResetLoading(false);
     }
-  }, [localResultRevision, refresh, selectedTask]);
+  }, [localResultRevision, refresh, runWithFreshRevision, selectedTask]);
 
   const handlePublish = useCallback(async () => {
     if (!selectedTask) return;
@@ -614,13 +621,17 @@ export function ParseReviewPage() {
 
     const revision = localResultRevision ?? selectedTask.resultRevision;
     try {
-      const res = await addRowApi(
+      const res = await runWithFreshRevision(
         selectedTask.id,
         revision,
-        newRowData.customerPartNumber.trim(),
-        qty,
-        dateResult!.dateInfo,
-        dateResult!.dateFormat,
+        (currentRevision) => addRowApi(
+          selectedTask.id,
+          currentRevision,
+          newRowData.customerPartNumber.trim(),
+          qty,
+          dateResult!.dateInfo,
+          dateResult!.dateFormat,
+        ),
       );
       setLocalResultRevision(res.resultRevision);
       localRevRef.current = res.resultRevision;
@@ -645,7 +656,7 @@ export function ParseReviewPage() {
       setNewRowData({ customerPartNumber: "", quantity: "", dateInfo: "" });
       setNewRowErrors({});
     }
-  }, [selectedTask, newRowData, localResultRevision, refresh]);
+  }, [selectedTask, newRowData, localResultRevision, refresh, runWithFreshRevision]);
 
   const handleCancelNewRow = useCallback(() => {
     setIsAddingRow(false);
@@ -700,23 +711,6 @@ export function ParseReviewPage() {
     if (!selectedAttachment) return;
     void handleAddSource(selectedAttachment.attachmentId, sheetName);
   }, [handleAddSource, selectedAttachment]);
-
-  const handleDeleteSourceTask = useCallback(async (taskId: string) => {
-    setScopeTaskId(taskId);
-    try {
-      await deleteSourceTask(taskId);
-      if (selectedTask?.id === taskId) {
-        setSelectedTaskId("");
-        setHasUserSelected(false);
-      }
-      await Promise.all([refresh(), loadMailTaskList()]);
-      toast.success("Sheet 解析任务已删除");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "删除 Sheet 解析任务失败");
-    } finally {
-      setScopeTaskId(null);
-    }
-  }, [loadMailTaskList, refresh, selectedTask]);
 
   const handleToggleExcluded = useCallback(async (taskId: string, excluded: boolean) => {
     setScopeTaskId(taskId);
@@ -882,7 +876,6 @@ export function ParseReviewPage() {
           onSelectBody={handleSelectBody}
           onSelectAttachment={handleSelectAttachment}
           onSelectTask={handleSelectTask}
-          onDeleteTask={handleDeleteSourceTask}
           onToggleExcluded={handleToggleExcluded}
         />
 

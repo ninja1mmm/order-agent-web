@@ -43,6 +43,8 @@ export type CellRevision = {
   sourceFile: string | null;
   mailSubject: string | null;
   mailMessageId: string | null;
+  mergeStrategy: string | null;
+  inputQuantity: number | null;
   createdAt: string;
 };
 

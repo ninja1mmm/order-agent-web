@@ -8,12 +8,14 @@ import type {
   MatchSummary,
   MergeReview,
   MergeSummary,
+  ReceiptImportReview,
   ReceiptRecord,
   ReconciliationConfigRow,
   ReconciliationMatch,
   ReconciliationSchedule,
   ReconciliationTask,
   ReconciliationTaskList,
+  ShipmentImportReview,
   ShipmentRecord,
 } from "@/types/models/reconciliation";
 import type {
@@ -21,12 +23,14 @@ import type {
   MatchSummaryResponseSchema,
   MergeReviewResponseSchema,
   MergeSummaryResponseSchema,
+  ReceiptImportReviewResponseSchema,
   ReceiptRecordListResponseSchema,
   ReceiptRecordResponseSchema,
   ReconciliationFileUploadResponseSchema,
   ReconciliationScheduleResponseSchema,
   ReconciliationTaskListResponseSchema,
   ReconciliationTaskResponseSchema,
+  ShipmentImportReviewResponseSchema,
   ShipmentRecordListResponseSchema,
   ShipmentRecordResponseSchema,
 } from "@/types/schemas/reconciliation";
@@ -122,6 +126,9 @@ export function transformTaskSchemaToModel(
     matchedRecordCount: task.matchedRecordCount ?? 0,
     exceptionRecordCount: task.exceptionRecordCount ?? 0,
     remark: task.remark,
+    createdBy: task.createdBy,
+    closedBy: task.closedBy,
+    reopenedAt: task.reopenedAt,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     closedAt: task.closedAt,
@@ -212,7 +219,10 @@ export function transformShipmentSchemaToModel(
     statusVariant: meta.variant,
     locked: record.effectiveReconciliationStatus !== "unmatched",
     remark: record.remark,
+    lastReconciledTaskId: record.lastReconciledTaskId,
+    status: record.status,
     sourceFileId: record.sourceFileId,
+    createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
 }
@@ -255,7 +265,10 @@ export function transformReceiptSchemaToModel(
     statusVariant: meta.variant,
     locked: record.effectiveReconciliationStatus !== "unmatched",
     remark: record.remark,
+    lastReconciledTaskId: record.lastReconciledTaskId,
+    status: record.status,
     sourceFileId: record.sourceFileId,
+    createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
 }
@@ -290,6 +303,28 @@ export function transformFileUploadToModel(
 
 export function transformMergeSummaryToModel(response: MergeSummaryResponseSchema): MergeSummary {
   return response;
+}
+
+export function transformShipmentImportReviewToModel(
+  response: ShipmentImportReviewResponseSchema,
+): ShipmentImportReview {
+  return {
+    ...response,
+    rows: response.rows.map((row) => ({ ...row })),
+    customerResolutionSummary: {
+      ...response.customerResolutionSummary,
+      customers: response.customerResolutionSummary.customers.map((customer) => ({ ...customer })),
+    },
+  };
+}
+
+export function transformReceiptImportReviewToModel(
+  response: ReceiptImportReviewResponseSchema,
+): ReceiptImportReview {
+  return {
+    ...response,
+    rows: response.rows.map((row) => ({ ...row })),
+  };
 }
 
 export function transformMatchSummaryToModel(response: MatchSummaryResponseSchema): MatchSummary {
@@ -508,7 +543,7 @@ export function transformMatchListToModel(
       return a.materialNo.localeCompare(b.materialNo, "zh-CN");
     });
 
-  return { matches, groups };
+  return { matches, groups, returnAnnotations: response.returnAnnotations };
 }
 
 export function buildCommitPreviewRows(

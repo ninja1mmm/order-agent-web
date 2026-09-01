@@ -8,22 +8,14 @@ import React, {
   useCallback,
 } from "react";
 import {
-  BACKEND_URL,
   logoutSession,
   redirectToLogin,
   setOnUnauthorized,
 } from "../api/client";
-
-interface User {
-  id: string;
-  username: string;
-  displayName: string | null;
-  roles: string[];
-  permissions: string[];
-}
+import { getAuthenticatedUser, type AuthenticatedUser } from "@/services/auth";
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthenticatedUser | null;
   logout: () => Promise<void>;
   ready: boolean;
 }
@@ -31,7 +23,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [ready, setReady] = useState(false);
 
   const logout = useCallback(async () => {
@@ -52,28 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function checkSession() {
       try {
-        const res = await fetch(`${BACKEND_URL}/auth/me`, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          if (!cancelled) {
-            if (res.status === 401) {
-              redirectToLogin();
-            } else {
-              setReady(true);
-            }
-          }
-          return;
-        }
-        const profile = await res.json();
+        const profile = await getAuthenticatedUser();
         if (!cancelled) {
-          setUser({
-            id: profile.id,
-            username: profile.username,
-            displayName: profile.displayName ?? null,
-            roles: profile.roles ?? [],
-            permissions: profile.permissions ?? [],
-          });
+          setUser(profile);
           setReady(true);
         }
       } catch {

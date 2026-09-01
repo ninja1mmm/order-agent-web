@@ -3,9 +3,9 @@
 import React, { useMemo, useState } from "react";
 import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react";
 
-import { BACKEND_URL } from "@/api/client";
 import type { WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
+import { getExcelPreview, getFileContent } from "@/services/files";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { SearchableFilterSelect } from "@/components/ui/select";
@@ -171,21 +171,16 @@ export function ExcelViewer({ fileArtifactId, locale, initialSheet, onParseSheet
 
   const fetchSheet = React.useCallback(
     (sheet?: string) => {
-      const query = sheet ? `?sheet=${encodeURIComponent(sheet)}` : "";
       const key = `${fileArtifactId}:${sheet ?? ""}`;
-      fetch(`${BACKEND_URL}/api/files/${fileArtifactId}/excel-preview${query}`)
-        .then((res) => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
-        })
+      getExcelPreview(fileArtifactId, sheet)
         .then((data) => {
-          const sheetNames = Array.isArray(data.sheetNames) ? data.sheetNames.map(String) : [];
+          const sheetNames = data.sheetNames;
           setPreview({
             key,
             sheetNames,
-            activeSheet: data.activeSheet ?? "",
-            rows: data.rows ?? [],
-            truncated: data.truncated ?? false,
+            activeSheet: data.activeSheet,
+            rows: data.rows as (string | number | null)[][],
+            truncated: data.truncated,
             error: null,
           });
           onSheetsLoaded?.(sheetNames);
@@ -279,13 +274,7 @@ export function PdfViewer({ fileArtifactId, locale }: { fileArtifactId: string; 
     const controller = new AbortController();
     let blobUrl: string | null = null;
 
-    fetch(`${BACKEND_URL}/api/files/${fileArtifactId}/content`, {
-      signal: controller.signal,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.blob();
-      })
+    getFileContent(fileArtifactId, controller.signal)
       .then((blob) => {
         blobUrl = URL.createObjectURL(blob);
         setPreview({ key: fileArtifactId, objectUrl: blobUrl, error: null });

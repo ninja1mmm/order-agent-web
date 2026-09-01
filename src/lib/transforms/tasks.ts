@@ -15,16 +15,24 @@ export function transformProceedTaskRequestToSchema(
   request: ProceedTaskRequest,
 ): ProceedTaskRequestSchema {
   const body: ProceedTaskRequestSchema = {
-    result_revision: request.resultRevision ?? 1,
+    resultRevision: request.resultRevision ?? 1,
   };
   if (request.orderTypeOverrides && Object.keys(request.orderTypeOverrides).length > 0) {
-    body.order_type_overrides = request.orderTypeOverrides;
+    body.orderTypeOverrides = request.orderTypeOverrides;
   }
   if (request.deletedRowIds && request.deletedRowIds.length > 0) {
-    body.deleted_row_ids = request.deletedRowIds;
+    body.deletedRowIds = request.deletedRowIds;
   }
   if (request.addedRows && request.addedRows.length > 0) {
-    body.added_rows = request.addedRows;
+    body.addedRows = request.addedRows.map((row) => ({
+      customerPartNumber: row.customer_part_number,
+      quantity: row.quantity,
+      dateInfo: row.date_info,
+      dateFormat: row.date_format,
+    }));
+  }
+  if (request.restartFromStep !== undefined) {
+    body.restartFromStep = request.restartFromStep;
   }
   return body;
 }
@@ -33,7 +41,7 @@ export function transformRowPatchRequestToSchema(
   request: RowPatchRequest,
 ): RowPatchRequestSchema {
   return {
-    result_revision: request.resultRevision,
+    resultRevision: request.resultRevision,
     changes: request.changes,
   };
 }

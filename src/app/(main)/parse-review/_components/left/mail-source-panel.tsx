@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Bot, ChevronDown, FileSpreadsheet, FileText, Mail, Trash2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DialogBody, DialogContent, DialogHeader, DialogOverlay, DialogTitle } from "@/components/ui/dialog";
+import { Bot, ChevronDown, FileSpreadsheet, FileText, Mail } from "lucide-react";
 import type { MailTaskListResponse, WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import { formatDateTime, type Locale, taskStatusLabel } from "../../../_components/shared";
 
@@ -19,17 +17,15 @@ type MailSourcePanelProps = {
   onSelectBody: () => void;
   onSelectAttachment: (attachmentId: string, sheetName?: string) => void;
   onSelectTask: (taskId: string) => void;
-  onDeleteTask: (taskId: string) => void;
   onToggleExcluded: (taskId: string, excluded: boolean) => void;
 };
 
 export function MailSourcePanel({
   locale, mail, tasks, selectedTaskId, activeBody, activeAttachmentId, taskList,
-  busyTaskId, onSelectBody, onSelectAttachment, onSelectTask, onDeleteTask, onToggleExcluded,
+  busyTaskId, onSelectBody, onSelectAttachment, onSelectTask, onToggleExcluded,
 }: MailSourcePanelProps) {
   const taskMeta = useMemo(() => new Map((taskList?.tasks ?? []).map((task) => [task.id, task])), [taskList]);
   const bodyTasks = tasks.filter((task) => task.attachmentId === null);
-  const [deleteCandidate, setDeleteCandidate] = useState<WorkspaceTask | null>(null);
 
   return (
     <aside className="panel scroll-panel parse-source-panel">
@@ -41,7 +37,7 @@ export function MailSourcePanel({
         {mail ? (
           <SourceGroup title="邮件正文" icon={<Mail className="h-3.5 w-3.5" />} subtitle="Email Body" active={activeBody} defaultOpen onActivate={onSelectBody}>
             {bodyTasks.length ? bodyTasks.map((task) => (
-              <TaskNode key={task.id} locale={locale} task={task} selected={task.id === selectedTaskId} excluded={taskMeta.get(task.id)?.excluded ?? false} busy={busyTaskId === task.id} onSelect={onSelectTask} onRequestDelete={setDeleteCandidate} onToggleExcluded={onToggleExcluded} />
+              <TaskNode key={task.id} locale={locale} task={task} selected={task.id === selectedTaskId} excluded={taskMeta.get(task.id)?.excluded ?? false} busy={busyTaskId === task.id} onSelect={onSelectTask} onToggleExcluded={onToggleExcluded} />
             )) : <p className="source-empty">正文没有解析任务</p>}
           </SourceGroup>
         ) : null}
@@ -53,20 +49,12 @@ export function MailSourcePanel({
 
           return (
             <SourceGroup key={attachment.attachmentId} title={attachment.fileName} icon={excel ? <FileSpreadsheet className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />} subtitle={excel ? "Excel 附件" : isPdf(attachment.fileName, attachment.contentType) ? "PDF 附件" : "邮件附件"} statusLabel={summaryStatus ? taskStatusLabel(summaryStatus, locale) : undefined} status={summaryStatus} active={activeAttachmentId === attachment.attachmentId} defaultOpen={attachmentTasks.some((task) => task.id === selectedTaskId)} onActivate={() => onSelectAttachment(attachment.attachmentId)}>
-              {attachmentTasks.map((task) => <TaskNode key={task.id} locale={locale} task={task} selected={task.id === selectedTaskId} excluded={taskMeta.get(task.id)?.excluded ?? false} busy={busyTaskId === task.id} onSelect={onSelectTask} onRequestDelete={setDeleteCandidate} onToggleExcluded={onToggleExcluded} />)}
+              {attachmentTasks.map((task) => <TaskNode key={task.id} locale={locale} task={task} selected={task.id === selectedTaskId} excluded={taskMeta.get(task.id)?.excluded ?? false} busy={busyTaskId === task.id} onSelect={onSelectTask} onToggleExcluded={onToggleExcluded} />)}
               {attachmentTasks.length === 0 ? <p className="source-empty">此附件尚无解析任务</p> : null}
             </SourceGroup>
           );
         })}
       </div>
-
-      <DialogOverlay open={Boolean(deleteCandidate)} onClose={() => setDeleteCandidate(null)} className="items-center pt-0">
-        <DialogContent className="w-[min(440px,calc(100vw-32px))] rounded-2xl">
-          <DialogHeader><DialogTitle>删除 Sheet 解析任务？</DialogTitle><Button variant="ghost" size="icon" aria-label="关闭" onClick={() => setDeleteCandidate(null)}><X className="h-4 w-4" /></Button></DialogHeader>
-          <DialogBody><p className="source-delete-copy">将删除 <strong>{deleteCandidate?.targetSheetName}</strong> 的解析任务及其未发布结果，不会删除原始 Excel 附件。</p></DialogBody>
-          <div className="merge-confirm-actions"><Button variant="default" size="sm" onClick={() => setDeleteCandidate(null)}>取消</Button><Button variant="destructive" size="sm" disabled={Boolean(deleteCandidate && busyTaskId === deleteCandidate.id)} onClick={() => { if (!deleteCandidate) return; onDeleteTask(deleteCandidate.id); setDeleteCandidate(null); }}><Trash2 className="h-3.5 w-3.5" />删除任务</Button></div>
-        </DialogContent>
-      </DialogOverlay>
     </aside>
   );
 }
@@ -81,12 +69,11 @@ function SourceGroup({ title, subtitle, statusLabel, status, icon, active, defau
   );
 }
 
-function TaskNode({ locale, task, selected, excluded, busy, onSelect, onRequestDelete, onToggleExcluded }: { locale: Locale; task: WorkspaceTask; selected: boolean; excluded: boolean; busy: boolean; onSelect: (taskId: string) => void; onRequestDelete: (task: WorkspaceTask) => void; onToggleExcluded: (taskId: string, excluded: boolean) => void }) {
-  const deletable = Boolean(task.targetSheetName) && task.status !== "completed" && task.status !== "published";
+function TaskNode({ locale, task, selected, excluded, busy, onSelect, onToggleExcluded }: { locale: Locale; task: WorkspaceTask; selected: boolean; excluded: boolean; busy: boolean; onSelect: (taskId: string) => void; onToggleExcluded: (taskId: string, excluded: boolean) => void }) {
   return (
     <div className={`source-task${selected ? " selected" : ""}${excluded ? " excluded" : ""}`}>
       <button type="button" onClick={() => onSelect(task.id)}><Bot className="h-3.5 w-3.5" /><span className="source-task-copy"><span className="source-task-title">{task.targetSheetName || (task.attachmentId ? "附件解析" : "正文解析")}</span><small>{taskStatusLabel(task.status, locale)}</small></span></button>
-      <div className="source-task-actions"><button type="button" className="source-scope-toggle" disabled={busy} onClick={() => onToggleExcluded(task.id, !excluded)}>{excluded ? "纳入" : "排除"}</button>{deletable ? <button type="button" className="source-delete-task" disabled={busy} aria-label={`删除 ${task.targetSheetName} 解析任务`} title="删除 Sheet 解析任务" onClick={() => onRequestDelete(task)}><Trash2 className="h-3 w-3" /></button> : null}</div>
+      <div className="source-task-actions"><button type="button" className="source-scope-toggle" disabled={busy} onClick={() => onToggleExcluded(task.id, !excluded)}>{excluded ? "纳入" : "排除"}</button></div>
     </div>
   );
 }

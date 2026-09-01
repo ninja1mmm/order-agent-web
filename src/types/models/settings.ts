@@ -15,12 +15,12 @@ export type MaterialMapping = {
   program: string | null;
   designation: string | null;
   deliveryLocation: string | null;
-  status: string;
+  status: "active" | "inactive";
 };
 
 export type SubmissionSchedule = {
   scheduleId: string;
-  documentType: string;
+  documentType: "sales_forecast" | "shipping_plan";
   expectedDay: number;
   graceHours: number;
   enabled: boolean;
@@ -62,5 +62,9 @@ export type MailboxSettingsUpdate = {
 
 export type MailboxTestResponse = {
   ok: boolean;
+  message: string;
+};
+
+export type MailboxSyncResponse = {
   message: string;
 };

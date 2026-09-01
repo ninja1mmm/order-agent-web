@@ -10,14 +10,18 @@ import {
 } from "@/api/settings";
 import {
   normalizeMailbox,
-  transformCustomerConfigModelToSchema,
+  transformCustomerConfigModelToCreateSchema,
+  transformCustomerConfigModelToUpdateSchema,
   transformCustomerConfigSchemaToModel,
+  transformMailboxSyncResponseToModel,
   transformMailboxSettingsUpdateToSchema,
+  transformMailboxTestResponseToModel,
 } from "@/lib/transforms/settings";
 import type {
   CustomerConfig,
   MailboxSettings,
   MailboxSettingsUpdate,
+  MailboxSyncResponse,
   MailboxTestResponse,
 } from "@/types/models/settings";
 
@@ -37,7 +41,7 @@ export async function listCustomers(): Promise<CustomerConfig[]> {
 export async function createCustomer(
   payload: Partial<CustomerConfig>,
 ): Promise<CustomerConfig> {
-  const customer = await createCustomerSchema(transformCustomerConfigModelToSchema(payload));
+  const customer = await createCustomerSchema(transformCustomerConfigModelToCreateSchema(payload));
   return transformCustomerConfigSchemaToModel(customer);
 }
 
@@ -47,7 +51,7 @@ export async function updateCustomer(
 ): Promise<CustomerConfig> {
   const customer = await updateCustomerSchema(
     customerId,
-    transformCustomerConfigModelToSchema(payload),
+    transformCustomerConfigModelToUpdateSchema(payload),
   );
   return transformCustomerConfigSchemaToModel(customer);
 }
@@ -70,10 +74,12 @@ export async function updateMailboxSettings(
   return normalizeMailbox(result);
 }
 
-export function testMailboxConnection(): Promise<MailboxTestResponse> {
-  return testMailboxConnectionSchema();
+export async function testMailboxConnection(): Promise<MailboxTestResponse> {
+  const response = await testMailboxConnectionSchema();
+  return transformMailboxTestResponseToModel(response);
 }
 
-export function triggerMailboxSync(): Promise<{ message: string }> {
-  return triggerMailboxSyncSchema();
+export async function triggerMailboxSync(): Promise<MailboxSyncResponse> {
+  const response = await triggerMailboxSyncSchema();
+  return transformMailboxSyncResponseToModel(response);
 }

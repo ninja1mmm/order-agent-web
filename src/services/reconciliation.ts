@@ -41,10 +41,13 @@ import {
   transformMatchSummaryToModel,
   transformMergeReviewToModel,
   transformMergeSummaryToModel,
+  transformReceiptImportReviewToModel,
   transformReceiptListSchemaToModel,
   transformReceiptSchemaToModel,
   transformShipmentListSchemaToModel,
+  transformShipmentImportReviewToModel,
   transformShipmentSchemaToModel,
+  transformScheduleSchemaToModel,
   transformTaskListSchemaToModel,
   transformTaskSchemaToModel,
 } from "@/lib/transforms/reconciliation";
@@ -60,6 +63,7 @@ import type {
   ReceiptRecord,
   ReceiptRecordDraft,
   ReconciliationConfigRow,
+  ReconciliationSchedule,
   ReconciliationScheduleDraft,
   ReconciliationTask,
   ReconciliationTaskCreate,
@@ -215,11 +219,13 @@ export async function getShipmentImportReview(params: {
   shipmentFileId: string;
   mappingFileId: string;
 }): Promise<ShipmentImportReview> {
-  return getShipmentImportReviewSchema(params);
+  const response = await getShipmentImportReviewSchema(params);
+  return transformShipmentImportReviewToModel(response);
 }
 
 export async function getReceiptImportReview(fileId: string): Promise<ReceiptImportReview> {
-  return getReceiptImportReviewSchema(fileId);
+  const response = await getReceiptImportReviewSchema(fileId);
+  return transformReceiptImportReviewToModel(response);
 }
 
 export async function listShipmentRecords(
@@ -384,8 +390,8 @@ export async function listConfigRows(customers: CustomerConfig[]): Promise<Recon
 export async function createReconciliationSchedule(
   customerId: string,
   draft: ReconciliationScheduleDraft,
-) {
-  return createReconciliationScheduleSchema(customerId, {
+): Promise<ReconciliationSchedule> {
+  const response = await createReconciliationScheduleSchema(customerId, {
     enabled: draft.enabled,
     periodType: draft.periodType,
     periodStartDay: draft.periodStartDay,
@@ -393,14 +399,15 @@ export async function createReconciliationSchedule(
     triggerDay: draft.triggerDay,
     triggerTime: draft.triggerTime,
   });
+  return transformScheduleSchemaToModel(response);
 }
 
 export async function updateReconciliationSchedule(
   customerId: string,
   scheduleId: string,
   draft: ReconciliationScheduleDraft,
-) {
-  return updateReconciliationScheduleSchema(customerId, scheduleId, {
+): Promise<ReconciliationSchedule> {
+  const response = await updateReconciliationScheduleSchema(customerId, scheduleId, {
     enabled: draft.enabled,
     periodType: draft.periodType,
     periodStartDay: draft.periodStartDay,
@@ -408,6 +415,7 @@ export async function updateReconciliationSchedule(
     triggerDay: draft.triggerDay,
     triggerTime: draft.triggerTime,
   });
+  return transformScheduleSchemaToModel(response);
 }
 
 export async function deleteReconciliationSchedule(

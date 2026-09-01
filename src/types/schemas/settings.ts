@@ -1,6 +1,6 @@
 export type ContactSchema = {
-  contactId?: string;
-  name?: string | null;
+  contactId: string;
+  name: string | null;
   email: string;
 };
 
@@ -14,14 +14,13 @@ export type MaterialMappingSchema = {
   oem: string | null;
   program: string | null;
   designation: string | null;
-  deliveryLocation?: string | null;
-  delivery_location?: string | null;
-  status: string;
+  deliveryLocation: string | null;
+  status: "active" | "inactive";
 };
 
 export type SubmissionScheduleSchema = {
   scheduleId: string;
-  documentType: string;
+  documentType: "sales_forecast" | "shipping_plan";
   expectedDay: number;
   graceHours: number;
   enabled: boolean;
@@ -32,8 +31,7 @@ export type CustomerConfigSchema = {
   name: string;
   abbreviation: string;
   code: string;
-  customerServiceRep?: string | null;
-  customer_service_rep?: string | null;
+  customerServiceRep: string | null;
   contacts: ContactSchema[];
   materialMappings: MaterialMappingSchema[];
   submissionSchedules: SubmissionScheduleSchema[];
@@ -44,38 +42,49 @@ export type CustomerConfigSchema = {
 export type CustomerListSchema = {
   customers: CustomerConfigSchema[];
   total: number;
+  page: number;
+  size: number;
+};
+
+export type CustomerCreateSchema = {
+  name: string;
+  abbreviation: string;
+  code: string;
+  customerServiceRep?: string | null;
+};
+
+export type CustomerUpdateSchema = Partial<CustomerCreateSchema> & {
+  contacts?: Array<{ name?: string | null; email: string }>;
+  materialMappings?: Array<Omit<MaterialMappingSchema, "mappingId">>;
+  submissionSchedules?: Array<Omit<SubmissionScheduleSchema, "scheduleId">>;
 };
 
 export type MailboxSettingsSchema = {
-  address?: string;
-  provider_type?: string;
-  providerType?: string;
-  host?: string;
-  port?: number;
-  sync_interval_seconds?: number;
-  syncIntervalSeconds?: number;
-  sync_window_days?: number;
-  syncWindowDays?: number;
-  enabled?: boolean;
-  connected?: boolean;
-  last_sync_at?: string | null;
-  lastSyncAt?: string | null;
-  last_error?: string | null;
-  lastError?: string | null;
-  last_received?: number;
-  lastReceived?: number;
-  last_created?: number;
-  lastCreated?: number;
-  last_skipped?: number;
-  lastSkipped?: number;
+  address: string;
+  providerType: string;
+  host: string;
+  port: number;
+  syncIntervalSeconds: number;
+  syncWindowDays: number;
+  enabled: boolean;
+  connected: boolean | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  lastReceived: number;
+  lastCreated: number;
+  lastSkipped: number;
 };
 
 export type MailboxSettingsUpdateSchema = {
-  sync_window_days?: number;
-  sync_interval_seconds?: number;
+  syncWindowDays?: number;
+  syncIntervalSeconds?: number;
 };
 
 export type MailboxTestResponseSchema = {
   ok: boolean;
+  message: string;
+};
+
+export type MailboxSyncResponseSchema = {
   message: string;
 };

@@ -1,6 +1,13 @@
 import { apiRequest } from "./client";
-import type { ProcessMailResponseSchema } from "@/types/schemas/mail";
-import type { MailTaskListResponseSchema } from "@/types/schemas/inbox";
+import type {
+  MailMessageDetailResponseSchema,
+  ProcessMailResponseSchema,
+  ResyncResponseSchema,
+} from "@/types/schemas/mail";
+import type {
+  MailTaskListResponseSchema,
+  MailTaskSummarySchema,
+} from "@/types/schemas/inbox";
 
 export function processMailSchema(
   mailId: string,
@@ -12,8 +19,8 @@ export function processMailSchema(
   });
 }
 
-export function createManualMailSchema(formData: FormData): Promise<unknown> {
-  return apiRequest("/api/mail-messages/manual", {
+export function createManualMailSchema(formData: FormData): Promise<MailMessageDetailResponseSchema> {
+  return apiRequest<MailMessageDetailResponseSchema>("/api/mail-messages/manual", {
     method: "POST",
     body: formData,
   });
@@ -27,22 +34,12 @@ export function addMailSourceSchema(
   mailId: string,
   attachmentId: string,
   targetSheetName: string,
-): Promise<unknown> {
-  return apiRequest(`/api/mail-messages/${mailId}/tasks/add-source`, {
+): Promise<MailTaskSummarySchema> {
+  return apiRequest<MailTaskSummarySchema>(`/api/mail-messages/${mailId}/tasks/add-source`, {
     method: "POST",
-    body: JSON.stringify({ attachment_id: attachmentId, target_sheet_name: targetSheetName }),
+    body: JSON.stringify({ attachmentId, targetSheetName }),
   });
 }
-
-export type ResyncResponseSchema = {
-  customer_changed: boolean;
-  previous_customer_id: string | null;
-  new_customer_id: string | null;
-  new_attachment_count: number;
-  new_attachment_names: string[];
-  tasks_created: number;
-  message: string;
-};
 
 export function resyncMailSchema(mailId: string): Promise<ResyncResponseSchema> {
   return apiRequest<ResyncResponseSchema>(`/api/mail-messages/${mailId}/resync`, {

@@ -1,10 +1,8 @@
 import {
   addRowSchema,
   cancelTaskSchema,
-  deleteSourceTaskSchema,
   deleteRowSchema,
   getEffectiveRowsSchema,
-  parseSheetSchema,
   patchRowSchema,
   proceedTaskSchema,
   publishTaskSchema,
@@ -49,7 +47,13 @@ export async function proceedTask(
   resultRevision = 1,
   orderTypeOverrides?: Record<string, string>,
   deletedRowIds?: string[],
-  addedRows?: { customer_part_number: string; quantity: number; date_info: string }[],
+  addedRows?: {
+    customer_part_number: string;
+    quantity: number;
+    date_info: string;
+    date_format?: string | null;
+  }[],
+  restartFromStep?: string | null,
 ): Promise<void> {
   await proceedTaskSchema(
     taskId,
@@ -58,6 +62,7 @@ export async function proceedTask(
       orderTypeOverrides,
       deletedRowIds,
       addedRows,
+      restartFromStep,
     }),
   );
 }
@@ -91,11 +96,11 @@ export async function addRow(
   classification?: string | null,
 ): Promise<AddRowResponse> {
   const response = await addRowSchema(taskId, {
-    result_revision: resultRevision,
-    customer_part_number: customerPartNumber,
+    resultRevision,
+    customerPartNumber,
     quantity,
-    date_info: dateInfo,
-    date_format: dateFormat,
+    dateInfo,
+    dateFormat,
     classification,
   });
   return response;
@@ -114,7 +119,7 @@ export async function publishTask(
   taskId: string,
   resultRevision: number,
 ): Promise<void> {
-  await publishTaskSchema(taskId, { result_revision: resultRevision });
+  await publishTaskSchema(taskId, { resultRevision });
 }
 
 export async function resetTaskReview(
@@ -128,16 +133,8 @@ export async function cancelTask(taskId: string): Promise<void> {
   await cancelTaskSchema(taskId);
 }
 
-export async function deleteSourceTask(taskId: string): Promise<void> {
-  await deleteSourceTaskSchema(taskId);
-}
-
 export async function rerunTask(taskId: string): Promise<void> {
   await rerunTaskSchema(taskId);
-}
-
-export async function parseSheet(taskId: string, sheetName: string): Promise<void> {
-  await parseSheetSchema(taskId, sheetName);
 }
 
 export async function setTaskExcluded(taskId: string, excluded: boolean): Promise<void> {
@@ -152,8 +149,8 @@ export async function bulkMergeStrategy(
 ): Promise<{ resultRevision: number; updatedCount: number }> {
   const response = await bulkMergeStrategySchema(taskId, resultRevision, rowIds, mergeStrategy);
   return {
-    resultRevision: response.resultRevision ?? response.result_revision ?? resultRevision,
-    updatedCount: response.updatedCount ?? response.updated_count ?? 0,
+    resultRevision: response.resultRevision,
+    updatedCount: response.updatedCount,
   };
 }
 

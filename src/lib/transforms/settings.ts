@@ -1,12 +1,18 @@
 import type {
   CustomerConfigSchema,
+  CustomerCreateSchema,
+  CustomerUpdateSchema,
   MailboxSettingsSchema,
   MailboxSettingsUpdateSchema,
+  MailboxSyncResponseSchema,
+  MailboxTestResponseSchema,
 } from "@/types/schemas/settings";
 import type {
   CustomerConfig,
   MailboxSettings,
+  MailboxSyncResponse,
   MailboxSettingsUpdate,
+  MailboxTestResponse,
 } from "@/types/models/settings";
 
 export function transformCustomerConfigSchemaToModel(
@@ -17,7 +23,7 @@ export function transformCustomerConfigSchemaToModel(
     name: customer.name,
     abbreviation: customer.abbreviation,
     code: customer.code,
-    customerServiceRep: customer.customerServiceRep ?? customer.customer_service_rep ?? null,
+    customerServiceRep: customer.customerServiceRep,
     contacts: (customer.contacts ?? []).map((contact) => ({
       contactId: contact.contactId,
       name: contact.name ?? null,
@@ -33,7 +39,7 @@ export function transformCustomerConfigSchemaToModel(
       oem: mapping.oem,
       program: mapping.program,
       designation: mapping.designation,
-      deliveryLocation: mapping.deliveryLocation ?? mapping.delivery_location ?? null,
+      deliveryLocation: mapping.deliveryLocation,
       status: mapping.status,
     })),
     submissionSchedules: customer.submissionSchedules ?? [],
@@ -42,27 +48,46 @@ export function transformCustomerConfigSchemaToModel(
   };
 }
 
-export function transformCustomerConfigModelToSchema(
+export function transformCustomerConfigModelToCreateSchema(
   customer: Partial<CustomerConfig>,
-): Partial<CustomerConfigSchema> {
-  return customer;
+): CustomerCreateSchema {
+  return {
+    name: customer.name ?? "",
+    abbreviation: customer.abbreviation ?? "",
+    code: customer.code ?? "",
+    customerServiceRep: customer.customerServiceRep ?? null,
+  };
+}
+
+export function transformCustomerConfigModelToUpdateSchema(
+  customer: Partial<CustomerConfig>,
+): CustomerUpdateSchema {
+  return {
+    name: customer.name,
+    abbreviation: customer.abbreviation,
+    code: customer.code,
+    customerServiceRep: customer.customerServiceRep,
+    contacts: customer.contacts?.map(({ name, email }) => ({ name, email })),
+    materialMappings: customer.materialMappings?.map(({ mappingId: _mappingId, ...mapping }) => mapping),
+    submissionSchedules: customer.submissionSchedules?.map(({ scheduleId: _scheduleId, ...schedule }) => schedule),
+  };
 }
 
 export function normalizeMailbox(raw: MailboxSettingsSchema): MailboxSettings {
   return {
-    address: raw.address ?? "",
-    providerType: raw.providerType ?? raw.provider_type ?? "",
-    host: raw.host ?? "",
-    port: raw.port ?? 0,
-    syncIntervalSeconds: raw.syncIntervalSeconds ?? raw.sync_interval_seconds ?? 0,
-    syncWindowDays: raw.syncWindowDays ?? raw.sync_window_days ?? 30,
-    enabled: raw.enabled ?? false,
+    address: raw.address,
+    providerType: raw.providerType,
+    host: raw.host,
+    port: raw.port,
+    syncIntervalSeconds: raw.syncIntervalSeconds,
+    syncWindowDays: raw.syncWindowDays,
+    enabled: raw.enabled,
     connected: raw.connected ?? false,
-    lastSyncAt: raw.lastSyncAt ?? raw.last_sync_at ?? null,
-    lastError: raw.lastError ?? raw.last_error ?? null,
-    lastReceived: raw.lastReceived ?? raw.last_received ?? 0,
-    lastCreated: raw.lastCreated ?? raw.last_created ?? 0,
-    lastSkipped: raw.lastSkipped ?? raw.last_skipped ?? 0,
+    lastSyncAt: raw.lastSyncAt,
+    lastError: raw.lastError,
+    lastReceived: raw.lastReceived,
+    lastCreated: raw.lastCreated,
+    lastSkipped: raw.lastSkipped,
   };
 }
 
@@ -70,9 +95,21 @@ export function transformMailboxSettingsUpdateToSchema(
   payload: MailboxSettingsUpdate,
 ): MailboxSettingsUpdateSchema {
   const body: MailboxSettingsUpdateSchema = {};
-  if (payload.syncWindowDays !== undefined) body.sync_window_days = payload.syncWindowDays;
+  if (payload.syncWindowDays !== undefined) body.syncWindowDays = payload.syncWindowDays;
   if (payload.syncIntervalSeconds !== undefined) {
-    body.sync_interval_seconds = payload.syncIntervalSeconds;
+    body.syncIntervalSeconds = payload.syncIntervalSeconds;
   }
   return body;
+}
+
+export function transformMailboxTestResponseToModel(
+  response: MailboxTestResponseSchema,
+): MailboxTestResponse {
+  return response;
+}
+
+export function transformMailboxSyncResponseToModel(
+  response: MailboxSyncResponseSchema,
+): MailboxSyncResponse {
+  return response;
 }

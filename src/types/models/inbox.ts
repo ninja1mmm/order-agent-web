@@ -8,7 +8,7 @@ export type PendingTaskSummary = {
   fileName: string;
   customerName: string | null;
   status: string;
-  reason: string;
+  reason: string | null;
 };
 
 export type WorkspaceStats = {
@@ -17,16 +17,16 @@ export type WorkspaceStats = {
   pendingCount: number;
   followUpCount: number;
   mailCount: number;
-  customerNames?: string[];
-  pendingTasks?: PendingTaskSummary[];
-  aiSummary?: AiSummary;
+  customerNames: string[];
+  pendingTasks: PendingTaskSummary[];
+  aiSummary: AiSummary | null;
 };
 
 export type WorkspaceAttachmentTaskSummary = {
   taskId: string;
   status: string;
-  targetSheetName?: string | null;
-  pipelineStep?: string | null;
+  targetSheetName: string | null;
+  pipelineStep: string | null;
   excluded: boolean;
 };
 
@@ -37,9 +37,10 @@ export type WorkspaceAttachment = {
   contentType: string;
   status: string;
   taskId: string | null;
+  taskStatus: string | null;
   documentType: string | null;
   labels: string[];
-  tasks?: WorkspaceAttachmentTaskSummary[];
+  tasks: WorkspaceAttachmentTaskSummary[];
 };
 
 export type InlineImage = {
@@ -87,29 +88,30 @@ export type WorkspaceTask = {
   id: string;
   mailMessageId: string;
   attachmentId: string | null;
-  targetSheetName?: string | null;
+  targetSheetName: string | null;
   taskType: string;
   status: string;
+  documentType: string | null;
   pipelineStep: string | null;
   warnings: string[];
-  requestedAt?: string | null;
-  completedAt?: string | null;
+  requestedAt: string;
+  completedAt: string | null;
   traceSteps: TraceStep[];
   resultRows: Record<string, Record<string, unknown>>;
-  attachmentFileName?: string;
-  agentSummary?: AgentStep[];
+  attachmentFileName: string | null;
+  agentSummary: AgentStep[] | null;
   resultRevision: number;
   reviewSummary: ReviewSummary | null;
-  customerId?: string | null;
-  customerName?: string | null;
-  receivedAt?: string | null;
-  mailCreatedAt?: string | null;
+  customerId: string | null;
+  customerName: string | null;
+  receivedAt: string | null;
+  mailCreatedAt: string | null;
 };
 
 export type InboxWorkspace = {
   mails: WorkspaceMail[];
   tasks: WorkspaceTask[];
-  stats?: WorkspaceStats;
+  stats: WorkspaceStats;
 };
 
 // --- Layered inbox API types ---

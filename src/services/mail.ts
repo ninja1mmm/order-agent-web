@@ -1,11 +1,14 @@
-import { addMailSourceSchema, createManualMailSchema, getMailTasksSchema, processMailSchema, resyncMailSchema, type ResyncResponseSchema } from "@/api/mail";
-import { transformProcessMailResponseToModel } from "@/lib/transforms/mail";
-import { normalizeMailTaskList } from "@/lib/transforms/inbox";
-import type { ProcessMailResponse } from "@/types/models/mail";
-import type { MailTaskListResponse } from "@/types/models/inbox";
+import { addMailSourceSchema, createManualMailSchema, getMailTasksSchema, processMailSchema, resyncMailSchema } from "@/api/mail";
+import {
+  transformCreatedMailResponseToModel,
+  transformProcessMailResponseToModel,
+  transformResyncResponseToModel,
+} from "@/lib/transforms/mail";
+import { normalizeMailTaskList, normalizeMailTaskSummary } from "@/lib/transforms/inbox";
+import type { CreatedMail, ProcessMailResponse, ResyncResponse } from "@/types/models/mail";
+import type { MailTaskListResponse, MailTaskSummary } from "@/types/models/inbox";
 
-export type { ProcessMailResponse } from "@/types/models/mail";
-export type ResyncResponse = ResyncResponseSchema;
+export type { CreatedMail, ProcessMailResponse, ResyncResponse } from "@/types/models/mail";
 
 export async function processMail(
   mailId: string,
@@ -15,18 +18,25 @@ export async function processMail(
   return transformProcessMailResponseToModel(response);
 }
 
-export function createManualMail(formData: FormData): Promise<unknown> {
-  return createManualMailSchema(formData);
+export async function createManualMail(formData: FormData): Promise<CreatedMail> {
+  const response = await createManualMailSchema(formData);
+  return transformCreatedMailResponseToModel(response);
 }
 
 export function getMailTasks(mailId: string): Promise<MailTaskListResponse> {
   return getMailTasksSchema(mailId).then(normalizeMailTaskList);
 }
 
-export function addMailSource(mailId: string, attachmentId: string, targetSheetName: string): Promise<unknown> {
-  return addMailSourceSchema(mailId, attachmentId, targetSheetName);
+export async function addMailSource(
+  mailId: string,
+  attachmentId: string,
+  targetSheetName: string,
+): Promise<MailTaskSummary> {
+  const response = await addMailSourceSchema(mailId, attachmentId, targetSheetName);
+  return normalizeMailTaskSummary(response);
 }
 
-export function resyncMail(mailId: string): Promise<ResyncResponse> {
-  return resyncMailSchema(mailId);
+export async function resyncMail(mailId: string): Promise<ResyncResponse> {
+  const response = await resyncMailSchema(mailId);
+  return transformResyncResponseToModel(response);
 }

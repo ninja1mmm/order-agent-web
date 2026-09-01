@@ -1,29 +1,31 @@
 import { apiRequest } from "./client";
 import type {
   CustomerConfigSchema,
+  CustomerCreateSchema,
   CustomerListSchema,
+  CustomerUpdateSchema,
   MailboxSettingsSchema,
   MailboxSettingsUpdateSchema,
+  MailboxSyncResponseSchema,
   MailboxTestResponseSchema,
 } from "@/types/schemas/settings";
 
-async function fetchAllPages<T>(path: string, key: string, size = 100): Promise<T[]> {
+async function fetchAllCustomerPages(size = 100): Promise<CustomerConfigSchema[]> {
   let page = 1;
-  const all: T[] = [];
+  const all: CustomerConfigSchema[] = [];
   for (;;) {
-    const res = await apiRequest<Record<string, unknown>>(
-      `${path}?page=${page}&size=${size}`,
+    const response = await apiRequest<CustomerListSchema>(
+      `/api/customers/?page=${page}&size=${size}`,
     );
-    const items = (res[key] ?? []) as T[];
-    all.push(...items);
-    if (all.length >= (res.total as number)) break;
+    all.push(...response.customers);
+    if (all.length >= response.total) break;
     page++;
   }
   return all;
 }
 
 export function listCustomerSchemas(): Promise<CustomerConfigSchema[]> {
-  return fetchAllPages<CustomerConfigSchema>("/api/customers/", "customers");
+  return fetchAllCustomerPages();
 }
 
 export function listCustomerPageSchema(page = 1, size = 100): Promise<CustomerListSchema> {
@@ -31,7 +33,7 @@ export function listCustomerPageSchema(page = 1, size = 100): Promise<CustomerLi
 }
 
 export function createCustomerSchema(
-  payload: Partial<CustomerConfigSchema>,
+  payload: CustomerCreateSchema,
 ): Promise<CustomerConfigSchema> {
   return apiRequest<CustomerConfigSchema>("/api/customers/", {
     method: "POST",
@@ -41,7 +43,7 @@ export function createCustomerSchema(
 
 export function updateCustomerSchema(
   customerId: string,
-  payload: Partial<CustomerConfigSchema>,
+  payload: CustomerUpdateSchema,
 ): Promise<CustomerConfigSchema> {
   return apiRequest<CustomerConfigSchema>(`/api/customers/${customerId}`, {
     method: "PUT",
@@ -50,7 +52,7 @@ export function updateCustomerSchema(
 }
 
 export async function deleteCustomerSchema(customerId: string): Promise<void> {
-  await apiRequest(`/api/customers/${customerId}`, { method: "DELETE" });
+  await apiRequest<void>(`/api/customers/${customerId}`, { method: "DELETE" });
 }
 
 export function getMailboxSettingsSchema(): Promise<MailboxSettingsSchema> {
@@ -70,6 +72,6 @@ export function testMailboxConnectionSchema(): Promise<MailboxTestResponseSchema
   return apiRequest<MailboxTestResponseSchema>("/api/settings/mailbox/test", { method: "POST" });
 }
 
-export function triggerMailboxSyncSchema(): Promise<{ message: string }> {
-  return apiRequest<{ message: string }>("/api/settings/mailbox/sync", { method: "POST" });
+export function triggerMailboxSyncSchema(): Promise<MailboxSyncResponseSchema> {
+  return apiRequest<MailboxSyncResponseSchema>("/api/settings/mailbox/sync", { method: "POST" });
 }
