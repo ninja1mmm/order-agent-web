@@ -13,6 +13,7 @@ type CustomerDetailProps = {
   onAddContact: () => void;
   onRemoveContact: (index: number) => void;
   onRemoveMaterial: (index: number) => void;
+  initialEditPN?: string | null;
 };
 
 export function CustomerDetail({
@@ -23,6 +24,7 @@ export function CustomerDetail({
   onAddContact,
   onRemoveContact,
   onRemoveMaterial,
+  initialEditPN,
 }: CustomerDetailProps) {
   if (!draft) {
     return <p className="item-meta">请选择或新增客户</p>;
@@ -50,6 +52,7 @@ export function CustomerDetail({
           draft={draft}
           onDraftChange={onDraftChange}
           onRemoveMaterial={onRemoveMaterial}
+          initialEditPN={initialEditPN}
         />
       )}
     </div>

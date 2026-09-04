@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pencil, Plus, Save, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ type MaterialsTabProps = {
   draft: CustomerConfig;
   onDraftChange: (draft: CustomerConfig) => void;
   onRemoveMaterial: (index: number) => void;
+  initialEditPN?: string | null;
 };
 
 const MATERIAL_PAGE_SIZE = 8;
@@ -169,12 +170,26 @@ export function MaterialsTab({
   draft,
   onDraftChange,
   onRemoveMaterial,
+  initialEditPN,
 }: MaterialsTabProps) {
   const [page, setPage] = useState(1);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [sheetDraft, setSheetDraft] = useState<MaterialMapping>(() => emptyMapping());
+  const initialEditConsumed = useRef(false);
   const mappings = draft.materialMappings ?? [];
+
+  useEffect(() => {
+    if (initialEditConsumed.current || !initialEditPN) return;
+    const idx = mappings.findIndex((m) => m.customerPartNumber === initialEditPN);
+    if (idx === -1) return;
+    initialEditConsumed.current = true;
+    const targetPage = Math.ceil((idx + 1) / MATERIAL_PAGE_SIZE);
+    setPage(targetPage);
+    setEditingIndex(idx);
+    setSheetDraft({ ...mappings[idx] });
+    setSheetOpen(true);
+  }, [initialEditPN, mappings]);
   const totalPages = Math.max(1, Math.ceil(mappings.length / MATERIAL_PAGE_SIZE));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const pageStart = (safePage - 1) * MATERIAL_PAGE_SIZE;

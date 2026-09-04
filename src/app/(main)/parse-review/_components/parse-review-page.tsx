@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Download, GitMerge, LoaderCircle, Play, RotateCcw, Table2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronLeft, ChevronRight, Download, GitMerge, Info, LoaderCircle, Play, RotateCcw, Table2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -178,47 +178,22 @@ export function ParseReviewPage() {
   const rowIds = useMemo(() => displayRowEntries.map(([k]) => k), [displayRowEntries]);
 
   const conflictColorMap = useMemo(() => {
-    const GRANULARITY_COLORS = ["conflict-group-orange", "conflict-group-purple", "conflict-group-teal", "conflict-group-pink"];
-    const QUANTITY_COLORS = ["conflict-group-red", "conflict-group-crimson", "conflict-group-rose", "conflict-group-brick"];
-    const TOTAL_COLORS = ["conflict-group-slate"];
-    const INCOMPLETE_COLORS = ["conflict-group-amber"];
-    const CONFLICT_FLAGS = new Set(["granularity_mismatch", "quantity_conflict", "suspected_total", "potentially_incomplete"]);
-    const partGroups: Record<string, string[]> = {};
+    const BLOCKING_COLORS = ["conflict-group-red", "conflict-group-crimson", "conflict-group-rose", "conflict-group-brick", "conflict-group-orange", "conflict-group-purple", "conflict-group-teal", "conflict-group-pink"];
+    const INFORMATIVE_COLORS = ["conflict-group-slate", "conflict-group-amber"];
+    const groupKeys = new Set<string>();
     for (const [, row] of displayRowEntries) {
-      const flag = String(row.conflictFlag ?? "none");
-      if (!CONFLICT_FLAGS.has(flag)) continue;
-      const pn = String(row.customerPartNumber ?? "");
-      const key = `${flag}::${pn}`;
-      if (!partGroups[key]) partGroups[key] = [];
+      const gk = String(row.conflictGroupKey ?? "");
+      if (gk) groupKeys.add(gk);
     }
     const map = new Map<string, string>();
-    let granIdx = 0, qtyIdx = 0, totalIdx = 0, incompleteIdx = 0;
-    for (const key of Object.keys(partGroups)) {
-      const [flag] = key.split("::");
-      let palette: string[];
-      let idx: number;
-      if (flag === "granularity_mismatch") {
-        palette = GRANULARITY_COLORS;
-        idx = granIdx++;
-      } else if (flag === "suspected_total") {
-        palette = TOTAL_COLORS;
-        idx = totalIdx++;
-      } else if (flag === "potentially_incomplete") {
-        palette = INCOMPLETE_COLORS;
-        idx = incompleteIdx++;
+    let blockingIdx = 0, informativeIdx = 0;
+    for (const gk of groupKeys) {
+      const isInformative = gk.startsWith("total|") || gk.startsWith("incomplete|");
+      if (isInformative) {
+        map.set(gk, INFORMATIVE_COLORS[informativeIdx++ % INFORMATIVE_COLORS.length]);
       } else {
-        palette = QUANTITY_COLORS;
-        idx = qtyIdx++;
+        map.set(gk, BLOCKING_COLORS[blockingIdx++ % BLOCKING_COLORS.length]);
       }
-      partGroups[key] = [palette[idx % palette.length]];
-    }
-    for (const [, row] of displayRowEntries) {
-      const flag = String(row.conflictFlag ?? "none");
-      if (!CONFLICT_FLAGS.has(flag)) continue;
-      const pn = String(row.customerPartNumber ?? "");
-      const key = `${flag}::${pn}`;
-      const cls = partGroups[key]?.[0] ?? "";
-      map.set(`${flag}::${pn}`, cls);
     }
     return map;
   }, [displayRowEntries]);
@@ -231,6 +206,14 @@ export function ParseReviewPage() {
   });
   const needsRevalidation = Boolean(taskStaleState?.pendingReevalSteps.length || hasOrderTypeEdits || deletedRowIds.size || localNewRows.length);
   const preferEditedDate = Boolean(taskStaleState?.staleFieldNames.includes("expanded_day"));
+
+  const hasBlockingConflicts = useMemo(() => {
+    const BLOCKING = new Set(["quantity_conflict", "granularity_mismatch", "invalid_date", "uncertain"]);
+    return visibleRowEntries.some(([, row]) => {
+      const flag = String(row.conflictFlag ?? "none");
+      return BLOCKING.has(flag);
+    });
+  }, [visibleRowEntries]);
 
   const loadMailTaskList = useCallback(async () => {
     if (!selectedMail) {
@@ -354,6 +337,18 @@ export function ParseReviewPage() {
     });
   }, []);
 
+  const bulkToggleCardOrderType = useCallback((cardRowIds: string[]) => {
+    setOrderTypeMap((prev) => {
+      const cardValues = cardRowIds.map((id) => prev.get(id) ?? "uncertain");
+      const allConfirmed = cardValues.length > 0 && cardValues.every((v) => v === "confirmed");
+      const allForecast = cardValues.length > 0 && cardValues.every((v) => v === "forecast");
+      const target: OrderType = allConfirmed ? "forecast" : allForecast ? "confirmed" : "confirmed";
+      const next = new Map(prev);
+      for (const id of cardRowIds) next.set(id, target);
+      return next;
+    });
+  }, []);
+
   const toggleMappingSort = useCallback(() => {
     setMappingSortOrder((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null));
   }, []);
@@ -361,30 +356,6 @@ export function ParseReviewPage() {
   const handleDeleteRow = useCallback(async (rowId: string) => {
     if (!selectedTask) return;
     const revision = localResultRevision ?? selectedTask.resultRevision;
-
-    const cqMatch = rowId.match(/^(.+)::cq(\d+)$/);
-    if (cqMatch) {
-      const realRowId = cqMatch[1];
-      const deletedIdx = Number(cqMatch[2]);
-      const realRow = rows.find((_, i) => rowIds[i] === realRowId);
-      const merged = (realRow?.mergedQuantities as number[] | undefined) ?? [];
-      const kept = merged.filter((_, i) => i !== deletedIdx);
-      const keptQty = kept[0] ?? merged[0];
-      try {
-        const res = await patchRow(selectedTask.id, realRowId, revision, {
-          quantity: keptQty,
-          conflict_flag: "none",
-          merged_quantities: null,
-        });
-        setLocalResultRevision(res.resultRevision);
-        localRevRef.current = res.resultRevision;
-        setTaskStaleState(res.taskStaleState);
-        await syncEffectiveTask(selectedTask.id);
-      } catch (err) {
-        console.error("Resolve conflict failed:", err);
-      }
-      return;
-    }
 
     try {
       const res = await runWithFreshRevision(
@@ -404,7 +375,7 @@ export function ParseReviewPage() {
         return next;
       });
     }
-  }, [selectedTask, localResultRevision, refresh, rows, rowIds, syncEffectiveTask]);
+  }, [selectedTask, localResultRevision, refresh, runWithFreshRevision]);
 
   const startEditing = useCallback((rowId: string, field: string, currentValue: unknown) => {
     if (!isWaitingHuman) return;
@@ -594,6 +565,9 @@ export function ParseReviewPage() {
       toast.success("当前解析任务已 Merge 到 Orders");
     } catch (err) {
       console.error("Publish failed:", err);
+      const message = readableActionError(err, "合并失败");
+      setReviewActionError(message);
+      toast.error(message);
     } finally {
       setIsPublishLoading(false);
     }
@@ -766,7 +740,9 @@ export function ParseReviewPage() {
       localRevRef.current = revision;
       setTaskStaleState(latestStale);
       setLocalRowOverrides(overrides);
-      toast.success(`已更新 ${updatedCount} 行提货日期`);
+      toast.success(`已更新 ${updatedCount} 行提货日期，正在重新校验…`);
+      // Auto-revalidate since date offset always creates staleness
+      void handleProceed();
     } catch (error) {
       const message = readableActionError(error, "批量调整日期失败");
       setReviewActionError(message);
@@ -775,7 +751,7 @@ export function ParseReviewPage() {
     } finally {
       setBatchLoading(false);
     }
-  }, [dateOffset, getRowValue, isWaitingHuman, localResultRevision, localRowOverrides, preferEditedDate, refresh, runWithFreshRevision, selectedTask, visibleRowEntries]);
+  }, [dateOffset, getRowValue, handleProceed, isWaitingHuman, localResultRevision, localRowOverrides, preferEditedDate, refresh, runWithFreshRevision, selectedTask, visibleRowEntries]);
 
   const handleApplyMergeStrategy = useCallback(async () => {
     if (!selectedTask || !isWaitingHuman || rowIds.length === 0) return;
@@ -832,8 +808,11 @@ export function ParseReviewPage() {
     }
   }, [isWaitingHuman, localResultRevision, refresh, runWithFreshRevision, selectedTask]);
 
-  const handleStartAddingRow = useCallback(() => {
+  const handleStartAddingRow = useCallback((prefillPartNumber?: string) => {
     setIsAddingRow(true);
+    if (prefillPartNumber) {
+      setNewRowData((prev) => ({ ...prev, customerPartNumber: prefillPartNumber }));
+    }
   }, []);
 
   const handleRemoveLocalNewRow = useCallback((rowId: string) => {
@@ -849,8 +828,13 @@ export function ParseReviewPage() {
     });
   }, []);
 
+  const blockingConflictCount = useMemo(() => {
+    const BLOCKING = new Set(["quantity_conflict", "granularity_mismatch", "invalid_date", "uncertain"]);
+    return visibleRowEntries.filter(([, row]) => BLOCKING.has(String(row.conflictFlag ?? "none"))).length;
+  }, [visibleRowEntries]);
+
   const reviewFooter = selectedTask && selectedTask.status !== "completed" && selectedTask.status !== "published"
-    ? <ReviewFooter step={reviewStep} needsRevalidation={needsRevalidation} revalidating={isProceedLoading} publishing={isPublishLoading} canPublish={isWaitingHuman && !selectedTaskExcluded} excluded={selectedTaskExcluded} onStepChange={setReviewStep} onRevalidate={handleProceed} onOpenMerge={() => setMergeConfirmOpen(true)} />
+    ? <ReviewFooter step={reviewStep} needsRevalidation={needsRevalidation} hasBlockingConflicts={hasBlockingConflicts} revalidating={isProceedLoading} publishing={isPublishLoading} canPublish={isWaitingHuman && !selectedTaskExcluded && !needsRevalidation && !hasBlockingConflicts} excluded={selectedTaskExcluded} onStepChange={setReviewStep} onRevalidate={handleProceed} onOpenMerge={() => setMergeConfirmOpen(true)} />
     : null;
 
   return (
@@ -880,6 +864,26 @@ export function ParseReviewPage() {
         />
 
         <section className="parse-review-main">
+          {isWaitingHuman && (needsRevalidation || hasBlockingConflicts) && (
+            <div className="review-warning-banner">
+              {needsRevalidation && (
+                <div className="review-warning-item review-warning-stale">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  <span>存在未校验的修改</span>
+                  <button type="button" className="review-warning-action" onClick={() => { void handleProceed(); }}>
+                    {isProceedLoading ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                    执行修改
+                  </button>
+                </div>
+              )}
+              {hasBlockingConflicts && (
+                <div className="review-warning-item review-warning-blocking">
+                  <Info className="h-3.5 w-3.5" />
+                  <span>{blockingConflictCount} 项冲突待处理</span>
+                </div>
+              )}
+            </div>
+          )}
           {!selectedTask ? (
             <div className="panel parse-empty-state">当前邮件没有可审查的解析任务。</div>
           ) : selectedTask.status === "completed" || selectedTask.status === "published" ? (
@@ -924,12 +928,16 @@ export function ParseReviewPage() {
                 newRowData={newRowData}
                 newRowErrors={newRowErrors}
                 reviewReason={selectedTask.reviewSummary?.reason ?? null}
+                reviewType={selectedTask.reviewSummary?.reviewType ?? null}
                 actionError={reviewActionError}
+                isProceedLoading={isProceedLoading}
+                onProceed={() => { void handleProceed(); }}
                 preferEditedDate={preferEditedDate}
                 langParam={params.get("lang")}
                 getRowValue={getRowValue}
                 onToggleMappingSort={toggleMappingSort}
                 onBulkToggleOrderType={bulkToggleOrderType}
+                onBulkToggleCardOrderType={bulkToggleCardOrderType}
                 onStartAddingRow={handleStartAddingRow}
                 onToggleOrderType={toggleOrderType}
                 onMergeStrategyChange={handleRowMergeStrategy}
@@ -957,7 +965,7 @@ export function ParseReviewPage() {
       <DialogOverlay open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)} className="items-center pt-0">
         <DialogContent className="w-[min(500px,calc(100vw-32px))] rounded-2xl">
           <DialogHeader><DialogTitle>恢复原始解析结果？</DialogTitle><Button variant="ghost" size="icon" aria-label="关闭" onClick={() => setResetConfirmOpen(false)}><X className="h-4 w-4" /></Button></DialogHeader>
-          <DialogBody><p className="review-reset-copy">放弃尚未 Merge 的修改，并恢复原始解析结果。</p></DialogBody>
+          <DialogBody><p className="review-reset-copy">此操作将恢复到原始解析结果，所有步骤的修改都将丢失（包括物料核对、日期调整等）。</p></DialogBody>
           <div className="merge-confirm-actions"><Button variant="default" size="sm" onClick={() => setResetConfirmOpen(false)}>取消</Button><Button variant="destructive" size="sm" disabled={isResetLoading} onClick={handleResetReview}>{isResetLoading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}确认恢复</Button></div>
         </DialogContent>
       </DialogOverlay>
@@ -972,7 +980,7 @@ const REVIEW_STEPS = [
   { id: 4 as const, title: "合并预览" },
 ];
 
-function ReviewFooter({ step, needsRevalidation, revalidating, publishing, canPublish, excluded, onStepChange, onRevalidate, onOpenMerge }: { step: 1 | 2 | 3 | 4; needsRevalidation: boolean; revalidating: boolean; publishing: boolean; canPublish: boolean; excluded: boolean; onStepChange: (step: 1 | 2 | 3 | 4) => void; onRevalidate: () => Promise<boolean>; onOpenMerge: () => void }) {
+function ReviewFooter({ step, needsRevalidation, hasBlockingConflicts, revalidating, publishing, canPublish, excluded, onStepChange, onRevalidate, onOpenMerge }: { step: 1 | 2 | 3 | 4; needsRevalidation: boolean; hasBlockingConflicts: boolean; revalidating: boolean; publishing: boolean; canPublish: boolean; excluded: boolean; onStepChange: (step: 1 | 2 | 3 | 4) => void; onRevalidate: () => Promise<boolean>; onOpenMerge: () => void }) {
   const previousLabel = step === 2 ? "返回物料" : step === 3 ? "返回日期" : "返回数量";
   const nextLabel = step === 1 ? "确认物料，继续日期" : step === 2 ? "确认日期，继续数量" : "生成 Orders 预览";
   const handleNext = async () => {
@@ -985,7 +993,7 @@ function ReviewFooter({ step, needsRevalidation, revalidating, publishing, canPu
   return (
     <footer className="parse-review-footer">
       <div>{step === 1 || step === 4 ? null : <Button variant="default" size="sm" onClick={() => onStepChange((step - 1) as 1 | 2 | 3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>}</div>
-      {step < 4 ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void handleNext(); }}>{step === 3 && needsRevalidation ? (revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />) : null}{step === 3 && needsRevalidation ? "执行修改，生成预览" : nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button> : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{needsRevalidation ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}执行修改并更新预览</Button> : <Button variant="primary" size="sm" disabled={!canPublish || publishing} title={excluded ? "当前来源已排除，请先重新纳入 Merge 范围" : undefined} onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认 Merge</Button>}</div>}
+      {step < 4 ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void handleNext(); }}>{step === 3 && needsRevalidation ? (revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />) : null}{step === 3 && needsRevalidation ? "执行修改，生成预览" : nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button> : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{needsRevalidation ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}执行修改并更新预览</Button> : <Button variant="primary" size="sm" disabled={!canPublish || publishing} title={excluded ? "当前来源已排除，请先重新纳入 Merge 范围" : hasBlockingConflicts ? "存在未解决的冲突" : needsRevalidation ? "请先执行修改" : undefined} onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认 Merge</Button>}</div>}
     </footer>
   );
 }

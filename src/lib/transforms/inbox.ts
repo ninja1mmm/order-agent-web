@@ -69,6 +69,7 @@ export function normalizeMail(raw: WorkspaceMailSchema): WorkspaceMail {
     fromEmail: raw.fromEmail,
     subject: raw.subject,
     bodyText: raw.bodyText,
+    bodyHtml: raw.bodyHtml ?? "",
     receivedAt: raw.receivedAt,
     createdAt: raw.createdAt ?? raw.receivedAt,
     customerId: raw.customerId,

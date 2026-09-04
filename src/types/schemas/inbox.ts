@@ -63,6 +63,7 @@ export type WorkspaceMailSchema = {
   mailStatus: string;
   attachments: WorkspaceAttachmentSchema[];
   bodyText: string;
+  bodyHtml: string;
   inlineImages: InlineImageSchema[];
   customerName: string | null;
   createdAt: string | null;

@@ -20,6 +20,7 @@ type ExistingResultRowProps = {
   editValue: string;
   preferEditedDate: boolean;
   langParam: string | null;
+  hidePartNumber?: boolean;
   getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown;
   onToggleOrderType: (rowId: string) => void;
   onMergeStrategyChange: (rowId: string, strategy: "replace" | "increment" | "decrement") => void;
@@ -41,6 +42,7 @@ export function ExistingResultRow({
   editValue,
   preferEditedDate,
   langParam,
+  hidePartNumber,
   getRowValue,
   onToggleOrderType,
   onMergeStrategyChange,
@@ -86,8 +88,8 @@ export function ExistingResultRow({
 
   return (
     <tr className={conflictClass}>
-      <td>{editableCell("customerPartNumber")}</td>
-      <td>{derivedCell("internalPartNumber", String(cellValue("internalPartNumber") ?? ""))}</td>
+      {!hidePartNumber && <td>{editableCell("customerPartNumber")}</td>}
+      {!hidePartNumber && <td>{derivedCell("internalPartNumber", String(cellValue("internalPartNumber") ?? ""))}</td>}
       <td>{editableCell("quantity")}</td>
       <td>{editableCell("dateInfo", String(collectionDate ?? ""))}</td>
       <td>{derivedCell("expandedWeek", String(cellValue("expandedWeek") ?? ""))}</td>

@@ -40,7 +40,7 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const urlParamsConsumed = useRef(false);
-  const pendingInternalPNFocus = useRef(false);
+  const [initialEditPN, setInitialEditPN] = useState<string | null>(null);
   const selectedIdRef = useRef(selectedId);
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export function SettingsPage() {
           },
         ];
       }
-      pendingInternalPNFocus.current = true;
+      setInitialEditPN(urlAddPN);
     }
 
     const timer = window.setTimeout(() => {
@@ -121,18 +121,6 @@ export function SettingsPage() {
     return () => window.clearTimeout(timer);
   }, [customers, params]);
 
-  useEffect(() => {
-    if (!pendingInternalPNFocus.current || tab !== "materials") return;
-    pendingInternalPNFocus.current = false;
-    const raf = requestAnimationFrame(() => {
-      const inputs = document.querySelectorAll<HTMLInputElement>(
-        '.settings-material-table input[placeholder="Faurecia P/N"]',
-      );
-      const lastInput = inputs[inputs.length - 1];
-      lastInput?.focus();
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [tab, draft?.materialMappings?.length]);
 
   const filteredCustomers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -313,6 +301,7 @@ export function SettingsPage() {
             onAddContact={handleAddContact}
             onRemoveContact={handleRemoveContact}
             onRemoveMaterial={handleRemoveMaterial}
+            initialEditPN={initialEditPN}
           />
         ) : (
           <MailboxSection

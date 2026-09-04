@@ -115,7 +115,7 @@ export type NormalizedTaskRowSchema = {
   expandedMonth: string | null;
   conflictFlag: string | null;
   conflictDetails: string | null;
-  mergedQuantities: number[] | null;
+  conflictGroupKey: string | null;
   internalPartNumber: string | null;
   mappingStatus: string | null;
   mergeStrategy: "replace" | "increment" | "decrement";
@@ -170,6 +170,18 @@ export type ProcessingTaskDetailResponseSchema = {
     createdAt: string;
   }>;
 };
+
+export const BLOCKING_CONFLICT_FLAGS = new Set([
+  "quantity_conflict",
+  "granularity_mismatch",
+  "invalid_date",
+  "uncertain",
+]);
+
+export const INFORMATIVE_CONFLICT_FLAGS = new Set([
+  "suspected_total",
+  "potentially_incomplete",
+]);
 
 export type ReviewResetResponseSchema = {
   resultRevision: number;

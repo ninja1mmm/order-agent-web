@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { AlertTriangle, FileSearch, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { AlertTriangle, CheckCircle, FileSearch, LoaderCircle, PanelRightClose, PanelRightOpen, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { WorkspaceAttachment, WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import { type Locale, copy } from "../../../_components/shared";
@@ -34,13 +34,17 @@ type MiddlePanelProps = {
   newRowData: NewRowData;
   newRowErrors: Record<string, string>;
   reviewReason: string | null;
+  reviewType: string | null;
   actionError: string | null;
+  isProceedLoading: boolean;
+  onProceed: () => void;
   preferEditedDate: boolean;
   langParam: string | null;
   getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown;
   onToggleMappingSort: () => void;
   onBulkToggleOrderType: () => void;
-  onStartAddingRow: () => void;
+  onBulkToggleCardOrderType: (cardRowIds: string[]) => void;
+  onStartAddingRow: (prefillPartNumber?: string) => void;
   onToggleOrderType: (rowId: string) => void;
   onMergeStrategyChange: (rowId: string, strategy: "replace" | "increment" | "decrement") => void;
   onDeleteRow: (rowId: string) => void;
@@ -80,12 +84,16 @@ export function MiddlePanel({
   newRowData,
   newRowErrors,
   reviewReason,
+  reviewType,
   actionError,
+  isProceedLoading,
+  onProceed,
   preferEditedDate,
   langParam,
   getRowValue,
   onToggleMappingSort,
   onBulkToggleOrderType,
+  onBulkToggleCardOrderType,
   onStartAddingRow,
   onToggleOrderType,
   onMergeStrategyChange,
@@ -124,11 +132,25 @@ export function MiddlePanel({
             </div>
           ) : null}
           {reviewReason ? (
-            <div className="review-feedback warning">
-              <AlertTriangle className="h-4 w-4" />
-              <div><strong>需要人工确认</strong><span>{reviewReason}</span></div>
-            </div>
+            reviewType === "confirmation_required" ? (
+              <div className="review-feedback info">
+                <CheckCircle className="h-4 w-4" />
+                <div><strong>解析完成，请确认</strong><span>{reviewReason}</span></div>
+              </div>
+            ) : (
+              <div className="review-feedback warning">
+                <AlertTriangle className="h-4 w-4" />
+                <div><strong>需要人工确认</strong><span>{reviewReason}</span></div>
+                {isWaitingHuman && (
+                  <button type="button" className="review-feedback-action" disabled={isProceedLoading} onClick={onProceed}>
+                    {isProceedLoading ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    重新校验
+                  </button>
+                )}
+              </div>
+            )
           ) : null}
+          <div className="scroll-x">
           <ResultTable
           selectedTask={selectedTask}
           rows={rows}
@@ -149,6 +171,7 @@ export function MiddlePanel({
           getRowValue={getRowValue}
           onToggleMappingSort={onToggleMappingSort}
           onBulkToggleOrderType={onBulkToggleOrderType}
+          onBulkToggleCardOrderType={onBulkToggleCardOrderType}
           onStartAddingRow={onStartAddingRow}
           onToggleOrderType={onToggleOrderType}
           onMergeStrategyChange={onMergeStrategyChange}
@@ -162,6 +185,7 @@ export function MiddlePanel({
           onSaveNewRow={onSaveNewRow}
           onCancelNewRow={onCancelNewRow}
         />
+        </div>
         </div> : null}
         {resultCollapsed ? null : footer}
       </section>

@@ -55,6 +55,7 @@ export type WorkspaceMail = {
   fromEmail: string;
   subject: string;
   bodyText: string;
+  bodyHtml: string;
   receivedAt: string;
   createdAt: string;
   customerId: string | null;

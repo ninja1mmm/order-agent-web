@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import DOMPurify from "dompurify";
 import { BACKEND_URL } from "@/api/client";
 import type { WorkspaceAttachment, WorkspaceMail } from "@/services/inbox";
 import { ExcelViewer, PdfViewer } from "../../../_components/shared-components";
@@ -29,6 +31,9 @@ export function AttachmentPreview({
   const t = copy[locale];
 
   if (isBodyTextTask && selectedMail) {
+    if (selectedMail.bodyHtml) {
+      return <MailHtmlBody mail={selectedMail} />;
+    }
     return (
       <div className="mail-body-viewer">
         <div style={{ whiteSpace: "pre-line", padding: 16, fontSize: 13, lineHeight: 1.7, color: "var(--ink-soft)" }}>
@@ -46,6 +51,37 @@ export function AttachmentPreview({
   }
 
   return <p className="item-meta">{t.noAttachment}</p>;
+}
+
+function MailHtmlBody({ mail }: { mail: WorkspaceMail }) {
+  const sanitizedHtml = useMemo(() => {
+    let html = mail.bodyHtml;
+    // Replace cid: references with backend file URLs
+    const cidMap = new Map<string, string>();
+    for (const img of mail.inlineImages ?? []) {
+      // img.imageId is the Content-ID (CID) without angle brackets
+      cidMap.set(img.imageId, `${BACKEND_URL}/api/files/${img.fileArtifactId}/content`);
+    }
+    html = html.replace(/src=["']cid:([^"']+)["']/gi, (match, cid: string) => {
+      const url = cidMap.get(cid);
+      return url ? `src="${url}"` : match;
+    });
+    return DOMPurify.sanitize(html, {
+      ADD_TAGS: ["style"],
+      ADD_ATTR: ["target"],
+      FORBID_TAGS: ["script", "iframe", "object", "embed", "form"],
+      FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover"],
+    });
+  }, [mail.bodyHtml, mail.inlineImages]);
+
+  return (
+    <div className="mail-body-viewer" style={{ padding: 16 }}>
+      <div
+        className="mail-html-viewer"
+        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+      />
+    </div>
+  );
 }
 
 function MailImages({ mail }: { mail: WorkspaceMail }) {

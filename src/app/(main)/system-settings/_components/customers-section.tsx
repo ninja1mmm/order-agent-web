@@ -24,6 +24,7 @@ type CustomersSectionProps = {
   onAddContact: () => void;
   onRemoveContact: (index: number) => void;
   onRemoveMaterial: (index: number) => void;
+  initialEditPN?: string | null;
 };
 
 export function CustomersSection({
@@ -43,6 +44,7 @@ export function CustomersSection({
   onAddContact,
   onRemoveContact,
   onRemoveMaterial,
+  initialEditPN,
 }: CustomersSectionProps) {
   return (
     <>
@@ -76,6 +78,7 @@ export function CustomersSection({
             onAddContact={onAddContact}
             onRemoveContact={onRemoveContact}
             onRemoveMaterial={onRemoveMaterial}
+            initialEditPN={initialEditPN}
           />
         </div>
       </div>

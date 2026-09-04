@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import DOMPurify from "dompurify";
 import { History } from "lucide-react";
 import { BACKEND_URL } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +54,9 @@ export function MiddlePanel({ locale, viewMode, mail, timelineMails, tasks, cust
                   <div className="min-w-0"><strong title={mail.subject}>{mail.subject}</strong><span>From: {mail.fromEmail} · 收件：{formatDateTime(mail.receivedAt, locale)}</span></div>
                   <Badge variant="slate">{mailStatus(tasks.filter((task) => task.mailMessageId === mail.id))}</Badge>
                 </div>
-                <div className="customer-mail-body">{normalizeMailBody(mail.bodyText) || "邮件正文为空；本次业务内容由附件提供。"}<MailImages mail={mail} /></div>
+                <div className="customer-mail-body">
+                  {mail.bodyHtml ? <SafeHtmlBody mail={mail} /> : <>{normalizeMailBody(mail.bodyText) || "邮件正文为空；本次业务内容由附件提供。"}<MailImages mail={mail} /></>}
+                </div>
               </>
             ) : <p className="item-meta">请选择一封邮件。</p>}
           </div>
@@ -80,9 +84,8 @@ export function MiddlePanel({ locale, viewMode, mail, timelineMails, tasks, cust
                 From: {mail.fromEmail} · {t.receivedAt}: {formatDateTime(mail.receivedAt, locale)}
               </CardDescription>
             </Card>
-            <div className="mail-body" style={{ whiteSpace: "pre-line" }}>
-              {normalizeMailBody(mail.bodyText) || "邮件正文为空；本次业务内容由附件提供。"}
-              <MailImages mail={mail} />
+            <div className="mail-body" style={mail.bodyHtml ? undefined : { whiteSpace: "pre-line" }}>
+              {mail.bodyHtml ? <SafeHtmlBody mail={mail} /> : <>{normalizeMailBody(mail.bodyText) || "邮件正文为空；本次业务内容由附件提供。"}<MailImages mail={mail} /></>}
             </div>
           </>
         ) : (
@@ -91,6 +94,28 @@ export function MiddlePanel({ locale, viewMode, mail, timelineMails, tasks, cust
       </div>
     </section>
   );
+}
+
+function SafeHtmlBody({ mail }: { mail: WorkspaceMail }) {
+  const sanitized = useMemo(() => {
+    let html = mail.bodyHtml;
+    const cidMap = new Map<string, string>();
+    for (const img of mail.inlineImages ?? []) {
+      cidMap.set(img.imageId, `${BACKEND_URL}/api/files/${img.fileArtifactId}/content`);
+    }
+    html = html.replace(/src=["']cid:([^"']+)["']/gi, (match, cid: string) => {
+      const url = cidMap.get(cid);
+      return url ? `src="${url}"` : match;
+    });
+    return DOMPurify.sanitize(html, {
+      ADD_TAGS: ["style"],
+      ADD_ATTR: ["target"],
+      FORBID_TAGS: ["script", "iframe", "object", "embed", "form"],
+      FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover"],
+    });
+  }, [mail.bodyHtml, mail.inlineImages]);
+
+  return <div className="mail-html-viewer" dangerouslySetInnerHTML={{ __html: sanitized }} />;
 }
 
 function mailStatus(tasks: WorkspaceTask[]) {
