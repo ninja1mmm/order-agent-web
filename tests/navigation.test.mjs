@@ -3,10 +3,10 @@ import test from "node:test";
 
 import { phaseOnePages } from "../src/config/navigation.mjs";
 
-test("phase one exposes the four urgent pages and minimum system settings", () => {
+test("phase one exposes the operational pages, Skill Studio, and settings", () => {
   assert.deepEqual(
     phaseOnePages.map((page) => page.key),
-    ["intelligent-service", "task-workbench", "parse-review", "orders", "customer-profile", "financial-reconciliation", "system-settings"],
+    ["intelligent-service", "task-workbench", "parse-review", "orders", "skill-studio", "customer-profile", "financial-reconciliation", "system-settings"],
   );
 });
 

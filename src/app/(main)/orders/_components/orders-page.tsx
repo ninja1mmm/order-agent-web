@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from 
 import { CalendarDays, Download, History, LoaderCircle, Save, Table2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
   SheetBody,
@@ -269,6 +269,9 @@ export function OrdersPage() {
             Sales Forecast Plus 2.0
           </h2>
           <div className="list-actions">
+            <Link className={buttonVariants({ size: "sm" })} href="/skill-studio">
+              Skill Studio
+            </Link>
             <Button variant="default" size="sm" disabled>
               当前窗口：{timeFrom} - {timeTo}
             </Button>

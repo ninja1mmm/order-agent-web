@@ -57,8 +57,23 @@ async function authenticatedFetch(
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
+    let detail = body;
+    try {
+      const parsed = JSON.parse(body) as {
+        error?: string;
+        message?: string;
+        detail?: string;
+        details?: { errors?: Array<{ loc?: string[]; msg?: string }> };
+      };
+      const validationDetails = parsed.details?.errors
+        ?.map((item) => `${item.loc?.at(-1) ?? "request"}: ${item.msg ?? "invalid"}`)
+        .join("; ");
+      detail = validationDetails || parsed.error || parsed.message || parsed.detail || body;
+    } catch {
+      // Keep a non-JSON backend response as-is.
+    }
     throw new Error(
-      `Backend request failed: ${response.status}${body ? ` - ${body}` : ""}`,
+      `Backend request failed: ${response.status}${detail ? ` - ${detail}` : ""}`,
     );
   }
 

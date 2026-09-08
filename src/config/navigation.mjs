@@ -28,6 +28,13 @@ export const phaseOnePages = [
     prototypePath: "/prototype-3.0/03-orders.html",
   },
   {
+    key: "skill-studio",
+    title: "技能工坊",
+    description: "配置、试运行并发布独立 Orders 审计 Skill。",
+    productionPath: "/skill-studio",
+    prototypePath: "/prototype-3.0/04-skill-studio.html",
+  },
+  {
     key: "customer-profile",
     title: "客户画像",
     description: "对比客户历史 Sales Forecast 与最终 Firm Shipping Plan。",
