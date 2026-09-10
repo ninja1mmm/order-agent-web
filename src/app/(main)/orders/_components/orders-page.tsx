@@ -1265,6 +1265,7 @@ function granularityText(granularity: TimeGranularity): string {
 function revisionTypeText(type: string): string {
   if (type === "manual_edit") return "人工修改";
   if (type === "pipeline") return "系统导入";
+  if (type === "skill_correction") return "Skill 合并";
   return type;
 }
 
