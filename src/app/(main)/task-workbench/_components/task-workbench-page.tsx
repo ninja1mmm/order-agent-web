@@ -149,6 +149,7 @@ export function TaskWorkbenchPage() {
         <nav className="subnav" aria-label="工作台模块">
           <Link className="active" href="/task-workbench">{t.inbox}</Link>
           <Link href="/orders">{t.order}</Link>
+          <Link href="/skill-studio">Skill Studio</Link>
         </nav>
         <div className="workbench-page-actions">
           <div className="workbench-view-controls" role="group" aria-label="工作台视图">

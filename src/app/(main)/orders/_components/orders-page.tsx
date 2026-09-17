@@ -261,6 +261,7 @@ export function OrdersPage() {
         <Link className="active" href="/orders">
           {t.order}
         </Link>
+        <Link href="/skill-studio">Skill Studio</Link>
       </div>
       <section className="panel scroll-panel screen-fill">
         <div className="panel-head">
