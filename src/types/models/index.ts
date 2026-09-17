@@ -6,4 +6,5 @@ export * from "./mail";
 export * from "./orders";
 export * from "./reconciliation";
 export * from "./settings";
+export * from "./skills";
 export * from "./tasks";

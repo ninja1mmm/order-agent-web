@@ -51,6 +51,10 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.skill-field { display: grid; gap: 6px; color: var(--muted-strong); font-size: 11px; font-weight: 800; }
+.skill-select { min-height: 34px; width: 100%; border: 1px solid var(--line); border-radius: 9px; background: white; padding: 0 9px; color: var(--ink); font-size: 11px; font-weight: 700; outline: none; }
+.skill-select:focus { border-color: var(--forvia-blue); box-shadow: 0 0 0 2px var(--forvia-blue-soft); }
+
 a {
   color: inherit;
   text-decoration: none;

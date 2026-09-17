@@ -13,7 +13,7 @@ const mainNav = [
   { key: "system-settings", title: "系统配置", href: "/system-settings" },
 ];
 
-const supplyChainSections = ["/task-workbench", "/parse-review", "/orders"];
+const supplyChainSections = ["/task-workbench", "/parse-review", "/orders", "/skill-studio"];
 const customerSections = ["/customer-profile"];
 const reconciliationSections = ["/financial-reconciliation"];
 

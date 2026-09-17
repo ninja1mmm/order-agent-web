@@ -1,46 +1,95 @@
-export type OutputType = "correction";
+// --- Enums ---
 export type RunStatus = "queued" | "running" | "succeeded" | "failed";
-export type ExecutionPhase = "waiting_for_snapshot" | "snapshot_locked" | "building_prompt" | "model_running" | "parsing_output" | "validating_corrections" | "completed";
+export type RunPhase = "pending" | "ready" | "executing" | "completed";
+export type RunMode = "test" | "formal";
 export type CorrectionStatus = "valid" | "blocked" | "merged";
+export type IssueSeverity = "error" | "warning";
 export type CollisionResolution = "replace" | "increment";
 export type SkillTimeGranularity = "day" | "week" | "month";
 
+// --- Skill ---
 export type Skill = {
-  id: string; name: string; description: string; prompt: string; customer_id: string | null;
-  classifications: ("forecast" | "confirmed")[]; output_type: OutputType;
-  skill_spec: Record<string, unknown>; created_at: string | null; updated_at: string | null;
+  id: string; name: string; description: string; prompt: string;
+  customerId: string | null; classifications: ("forecast" | "confirmed")[];
+  createdAt: string | null; updatedAt: string | null;
 };
-export type OrdersFilter = { time_from: string; time_to: string; internal_part_numbers: string[] };
-export type ResolvedOrdersFilter = Partial<OrdersFilter> & { customer_id: string; classifications: ("forecast" | "confirmed")[] };
 
-export type CorrectionIssue = { code: string; field: string | null; severity: "blocked" | "warning"; message: string };
-export type CorrectionCell = {
-  row_key: string; col_key: string; customer_id: string; customer_name: string;
-  internal_part_number: string; customer_part_number: string | null; date: string;
-  quantity: number | null; classification: "forecast" | "confirmed";
-  time_granularity: SkillTimeGranularity; cell_revision: number | null; previous_value: number | null;
+// --- Filters ---
+export type OrdersFilter = { timeFrom: string; timeTo: string; internalPartNumbers: string[] };
+export type ResolvedOrdersFilter = Partial<OrdersFilter> & { customerId: string; classifications: ("forecast" | "confirmed")[] };
+
+// --- Issues ---
+export type Issue = { code: string; field: string | null; severity: IssueSeverity; message: string };
+
+// --- Snapshot ---
+export type RevisionHistoryEntry = {
+  revision: number; value: number | null; previousValue: number | null;
+  changedAt: string | null; sourceType: string | null;
 };
-export type CorrectionProposal = Omit<CorrectionCell, "row_key" | "col_key" | "cell_revision" | "previous_value"> & { quantity: number };
-export type CorrectionTarget = { row_key: string; col_key: string; exists: boolean; current_quantity: number | null; current_revision: number | null };
+export type SnapshotCell = {
+  rowKey: string; colKey: string; customerId: string;
+  internalPartNumber: string; customerPartNumber: string | null; date: string;
+  quantity: number | null; classification: "forecast" | "confirmed";
+  timeGranularity: SkillTimeGranularity; cellRevision: number;
+  revisionHistory: RevisionHistoryEntry[];
+};
+export type SnapshotResponse = { runId: string; cells: SnapshotCell[] };
+
+// --- Corrections ---
+export type CorrectionSource = {
+  rowKey: string; colKey: string; customerId: string;
+  internalPartNumber: string; customerPartNumber: string | null; date: string;
+  quantity: number | null; classification: "forecast" | "confirmed";
+  timeGranularity: SkillTimeGranularity; cellRevision: number;
+};
+export type CorrectionProposal = {
+  internalPartNumber: string; customerPartNumber: string | null;
+  date: string; quantity: number; classification: "forecast" | "confirmed";
+};
+export type CorrectionTarget = {
+  rowKey: string; colKey: string; exists: boolean;
+  currentQuantity: number | null; currentRevision: number | null;
+};
 export type SkillCorrection = {
-  id: string; source: CorrectionCell; proposal: CorrectionProposal; target: CorrectionTarget | null;
-  reason: string; confidence: number; status: CorrectionStatus; issues: CorrectionIssue[];
-  collision_resolution: CollisionResolution | null; merged_batch_id: string | null;
+  id: string; runId: string; source: CorrectionSource; proposal: CorrectionProposal;
+  target: CorrectionTarget | null; reason: string; confidence: number;
+  status: CorrectionStatus; issues: Issue[];
+  collisionResolution: CollisionResolution | null; mergedBatchId: string | null;
+  createdAt: string | null; updatedAt: string | null;
 };
 export type ValidationSummary = { valid: number; blocked: number; merged: number };
-export type ReviewCommit = { revision: number; correction_id: string; changes: Record<string, { old: unknown; new: unknown }>; created_by: string; created_at: string };
-export type MergeBatch = { id: string; changeset_id: string; idempotency_key: string; correction_ids: string[]; review_revision: number; created_by: string; created_at: string };
+export type CorrectionListResponse = { items: SkillCorrection[]; summary: ValidationSummary };
 
-export type SkillRun = {
-  id: string; skill_id: string; mode: "test" | "formal"; status: RunStatus;
-  execution_phase: ExecutionPhase; filters: ResolvedOrdersFilter; input_cell_count: number;
-  input_issues: CorrectionIssue[]; skill_snapshot: Record<string, unknown>;
-  input_snapshot: Array<Record<string, unknown>>; summary: string | null; corrections: SkillCorrection[];
-  review_revision: number; review_commits: ReviewCommit[]; validation_summary: ValidationSummary;
-  merge_batches: MergeBatch[]; error: string | null; created_at: string | null; updated_at: string | null;
-};
-export type PromptSuggestion = { name: string; summary: string; prompt: string; skillSpec: Record<string, unknown> };
+// --- Correction patch ---
 export type CorrectionPatch = {
-  review_revision: number; internal_part_number?: string; customer_part_number?: string; date?: string; quantity?: number;
-  classification?: "forecast" | "confirmed"; collision_resolution?: CollisionResolution | null;
+  reviewRevision: number; internalPartNumber?: string; customerPartNumber?: string;
+  date?: string; quantity?: number; classification?: "forecast" | "confirmed";
+  collisionResolution?: CollisionResolution | null;
 };
+
+// --- Run ---
+export type ExecutionMeta = {
+  model: string | null; chunks: number; totalAttempts: number; durationMs: number | null;
+};
+export type SkillSnapshotConfig = { name: string; prompt: string };
+export type ReviewCommit = {
+  correctionId: string; field: string; oldValue: unknown; newValue: unknown;
+  actorId: string | null; timestamp: string | null;
+};
+export type MergeBatch = {
+  batchId: string; correctionIds: string[]; changesetId: string | null;
+  cellCount: number; actorId: string | null; timestamp: string | null;
+};
+export type SkillRun = {
+  id: string; skillId: string; mode: RunMode; status: RunStatus; phase: RunPhase;
+  filters: ResolvedOrdersFilter; inputCellCount: number; inputIssues: Issue[];
+  skillSnapshot: SkillSnapshotConfig | null; summary: string | null;
+  validationSummary: ValidationSummary; reviewRevision: number;
+  reviewCommits: ReviewCommit[]; mergeBatches: MergeBatch[];
+  executionMeta: ExecutionMeta | null; error: string | null;
+  startedAt: string | null; createdBy: string | null;
+  createdAt: string | null; updatedAt: string | null;
+};
+
+// --- Prompt generation ---
+export type PromptSuggestion = { name: string; prompt: string };
