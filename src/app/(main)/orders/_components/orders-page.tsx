@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from "react";
-import { CalendarDays, Download, History, LoaderCircle, Save, Table2 } from "lucide-react";
+import { CalendarDays, Download, History, LoaderCircle, Save, Sparkles, Table2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
   SheetBody,
@@ -261,7 +261,6 @@ export function OrdersPage() {
         <Link className="active" href="/orders">
           {t.order}
         </Link>
-        <Link href="/skill-studio">Skill Studio</Link>
       </div>
       <section className="panel scroll-panel screen-fill">
         <div className="panel-head">
@@ -270,6 +269,9 @@ export function OrdersPage() {
             Sales Forecast Plus 2.0
           </h2>
           <div className="list-actions">
+            <Link href="/skill-studio" className={buttonVariants({ variant: "default", size: "sm" })}>
+              <Sparkles className="h-3.5 w-3.5" />技能工坊
+            </Link>
             <Button variant="default" size="sm" disabled>
               当前窗口：{timeFrom} - {timeTo}
             </Button>

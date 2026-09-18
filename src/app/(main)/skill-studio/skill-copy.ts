@@ -3,7 +3,7 @@ import type { CorrectionStatus, RunMode, RunPhase, RunStatus } from "@/types/mod
 /** Centralized zh-CN copy for Skill Studio. No multi-locale — internal tool. */
 export const t = {
   // --- Studio page ---
-  title: "Skill Studio",
+  title: "技能工坊",
   subtitle: "独立配置、测试并运行 Orders 审计",
   list: "Skill 清单",
   create: "新建",
@@ -46,7 +46,7 @@ export const t = {
   generationDone: "完成后会自动填入可编辑提示词。",
 
   // --- Run page ---
-  backToStudio: "返回 Skill Studio",
+  backToStudio: "返回技能工坊",
   runSummary: "运行摘要",
   deleteRun: "删除运行",
   notFound: "未找到 Skill 运行",
@@ -158,7 +158,7 @@ export const t = {
   noMergeSelection: "尚未选择可合并项，请返回 Step 2 选择。",
   exportResult: "导出结果",
   confirmMerge: (n: number) => `确认合并并写入 Orders (${n})`,
-  testModeWarning: "当前为试运行，仅用于预览、校验和调整；如需写入 Orders，请返回 Skill Studio 创建正式运行。",
+  testModeWarning: "当前为试运行，仅用于预览、校验和调整；如需写入 Orders，请返回技能工坊创建正式运行。",
   mergeHistory: "合并记录",
   mergeBatchLabel: (count: number) => `已提交 · ${count} 项`,
   mergeRevision: (rev: number) => `审阅修订 ${rev}`,

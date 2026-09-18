@@ -562,7 +562,7 @@ export function ParseReviewPage() {
       setLocalNewRows([]);
       refresh();
       void loadMailTaskList();
-      toast.success("当前解析任务已 Merge 到 Orders");
+      toast.success("当前解析任务已合并到 Orders");
     } catch (err) {
       console.error("Publish failed:", err);
       const message = readableActionError(err, "合并失败");
@@ -691,7 +691,7 @@ export function ParseReviewPage() {
     try {
       await setTaskExcluded(taskId, excluded);
       await Promise.all([refresh(), loadMailTaskList()]);
-      toast.success(excluded ? "该来源已从 Merge 范围排除" : "该来源已重新纳入 Merge 范围");
+      toast.success(excluded ? "该来源已从合并范围排除" : "该来源已重新纳入合并范围");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "更新来源范围失败");
     } finally {
@@ -959,7 +959,7 @@ export function ParseReviewPage() {
         <DialogContent className="w-[min(500px,calc(100vw-32px))] rounded-2xl">
           <DialogHeader><DialogTitle>确认合并到 Orders？</DialogTitle><Button variant="ghost" size="icon" aria-label="关闭" onClick={() => setMergeConfirmOpen(false)}><X className="h-4 w-4" /></Button></DialogHeader>
           <DialogBody><div className="merge-confirm-callout">确认后，当前审查结果将写入 Orders。请先核对预览中的物料、日期与数量。</div></DialogBody>
-          <div className="merge-confirm-actions"><Button variant="default" size="sm" onClick={() => setMergeConfirmOpen(false)}>取消</Button><Button variant="primary" size="sm" disabled={isPublishLoading} onClick={handlePublish}>{isPublishLoading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <GitMerge className="h-3.5 w-3.5" />}确认 Merge</Button></div>
+          <div className="merge-confirm-actions"><Button variant="default" size="sm" onClick={() => setMergeConfirmOpen(false)}>取消</Button><Button variant="primary" size="sm" disabled={isPublishLoading} onClick={handlePublish}>{isPublishLoading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <GitMerge className="h-3.5 w-3.5" />}确认合并</Button></div>
         </DialogContent>
       </DialogOverlay>
       <DialogOverlay open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)} className="items-center pt-0">
@@ -993,7 +993,7 @@ function ReviewFooter({ step, needsRevalidation, hasBlockingConflicts, revalidat
   return (
     <footer className="parse-review-footer">
       <div>{step === 1 || step === 4 ? null : <Button variant="default" size="sm" onClick={() => onStepChange((step - 1) as 1 | 2 | 3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>}</div>
-      {step < 4 ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void handleNext(); }}>{step === 3 && needsRevalidation ? (revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />) : null}{step === 3 && needsRevalidation ? "执行修改，生成预览" : nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button> : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{needsRevalidation ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}执行修改并更新预览</Button> : <Button variant="primary" size="sm" disabled={!canPublish || publishing} title={excluded ? "当前来源已排除，请先重新纳入 Merge 范围" : hasBlockingConflicts ? "存在未解决的冲突" : needsRevalidation ? "请先执行修改" : undefined} onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认 Merge</Button>}</div>}
+      {step < 4 ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void handleNext(); }}>{step === 3 && needsRevalidation ? (revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />) : null}{step === 3 && needsRevalidation ? "执行修改，生成预览" : nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button> : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{needsRevalidation ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}执行修改并更新预览</Button> : <Button variant="primary" size="sm" disabled={!canPublish || publishing} title={excluded ? "当前来源已排除，请先重新纳入合并范围" : hasBlockingConflicts ? "存在未解决的冲突" : needsRevalidation ? "请先执行修改" : undefined} onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认合并</Button>}</div>}
     </footer>
   );
 }
@@ -1060,17 +1060,62 @@ function readableActionError(error: unknown, fallback: string) {
   return raw || fallback;
 }
 
+type PreviewPeriod = { key: string; label: string; start: string; end: string };
+
+function previewPeriod(value: string): PreviewPeriod | null {
+  const dayMatch = value.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (dayMatch) {
+    const day = new Date(Date.UTC(Number(dayMatch[1]), Number(dayMatch[2]) - 1, Number(dayMatch[3])));
+    if (day.getUTCFullYear() !== Number(dayMatch[1]) || day.getUTCMonth() + 1 !== Number(dayMatch[2]) || day.getUTCDate() !== Number(dayMatch[3])) return null;
+    const thursday = new Date(day);
+    thursday.setUTCDate(day.getUTCDate() + 4 - (day.getUTCDay() || 7));
+    const year = thursday.getUTCFullYear();
+    const firstThursday = new Date(Date.UTC(year, 0, 4));
+    firstThursday.setUTCDate(firstThursday.getUTCDate() + 4 - (firstThursday.getUTCDay() || 7));
+    const week = 1 + Math.round((thursday.getTime() - firstThursday.getTime()) / 604_800_000);
+    return previewPeriod(`${year}-W${String(week).padStart(2, "0")}`);
+  }
+  const weekMatch = value.match(/^(\d{4})-W(\d{1,2})$/i);
+  if (weekMatch) {
+    const year = Number(weekMatch[1]);
+    const week = Number(weekMatch[2]);
+    if (week < 1 || week > 53) return null;
+    const monday = new Date(Date.UTC(year, 0, 4));
+    monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() || 7) + 1 + (week - 1) * 7);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(sunday.getUTCDate() + 6);
+    return { key: `${year}-W${String(week).padStart(2, "0")}`, label: `W${String(week).padStart(2, "0")}`, start: monday.toISOString().slice(0, 10), end: sunday.toISOString().slice(0, 10) };
+  }
+  const monthMatch = value.match(/^(\d{4})[-/](\d{1,2})$/);
+  if (monthMatch) {
+    const year = Number(monthMatch[1]);
+    const month = Number(monthMatch[2]);
+    if (month < 1 || month > 12) return null;
+    const key = `${year}-${String(month).padStart(2, "0")}`;
+    return { key, label: key, start: `${key}-01`, end: new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10) };
+  }
+  return null;
+}
+
 function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, customerId, customerOptions, updatedAt, preferEditedDate, footer }: { rows: Record<string, unknown>[]; rowIds: string[]; getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown; orderTypeMap: Map<string, OrderType>; customerName: string; customerId: string | null; customerOptions: { value: string; label: string }[]; updatedAt: string | null | undefined; preferEditedDate: boolean; footer: ReactNode }) {
   const [materialQuery, setMaterialQuery] = useState("");
-  const effectiveDate = (rowId: string, row: Record<string, unknown>) => String(preferEditedDate
-    ? getRowValue(rowId, "dateInfo", row.dateInfo) || getRowValue(rowId, "expandedDay", row.expandedDay) || ""
-    : getRowValue(rowId, "expandedDay", row.expandedDay) || getRowValue(rowId, "dateInfo", row.dateInfo) || "");
-  const allDates = Array.from(new Set(rows.map((row, index) => effectiveDate(rowIds[index], row)).filter(Boolean))).sort();
+  const effectivePeriod = (rowId: string, row: Record<string, unknown>) => {
+    const dateInfo = String(getRowValue(rowId, "dateInfo", row.dateInfo) ?? "").trim();
+    const expandedWeek = String(getRowValue(rowId, "expandedWeek", row.expandedWeek) ?? "").trim();
+    const expandedMonth = String(getRowValue(rowId, "expandedMonth", row.expandedMonth) ?? "").trim();
+    const expandedDay = String(getRowValue(rowId, "expandedDay", row.expandedDay) ?? "").trim();
+    return (preferEditedDate ? previewPeriod(dateInfo) : null)
+      ?? previewPeriod(expandedWeek)
+      ?? previewPeriod(dateInfo)
+      ?? previewPeriod(expandedMonth)
+      ?? previewPeriod(expandedDay.slice(0, 10));
+  };
+  const allPeriods = Array.from(new Map<string, PreviewPeriod>(rows.map((row, index) => effectivePeriod(rowIds[index], row)).filter((period): period is PreviewPeriod => period !== null).map((period) => [period.key, period])).values()).sort((a, b) => a.start.localeCompare(b.start) || a.key.localeCompare(b.key));
   const [customerFilter, setCustomerFilter] = useState(customerId || "__all__");
   const [visibleDemandKinds, setVisibleDemandKinds] = useState<DemandKind[]>(["forecast", "firm"]);
-  const [timeFrom, setTimeFrom] = useState(allDates[0] ?? "");
-  const [timeTo, setTimeTo] = useState(allDates.at(-1) ?? "");
-  const dates = allDates.filter((date) => (!timeFrom || date >= timeFrom) && (!timeTo || date <= timeTo));
+  const [timeFrom, setTimeFrom] = useState(allPeriods[0]?.start ?? "");
+  const [timeTo, setTimeTo] = useState(allPeriods.at(-1)?.end ?? "");
+  const periods = allPeriods.filter((period) => (!timeFrom || period.end >= timeFrom) && (!timeTo || period.start <= timeTo));
   const groups = new Map<string, { customerPartNumber: string; internalPartNumber: string; type: string; strategy: BulkMergeStrategy; quantities: Map<string, number> }>();
   rows.forEach((row, index) => {
     const rowId = rowIds[index];
@@ -1078,10 +1123,11 @@ function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, c
     const internalPartNumber = String(getRowValue(rowId, "internalPartNumber", row.internalPartNumber) ?? "—");
     const type = (orderTypeMap.get(rowId) ?? String(row.classification ?? "uncertain")) === "confirmed" ? "Firm" : "Forecast";
     const strategy = String(getRowValue(rowId, "mergeStrategy", row.mergeStrategy) ?? "replace") as BulkMergeStrategy;
-    const date = effectiveDate(rowId, row);
+    const period = effectivePeriod(rowId, row);
+    if (!period) return;
     const key = `${customerPartNumber}|${internalPartNumber}|${type}|${strategy}`;
     const group = groups.get(key) ?? { customerPartNumber, internalPartNumber, type, strategy, quantities: new Map<string, number>() };
-    group.quantities.set(date, (group.quantities.get(date) ?? 0) + Number(getRowValue(rowId, "quantity", row.quantity) ?? 0));
+    group.quantities.set(period.key, (group.quantities.get(period.key) ?? 0) + Number(getRowValue(rowId, "quantity", row.quantity) ?? 0));
     groups.set(key, group);
   });
   const visibleGroups = Array.from(groups.entries()).filter(([, group]) => {
@@ -1098,13 +1144,13 @@ function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, c
     });
   };
   const exportPreview = () => {
-    const header = ["Customer", "Customer P/N", "Faurecia P/N", "Updated Time", "Type", "合并策略", ...dates, "Total"];
-    const body = visibleGroups.map(([, group]) => [customerName, group.customerPartNumber, group.internalPartNumber, updatedAt ?? "", group.type, strategyLabel(group.strategy), ...dates.map((date) => group.quantities.get(date) ?? ""), dates.reduce((sum, date) => sum + (group.quantities.get(date) ?? 0), 0)]);
+    const header = ["Customer", "Customer P/N", "Faurecia P/N", "Updated Time", "Type", "合并策略", ...periods.map((period) => period.key), "Total"];
+    const body = visibleGroups.map(([, group]) => [customerName, group.customerPartNumber, group.internalPartNumber, updatedAt ?? "", group.type, strategyLabel(group.strategy), ...periods.map((period) => group.quantities.get(period.key) ?? ""), periods.reduce((sum, period) => sum + (group.quantities.get(period.key) ?? 0), 0)]);
     const csv = [header, ...body].map((cells) => cells.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "orders-merge-preview.csv";
+    anchor.download = "orders-合并预览.csv";
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -1112,16 +1158,17 @@ function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, c
     <section className="panel scroll-panel merge-preview-panel">
       <div className="panel-head">
         <h2 className="panel-title"><Table2 className="h-4 w-4" />Sales Forecast Plus 2.0</h2>
-        <div className="panel-head-actions">{dates.length ? <Button variant="default" size="sm" disabled>当前窗口：{dates[0]} - {dates.at(-1)}</Button> : null}<Button variant="primary" size="sm" onClick={exportPreview}><Download className="h-3.5 w-3.5" />导出</Button></div>
+        <div className="panel-head-actions">{periods.length ? <Button variant="default" size="sm" disabled>当前窗口：{periods[0].key} - {periods.at(-1)?.key}</Button> : null}<Button variant="primary" size="sm" onClick={exportPreview}><Download className="h-3.5 w-3.5" />导出</Button></div>
       </div>
       <div className="panel-body orders-body merge-orders-preview-body">
         <OrdersFilters customerLabel="客户" materialLabel="物料" customerFilter={customerFilter} materialFilter={materialQuery} timeFrom={timeFrom} timeTo={timeTo} visibleDemandKinds={visibleDemandKinds} customerOptions={customerOptions} onCustomerFilterChange={setCustomerFilter} onMaterialFilterChange={setMaterialQuery} onDemandKindToggle={toggleDemandKind} onTimeFromChange={setTimeFrom} onTimeToChange={setTimeTo} />
         <div className="orders-table-fill">
           <div className="scroll-x orders-table-scroll order2-scroll merge-preview-scroll">
             <div className="order2-shell merge-preview-shell">
-              <table className="order2-table merge-preview-table" style={{ minWidth: Math.max(980, 650 + dates.length * 108) }}>
-                <thead><tr><th>Customer</th><th>Customer P/N</th><th>Faurecia P/N</th><th>Updated Time</th><th>Type</th><th>合并策略</th>{dates.map((date) => <th key={date}>{date}</th>)}<th>Total</th></tr></thead>
-                <tbody>{visibleGroups.map(([key, group]) => { const total = dates.reduce((sum, date) => sum + (group.quantities.get(date) ?? 0), 0); return <tr key={key}><td>{customerName || "当前客户"}</td><td>{group.customerPartNumber}</td><td>{group.internalPartNumber}</td><td>{updatedAt ? formatDateTime(updatedAt, "zh-CN") : "—"}</td><td><span className={`orders-lane-badge ${group.type.toLowerCase()}`}>{group.type}</span></td><td>{strategyLabel(group.strategy)}</td>{dates.map((date) => <td key={date} className={group.quantities.has(date) ? `order-quantity-cell ${group.type.toLowerCase()}` : ""}>{group.quantities.has(date) ? group.quantities.get(date)?.toLocaleString() : ""}</td>)}<td><strong>{total.toLocaleString()}</strong></td></tr>; })}</tbody>
+              <table className="order2-table merge-preview-table" style={{ minWidth: Math.max(980, 840 + periods.length * 108) }}>
+                <colgroup><col style={{ width: 112 }} /><col style={{ width: 114 }} /><col style={{ width: 114 }} /><col style={{ width: 180 }} /><col style={{ width: 100 }} /><col style={{ width: 112 }} />{periods.map((period) => <col key={period.key} style={{ width: 108 }} />)}<col style={{ width: 108 }} /></colgroup>
+                <thead><tr><th>Customer</th><th>Customer P/N</th><th>Faurecia P/N</th><th>Updated Time</th><th>Type</th><th>合并策略</th>{periods.map((period) => <th key={period.key} title={period.key}>{period.label}</th>)}<th>Total</th></tr></thead>
+                <tbody>{visibleGroups.map(([key, group]) => { const total = periods.reduce((sum, period) => sum + (group.quantities.get(period.key) ?? 0), 0); return <tr key={key}><td>{customerName || "当前客户"}</td><td>{group.customerPartNumber}</td><td>{group.internalPartNumber}</td><td className="merge-preview-updated-time">{updatedAt ? formatDateTime(updatedAt, "zh-CN") : "—"}</td><td><span className={`orders-lane-badge ${group.type.toLowerCase()}`}>{group.type}</span></td><td>{strategyLabel(group.strategy)}</td>{periods.map((period) => <td key={period.key} className={group.quantities.has(period.key) ? `order-quantity-cell ${group.type.toLowerCase()}` : ""}>{group.quantities.has(period.key) ? group.quantities.get(period.key)?.toLocaleString() : ""}</td>)}<td><strong>{total.toLocaleString()}</strong></td></tr>; })}</tbody>
               </table>
               {visibleGroups.length === 0 ? <div className="orders-state"><strong>当前筛选条件下没有待合并数据</strong></div> : null}
             </div>

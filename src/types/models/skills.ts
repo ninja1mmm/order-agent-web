@@ -9,14 +9,20 @@ export type SkillTimeGranularity = "day" | "week" | "month";
 
 // --- Skill ---
 export type Skill = {
-  id: string; name: string; description: string; prompt: string;
+  id: string; name: string; description: string | null; prompt: string | null;
   customerId: string | null; classifications: ("forecast" | "confirmed")[];
   createdAt: string | null; updatedAt: string | null;
+};
+export type SkillWrite = Pick<Skill, "name" | "customerId" | "classifications"> & {
+  description: string; prompt: string;
 };
 
 // --- Filters ---
 export type OrdersFilter = { timeFrom: string; timeTo: string; internalPartNumbers: string[] };
-export type ResolvedOrdersFilter = Partial<OrdersFilter> & { customerId: string; classifications: ("forecast" | "confirmed")[] };
+export type ResolvedOrdersFilter = {
+  customerId: string; classifications: ("forecast" | "confirmed")[];
+  timeFrom: string | null; timeTo: string | null; internalPartNumbers: string[];
+};
 
 // --- Issues ---
 export type Issue = { code: string; field: string | null; severity: IssueSeverity; message: string };

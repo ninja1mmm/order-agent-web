@@ -1,6 +1,7 @@
 "use client";
 
 import { SearchableFilterSelect } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { DemandKind } from "@/services/orders";
 
 type FilterOption = string | { value: string; label: string };
@@ -53,14 +54,14 @@ export function OrdersFilters({
             placeholder="Faurecia P/N"
           />
         </label>
-        <label className="orders-inline-date-filter">
+        <div className="orders-inline-date-filter">
           <span>开始</span>
-          <input type="date" value={timeFrom} onChange={(event) => onTimeFromChange(event.target.value)} />
-        </label>
-        <label className="orders-inline-date-filter">
+          <DatePicker aria-label="开始日期" className="h-9 border-0 bg-transparent px-0 text-xs shadow-none" value={timeFrom} onChange={onTimeFromChange} />
+        </div>
+        <div className="orders-inline-date-filter">
           <span>结束</span>
-          <input type="date" value={timeTo} onChange={(event) => onTimeToChange(event.target.value)} />
-        </label>
+          <DatePicker aria-label="结束日期" className="h-9 border-0 bg-transparent px-0 text-xs shadow-none" value={timeTo} onChange={onTimeToChange} />
+        </div>
       </div>
       <div className="orders-filter-actions">
         <div className="orders-lane-tabs" aria-label="需求类型行显示">

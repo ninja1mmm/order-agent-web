@@ -1,7 +1,7 @@
 import { apiBlobRequest, apiRequest } from "./client";
 import type {
   CorrectionListResponse, CorrectionPatch, OrdersFilter,
-  PromptSuggestion, Skill, SkillCorrection, SkillRun, SnapshotResponse,
+  PromptSuggestion, Skill, SkillCorrection, SkillRun, SkillWrite, SnapshotResponse,
 } from "@/types/models/skills";
 
 export const listSkills = ({ search = "", page = 1, size = 20 }: { search?: string; page?: number; size?: number } = {}) => {
@@ -9,9 +9,9 @@ export const listSkills = ({ search = "", page = 1, size = 20 }: { search?: stri
   if (search) query.set("search", search);
   return apiRequest<{ items: Skill[]; page: number; size: number; total: number }>(`/api/skills?${query}`);
 };
-export const createSkill = (body: Partial<Skill>) =>
+export const createSkill = (body: Pick<SkillWrite, "name"> & Partial<Omit<SkillWrite, "name">>) =>
   apiRequest<Skill>("/api/skills", { method: "POST", body: JSON.stringify(body) });
-export const updateSkill = (id: string, body: Partial<Skill>) =>
+export const updateSkill = (id: string, body: Partial<SkillWrite>) =>
   apiRequest<Skill>(`/api/skills/${id}`, { method: "PATCH", body: JSON.stringify(body) });
 export const generatePrompt = (id: string, description: string) =>
   apiRequest<PromptSuggestion>(`/api/skills/${id}/generate-prompt`, { method: "POST", body: JSON.stringify({ description }) });

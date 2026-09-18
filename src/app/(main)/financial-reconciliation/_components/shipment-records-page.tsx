@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { FilterSelect, SearchableFilterSelect } from "@/components/ui/select";
 import { useCustomerConfig } from "../../_components/shared";
 import {
@@ -131,14 +131,14 @@ export function ShipmentRecordsPage() {
         <div className="recon-toolbar">
           <SearchableFilterSelect label="客户" value={customerId} options={options} onChange={(value) => { setCustomerId(value); setPage(1); }} />
           <FilterSelect label="状态" value={status} options={reconciliationStatusOptions} onChange={(value) => { setStatus(value); setPage(1); }} />
-          <label className="recon-date-filter-card">
+          <div className="recon-date-filter-card">
             <span>开始日期：</span>
-            <Input type="date" value={dateFrom} onChange={(event) => { setDateFrom(event.target.value); setPage(1); }} />
-          </label>
-          <label className="recon-date-filter-card">
+            <DatePicker aria-label="开始日期" className="h-9 border-0 bg-transparent px-0 text-xs shadow-none" value={dateFrom} onChange={(value) => { setDateFrom(value); setPage(1); }} />
+          </div>
+          <div className="recon-date-filter-card">
             <span>结束日期：</span>
-            <Input type="date" value={dateTo} onChange={(event) => { setDateTo(event.target.value); setPage(1); }} />
-          </label>
+            <DatePicker aria-label="结束日期" className="h-9 border-0 bg-transparent px-0 text-xs shadow-none" value={dateTo} onChange={(value) => { setDateTo(value); setPage(1); }} />
+          </div>
         </div>
         <div className="scroll-x recon-table-wrap">
           <table className="table recon-table shipment-record-table">

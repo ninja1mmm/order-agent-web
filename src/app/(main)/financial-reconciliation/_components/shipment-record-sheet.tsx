@@ -5,6 +5,7 @@ import { Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input, Textarea } from "@/components/ui/input";
 import { SearchableFilterSelect } from "@/components/ui/select";
 import {
@@ -137,10 +138,10 @@ export function ShipmentRecordSheet({ open, record, customers, onOpenChange, onS
               <span className="recon-form-label">客户编码</span>
               <Input className="recon-form-control" disabled={locked} value={draft.sapCustomerCode} onChange={(event) => setDraft((current) => ({ ...current, sapCustomerCode: event.target.value }))} />
             </label>
-            <label className="recon-form-field">
+            <div className="recon-form-field">
               <span className="recon-form-label">发运日期</span>
-              <Input className="recon-form-control" disabled={locked} type="date" value={draft.shipmentDate} onChange={(event) => setDraft((current) => ({ ...current, shipmentDate: event.target.value }))} />
-            </label>
+              <DatePicker aria-label="发运日期" className="recon-form-control" disabled={locked} value={draft.shipmentDate} onChange={(value) => setDraft((current) => ({ ...current, shipmentDate: value }))} />
+            </div>
             <div className="recon-form-field">
               <span className="recon-form-label">物料</span>
               <SearchableFilterSelect

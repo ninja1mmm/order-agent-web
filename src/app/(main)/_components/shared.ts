@@ -72,7 +72,7 @@ export const copy: Record<
     involvedCustomerTitle: string;
     yesterdayPending: string;
     customerRhythm: string;
-    days30: string;
+    days14: string;
     today: string;
     pendingTasks: string;
     mailList: string;
@@ -132,7 +132,7 @@ export const copy: Record<
     involvedCustomerTitle: "涉及客户",
     yesterdayPending: "昨日进入待处理",
     customerRhythm: "客户回邮件节奏",
-    days30: "30 天",
+    days14: "14 天",
     today: "今日",
     pendingTasks: "待处理任务",
     mailList: "邮件列表",
@@ -191,7 +191,7 @@ export const copy: Record<
     involvedCustomerTitle: "涉及客戶",
     yesterdayPending: "昨日進入待處理",
     customerRhythm: "客戶回郵件節奏",
-    days30: "30 天",
+    days14: "14 天",
     today: "今日",
     pendingTasks: "待處理任務",
     mailList: "郵件列表",
@@ -250,7 +250,7 @@ export const copy: Record<
     involvedCustomerTitle: "Customers",
     yesterdayPending: "Entered Pending",
     customerRhythm: "Customer Mail Rhythm",
-    days30: "30 Days",
+    days14: "14 Days",
     today: "Today",
     pendingTasks: "Pending Tasks",
     mailList: "Mail List",
@@ -357,6 +357,14 @@ export function customerLabelFromId(customers: CustomerConfig[], customerId: str
   const config = customers.find((customer) => customer.id === customerId);
   if (config) return customerLabel(config);
   return fallback || customerId || "-";
+}
+
+export function customerMailKey(mail: Pick<WorkspaceMail, "customerId" | "customerName">, customers: CustomerConfig[]) {
+  if (mail.customerId) return `id:${mail.customerId}`;
+  const name = mail.customerName?.trim();
+  if (!name) return "";
+  const config = customers.find((customer) => customer.name === name);
+  return config ? `id:${config.id}` : `name:${name}`;
 }
 
 export function formatShortDate(value: string | Date) {

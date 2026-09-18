@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { SearchableFilterSelect } from "@/components/ui/select";
 import { DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogBody } from "@/components/ui/dialog";
-import { type Locale, beijingDateKey, copy, customerLabel, customerLabelFromId, formatShortDate } from "./shared";
+import { type Locale, beijingDateKey, copy, customerLabel, customerLabelFromId, customerMailKey, formatShortDate } from "./shared";
 
 function buildHeatmapColumns(days = 14) {
   const [year, month, day] = beijingDateKey(new Date()).split("-").map(Number);
@@ -35,27 +35,36 @@ export function CustomerHeatmap({
   tasks = [],
   customers,
   locale,
+  selectedCustomerDay,
+  onSelectCustomerDay,
 }: {
   mails: WorkspaceMail[];
   tasks?: WorkspaceTask[];
   customers: CustomerConfig[];
   locale: Locale;
+  selectedCustomerDay: { customerKey: string; date: string } | null;
+  onSelectCustomerDay: (customerKey: string, customerLabel: string, date: string) => void;
 }) {
   const t = copy[locale];
   const [view, setView] = useState<"activity" | "today">("activity");
   const columns = useMemo(() => buildHeatmapColumns(14), []);
-  const configuredCustomerNames = customers.map(customerLabel);
-  const fallbackCustomers = Array.from(new Set(mails.map((mail) => mail.customerName || mail.customerId).filter(Boolean) as string[]));
-  const displayCustomers = configuredCustomerNames.length ? configuredCustomerNames : fallbackCustomers;
+  const displayCustomers = useMemo(() => {
+    const labels = new Map(customers.map((customer) => [`id:${customer.id}`, customerLabel(customer)]));
+    for (const mail of mails) {
+      const key = customerMailKey(mail, customers);
+      if (key && !labels.has(key)) labels.set(key, customerLabelFromId(customers, mail.customerId, mail.customerName));
+    }
+    return Array.from(labels, ([key, label]) => ({ key, label }));
+  }, [customers, mails]);
 
   const countsByCustomerDay = useMemo(() => {
     const map = new Map<string, number>();
     for (const mail of mails) {
-      const customer = customerLabelFromId(customers, mail.customerId, mail.customerName);
+      const customer = customerMailKey(mail, customers);
       const dayKey = beijingDateKey(mail.receivedAt);
       if (!customer || !dayKey) continue;
       const key = `${customer}|${dayKey}`;
-      map.set(key, (map.get(key) ?? 0) + Math.max(mail.attachments.length, 1));
+      map.set(key, (map.get(key) ?? 0) + 1);
     }
     return map;
   }, [customers, mails]);
@@ -69,7 +78,7 @@ export function CustomerHeatmap({
     return new Set(
       mails
         .filter((mail) => issueMailIds.has(mail.id))
-        .map((mail) => `${customerLabelFromId(customers, mail.customerId, mail.customerName)}|${beijingDateKey(mail.receivedAt)}`),
+        .map((mail) => `${customerMailKey(mail, customers)}|${beijingDateKey(mail.receivedAt)}`),
     );
   }, [customers, mails, tasks]);
 
@@ -77,12 +86,12 @@ export function CustomerHeatmap({
     const today = beijingDateKey(new Date());
     return displayCustomers.map((customer) => {
       const todayMails = mails.filter((mail) => {
-        const name = customerLabelFromId(customers, mail.customerId, mail.customerName);
+        const name = customerMailKey(mail, customers);
         const dayKey = beijingDateKey(mail.receivedAt);
-        if (name !== customer || !dayKey) return false;
+        if (name !== customer.key || !dayKey) return false;
         return dayKey === today;
       });
-      return { customer, count: todayMails.length };
+      return { customer, date: today, count: todayMails.length };
     });
   }, [customers, displayCustomers, mails]);
 
@@ -92,7 +101,7 @@ export function CustomerHeatmap({
         <h2 className="panel-title">{t.customerRhythm}</h2>
         <div className="mode-strip">
           <Button variant={view === "activity" ? "primary" : "default"} size="sm" onClick={() => setView("activity")}>
-            {t.days30}
+            {t.days14}
           </Button>
           <Button variant={view === "today" ? "primary" : "default"} size="sm" onClick={() => setView("today")}>
             {t.today}
@@ -112,19 +121,23 @@ export function CustomerHeatmap({
               </span>
             ) : (
               displayCustomers.map((customer) => (
-                <React.Fragment key={customer}>
-                  <span>{customer}</span>
+                <React.Fragment key={customer.key}>
+                  <span>{customer.label}</span>
                   {columns.map((date) => {
-                    const key = `${customer}|${date}`;
+                    const key = `${customer.key}|${date}`;
                     const count = countsByCustomerDay.get(key) ?? 0;
                     const hasIssue = issueDays.has(key);
+                    const selected = selectedCustomerDay?.customerKey === customer.key && selectedCustomerDay.date === date;
                     return (
-                      <span
+                      <button
+                        type="button"
                         key={key}
-                        className={`heat-cell ${heatLevel(count)}${hasIssue ? " issue" : ""}`}
-                        aria-label={`${formatShortDate(date)} ${customer}${hasIssue ? " 有待处理邮件" : ""}`}
-                        title={hasIssue ? `${formatShortDate(date)} · 有邮件需要处理` : undefined}
-                      >{hasIssue ? "!" : ""}</span>
+                        className={`heat-cell ${heatLevel(count)}${hasIssue ? " issue" : ""}${selected ? " selected" : ""}`}
+                        aria-label={`${customer.label} ${date}，${count} 封邮件${hasIssue ? "，有待处理任务" : ""}`}
+                        aria-pressed={selected}
+                        title={`${customer.label} · ${date} · ${count} 封邮件`}
+                        onClick={() => onSelectCustomerDay(customer.key, customer.label, date)}
+                      >{hasIssue ? "!" : ""}</button>
                     );
                   })}
                 </React.Fragment>
@@ -134,11 +147,11 @@ export function CustomerHeatmap({
         ) : (
           <div className="today-mail-grid">
             {todayCards.map((item) => (
-              <div key={item.customer} className={`today-mail-row ${item.count === 0 ? "missed" : ""}`}>
-                <span>{item.customer}</span>
+              <button type="button" key={item.customer.key} className={`today-mail-row ${item.count === 0 ? "missed" : ""}${selectedCustomerDay?.customerKey === item.customer.key && selectedCustomerDay.date === item.date ? " selected" : ""}`} aria-pressed={selectedCustomerDay?.customerKey === item.customer.key && selectedCustomerDay.date === item.date} onClick={() => onSelectCustomerDay(item.customer.key, item.customer.label, item.date)}>
+                <span>{item.customer.label}</span>
                 <strong>{item.count}</strong>
                 <small>{item.count === 0 ? "今日暂无邮件" : `今日收到 ${item.count} 封邮件`}</small>
-              </div>
+              </button>
             ))}
           </div>
         )}

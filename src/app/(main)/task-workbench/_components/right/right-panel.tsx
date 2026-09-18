@@ -97,7 +97,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
           const reviewHref = task?.id && mailId
             ? `/parse-review?mailId=${encodeURIComponent(mailId)}&attachmentId=${encodeURIComponent(attachment.attachmentId)}&taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
             : "";
-          const reviewLabel = task?.status === "completed" || task?.status === "published" ? "查看 Merge 结果" : "进入解析确认";
+          const reviewLabel = task?.status === "completed" || task?.status === "published" ? "查看合并结果" : "进入解析确认";
 
           return (
             <div className="result-block" key={attachment.attachmentId}>
@@ -189,7 +189,7 @@ function BodyTaskResult({
   const reviewHref = task.id
     ? `/parse-review?mailId=${encodeURIComponent(mailId ?? "")}&taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
     : "";
-  const reviewLabel = task.status === "completed" || task.status === "published" ? "查看 Merge 结果" : "进入解析确认";
+  const reviewLabel = task.status === "completed" || task.status === "published" ? "查看合并结果" : "进入解析确认";
 
   return (
     <div className="result-block">

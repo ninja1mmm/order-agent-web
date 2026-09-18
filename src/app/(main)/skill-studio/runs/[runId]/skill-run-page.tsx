@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog, useConfirm } from "../../confirm-dialog";
 import { listCustomers, type CustomerConfig } from "@/services/settings";
@@ -179,7 +180,7 @@ export function SkillRunPage({ runId }: { runId: string }) {
       if (!initialized.current) {
         initialized.current = true;
         if (next.filters.timeFrom && next.filters.timeTo) {
-          setScope({ timeFrom: next.filters.timeFrom, timeTo: next.filters.timeTo, internalPartNumbers: next.filters.internalPartNumbers ?? [] });
+          setScope({ timeFrom: next.filters.timeFrom, timeTo: next.filters.timeTo, internalPartNumbers: next.filters.internalPartNumbers });
           setSnapshotDirty(!next.inputCellCount);
         }
       }
@@ -221,13 +222,13 @@ export function SkillRunPage({ runId }: { runId: string }) {
   const canExecute = !executing && !snapshotDirty && (run?.inputCellCount ?? 0) > 0 && !hasBlockingIssues;
 
   async function execute() {
-    if (!run || !canExecute) return;
+    if (!run || !canExecute || !run.filters.timeFrom || !run.filters.timeTo) return;
     const confirmed = await confirm({
       title: t.executeConfirmTitle,
       body: t.executeConfirmBody(
         customer?.name ?? run.filters.customerId,
-        run.filters.timeFrom ?? "",
-        run.filters.timeTo ?? "",
+        run.filters.timeFrom,
+        run.filters.timeTo,
         run.inputCellCount,
       ),
       confirmLabel: t.confirmAndExecute,
@@ -338,7 +339,7 @@ export function SkillRunPage({ runId }: { runId: string }) {
       await loadCorrections();
       mergeKey.current = null;
       const latestBatch = result.mergeBatches[result.mergeBatches.length - 1];
-      toast.success(t.mergeSuccess(latestBatch?.changesetId ?? ""));
+      toast.success(t.mergeSuccess(latestBatch.changesetId ?? ""));
     } catch (error) {
       await loadRun().catch(() => null);
       await loadCorrections().catch(() => null);
@@ -389,8 +390,8 @@ export function SkillRunPage({ runId }: { runId: string }) {
           <dt className="text-slate-500">{t.filtersCustomer}</dt><dd className="font-semibold">{customerName}</dd>
           <dt className="text-slate-500">{t.filtersDate}</dt><dd>{run.filters.timeFrom ? <>{run.filters.timeFrom}<br/>{run.filters.timeTo}</> : t.filtersPending}</dd>
           <dt className="text-slate-500">{t.filtersType}</dt><dd>{run.filters.classifications.join(" / ")}</dd>
-          <dt className="text-slate-500">{t.filtersMaterial}</dt><dd>{run.filters.timeFrom ? run.filters.internalPartNumbers?.length ? t.materialCount(run.filters.internalPartNumbers.length) : t.filtersAllMaterials : t.filtersPending}</dd>
-          <dt className="text-slate-500">{t.prompt}</dt><dd className="truncate text-[11px] text-slate-600">{run.skillSnapshot?.prompt ? run.skillSnapshot.prompt.slice(0, 80) + "…" : "—"}</dd>
+          <dt className="text-slate-500">{t.filtersMaterial}</dt><dd>{run.filters.timeFrom ? run.filters.internalPartNumbers.length ? t.materialCount(run.filters.internalPartNumbers.length) : t.filtersAllMaterials : t.filtersPending}</dd>
+          <dt className="text-slate-500">{t.prompt}</dt><dd className="truncate text-[11px] text-slate-600">{run.skillSnapshot?.prompt ? `${run.skillSnapshot.prompt.slice(0, 80)}${run.skillSnapshot.prompt.length > 80 ? "…" : ""}` : "—"}</dd>
         </dl>
         {run.status === "succeeded" && <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[11px]"><SummaryStat label={t.statusValid} value={validationSummary.valid}/><SummaryStat label={t.statusBlocked} value={validationSummary.blocked}/><SummaryStat label={t.statusMerged} value={validationSummary.merged}/></div>}
       </aside>
@@ -460,7 +461,7 @@ function StepOne({ run, scope, setScope, invalidDates, snapshotting, snapshotDir
 
     <InputIssuesPanel issues={run.inputIssues} />
 
-    {run.status === "queued" && <div className="mb-4 rounded-xl border border-[var(--line)] bg-slate-50 p-4"><div className="grid grid-cols-[minmax(280px,1fr)_minmax(260px,1fr)_auto] items-end gap-3 max-[1100px]:grid-cols-1"><label className="skill-field">{t.dateRange}<span className="grid grid-cols-2 gap-2"><Input type="date" value={scope.timeFrom} onChange={(event) => setScope({ ...scope, timeFrom: event.target.value })}/><Input type="date" value={scope.timeTo} onChange={(event) => setScope({ ...scope, timeTo: event.target.value })}/></span>{invalidDates && <small className="text-red-600">{t.dateRangeError}</small>}</label><div className="skill-field"><span>{t.material}（可选）</span><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400"/><Input className="pl-8" value={materialSearch} onChange={(event) => setMaterialSearch(event.target.value)} placeholder={t.searchMaterial}/></div></div><Button disabled={invalidDates || snapshotting} onClick={() => void previewSnapshot()}>{snapshotting && <LoaderCircle className="animate-spin" size={14}/>}{t.loadSnapshot}</Button></div><div className="mt-3 flex flex-wrap gap-1">{scope.internalPartNumbers.map((part) => <button key={part} onClick={() => toggleMaterial(part)} className="inline-flex items-center gap-1 rounded-full bg-[var(--forvia-blue-soft)] px-2 py-1 text-[11px] text-[var(--forvia-blue)]">{part}<X size={11}/></button>)}</div>{materialSearch && <div className="mt-2 max-h-36 overflow-auto rounded-lg border border-[var(--line)] bg-white">{materials.map((item) => <button key={item.mappingId} onClick={() => toggleMaterial(item.internalPartNumber)} className="block w-full border-b border-[var(--line)] px-3 py-2 text-left text-xs last:border-0 hover:bg-slate-50"><strong>{item.internalPartNumber}</strong><span className="ml-2 text-slate-500">{item.customerPartNumber}</span></button>)}{!materials.length && <p className="p-3 text-xs text-slate-400">{t.noMatchingMaterial}</p>}</div>}<p className="mt-2 text-[11px] text-slate-500">{t.materialHint}</p></div>}
+    {run.status === "queued" && <div className="mb-4 rounded-xl border border-[var(--line)] bg-slate-50 p-4"><div className="grid grid-cols-[minmax(280px,1fr)_minmax(260px,1fr)_auto] items-end gap-3 max-[1100px]:grid-cols-1"><div className="skill-field"><span>{t.dateRange}</span><div className="grid grid-cols-2 gap-2"><DatePicker aria-label="开始日期" value={scope.timeFrom} onChange={(value) => setScope({ ...scope, timeFrom: value })}/><DatePicker aria-label="结束日期" value={scope.timeTo} onChange={(value) => setScope({ ...scope, timeTo: value })}/></div>{invalidDates && <small className="text-red-600">{t.dateRangeError}</small>}</div><div className="skill-field"><span>{t.material}（可选）</span><div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400"/><Input className="pl-8" value={materialSearch} onChange={(event) => setMaterialSearch(event.target.value)} placeholder={t.searchMaterial}/></div></div><Button disabled={invalidDates || snapshotting} onClick={() => void previewSnapshot()}>{snapshotting && <LoaderCircle className="animate-spin" size={14}/>}{t.loadSnapshot}</Button></div><div className="mt-3 flex flex-wrap gap-1">{scope.internalPartNumbers.map((part) => <button key={part} onClick={() => toggleMaterial(part)} className="inline-flex items-center gap-1 rounded-full bg-[var(--forvia-blue-soft)] px-2 py-1 text-[11px] text-[var(--forvia-blue)]">{part}<X size={11}/></button>)}</div>{materialSearch && <div className="mt-2 max-h-36 overflow-auto rounded-lg border border-[var(--line)] bg-white">{materials.map((item) => <button key={item.mappingId} onClick={() => toggleMaterial(item.internalPartNumber)} className="block w-full border-b border-[var(--line)] px-3 py-2 text-left text-xs last:border-0 hover:bg-slate-50"><strong>{item.internalPartNumber}</strong><span className="ml-2 text-slate-500">{item.customerPartNumber}</span></button>)}{!materials.length && <p className="p-3 text-xs text-slate-400">{t.noMatchingMaterial}</p>}</div>}<p className="mt-2 text-[11px] text-slate-500">{t.materialHint}</p></div>}
     {snapshotDirty && run.inputCellCount > 0 && <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">{t.snapshotDirtyHint}</div>}
     {snapshot && snapshot.length > 0 ? <OrdersTable rows={snapshot}/> : <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-[var(--line)] text-center text-xs text-slate-400"><div><Search className="mx-auto mb-2" size={20}/><strong className="block text-slate-600">{t.noData}</strong><span>{t.noDataHint}</span></div></div>}
   </div>;
@@ -531,10 +532,10 @@ function OrdersTable({ rows }: { rows: SnapshotCell[] }) {
 }
 
 function SnapshotRow({ row }: { row: SnapshotCell }) {
-  const history = row.revisionHistory ?? [];
-  const revision = row.cellRevision ?? 0;
+  const history = row.revisionHistory;
+  const revision = row.cellRevision;
   const hasHistory = revision > 1 || history.some((item) => item.previousValue !== null && item.previousValue !== undefined);
-  return <tr className="border-t border-[var(--line)] align-top"><td className="p-2">{displayValue(row.customerPartNumber)}</td><td className="p-2">{displayValue(row.internalPartNumber)}</td><td className="p-2 tabular-nums">{displayValue(row.date)}</td><td className="p-2"><Badge variant={row.classification === "confirmed" ? undefined : "blue"}>{classificationText(row.classification)}</Badge></td><td className="p-2 text-right font-semibold tabular-nums">{displayQuantity(row.quantity)}</td><td className="p-2"><details className="min-w-44"><summary className="cursor-pointer font-semibold text-[var(--forvia-blue)]">{t.revisionLabel(revision)} · {hasHistory ? t.hasHistory : t.initialValue}</summary><div className="mt-2 space-y-2 border-l border-[var(--line)] pl-2">{history.length ? history.map((item, index) => <div key={`${item.revision ?? "revision"}-${index}`} className="leading-4 text-slate-500"><strong className="block text-[var(--ink)]">{t.revisionEntry(item.revision ?? 0)} · {displayQuantity(item.value)}</strong><span>{displayChangedAt(item.changedAt)} · {sourceTypeLabel(item.sourceType)}</span>{item.previousValue !== null && item.previousValue !== undefined && <span className="block">{t.previousValueLabel(displayQuantity(item.previousValue))}</span>}</div>) : <span className="text-slate-400">{t.noRevisionDetail}</span>}</div></details></td></tr>;
+  return <tr className="border-t border-[var(--line)] align-top"><td className="p-2">{displayValue(row.customerPartNumber)}</td><td className="p-2">{displayValue(row.internalPartNumber)}</td><td className="p-2 tabular-nums">{displayValue(row.date)}</td><td className="p-2"><Badge variant={row.classification === "confirmed" ? undefined : "blue"}>{classificationText(row.classification)}</Badge></td><td className="p-2 text-right font-semibold tabular-nums">{displayQuantity(row.quantity)}</td><td className="p-2"><details className="min-w-44"><summary className="cursor-pointer font-semibold text-[var(--forvia-blue)]">{t.revisionLabel(revision)} · {hasHistory ? t.hasHistory : t.initialValue}</summary><div className="mt-2 space-y-2 border-l border-[var(--line)] pl-2">{history.length ? history.map((item, index) => <div key={`${item.revision}-${index}`} className="leading-4 text-slate-500"><strong className="block text-[var(--ink)]">{t.revisionEntry(item.revision)} · {displayQuantity(item.value)}</strong><span>{displayChangedAt(item.changedAt)} · {sourceTypeLabel(item.sourceType)}</span>{item.previousValue !== null && item.previousValue !== undefined && <span className="block">{t.previousValueLabel(displayQuantity(item.previousValue))}</span>}</div>) : <span className="text-slate-400">{t.noRevisionDetail}</span>}</div></details></td></tr>;
 }
 
 function ExecutionProgress({ run }: { run: SkillRun }) {
@@ -550,7 +551,7 @@ function CorrectionTable({ corrections, drafts, selected, materials, allowedClas
 }) {
   if (!corrections.length) return <div className="rounded-xl border border-dashed border-[var(--line)] p-8 text-center text-xs text-slate-400">{t.noFilteredCorrections}</div>;
   return <div className="overflow-auto rounded-xl border border-[var(--line)]"><table className="w-full min-w-[1260px] text-xs"><thead className="bg-slate-50"><tr><th className="p-3">{t.colSelect}</th><th className="p-3 text-left">{t.colCustomer}</th><th className="p-3 text-left">{t.colBefore}</th><th className="p-3 text-left">{t.colAfter}</th><th className="p-3 text-left">{t.colValidation}</th><th className="p-3">{t.colAction}</th></tr></thead><tbody>{corrections.map((item) => {
-    const draft = drafts[item.id] ?? draftFor(item);
+    const draft = drafts[item.id];
     const blocked = item.status !== "valid";
     const hasCollision = item.issues.some((issue) => issue.code === "TARGET_COLLISION") || !!item.collisionResolution;
     const dateType = item.source.timeGranularity === "day" ? "date" : item.source.timeGranularity === "week" ? "week" : "month";
@@ -579,7 +580,7 @@ function CorrectionTable({ corrections, drafts, selected, materials, allowedClas
           if (next) onDraft(item.id, { internalPartNumber: next.internalPartNumber, customerPartNumber: next.customerPartNumber, collisionResolution: "" });
         }}>{!material && <option value="" disabled>{draft.internalPartNumber} · {draft.customerPartNumber || t.selectMaterial}</option>}{materials.map((c) => <option key={c.mappingId} value={c.mappingId}>{c.internalPartNumber} · {c.customerPartNumber}</option>)}</select></label>
         <div className="grid grid-cols-2 gap-2">
-          <label className="grid grid-cols-[42px_1fr] items-center gap-2"><span className="text-[11px] text-slate-500">{t.dateLabel}</span><Input disabled={disabled} className={changed.has("date") ? "border-blue-300 bg-blue-50" : ""} type={dateType} value={draft.date} onChange={(event) => onDraft(item.id, { date: event.target.value, collisionResolution: "" })}/></label>
+          <label className="grid grid-cols-[42px_1fr] items-center gap-2"><span className="text-[11px] text-slate-500">{t.dateLabel}</span>{dateType === "date" ? <DatePicker aria-label={t.dateLabel} disabled={disabled} className={changed.has("date") ? "border-blue-300 bg-blue-50" : ""} value={draft.date} onChange={(value) => onDraft(item.id, { date: value, collisionResolution: "" })}/> : <Input disabled={disabled} className={changed.has("date") ? "border-blue-300 bg-blue-50" : ""} type={dateType} value={draft.date} onChange={(event) => onDraft(item.id, { date: event.target.value, collisionResolution: "" })}/>}</label>
           <label className="grid grid-cols-[42px_1fr] items-center gap-2"><span className="text-[11px] text-slate-500">{t.quantityLabel}</span><Input disabled={disabled} className={`text-right tabular-nums ${changed.has("quantity") ? "border-blue-300 bg-blue-50" : ""}`} type="number" min={0} step={1} value={draft.quantity} onChange={(event) => onDraft(item.id, { quantity: event.target.value })}/></label>
         </div>
         <div className="grid grid-cols-2 gap-2">

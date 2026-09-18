@@ -5,6 +5,7 @@ import { Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input, Textarea } from "@/components/ui/input";
 import { FilterSelect, SearchableFilterSelect } from "@/components/ui/select";
 import {
@@ -150,10 +151,10 @@ export function ReceiptRecordSheet({ open, record, customers, onOpenChange, onSa
             </div>
           </div>
           <div className="grid-2">
-            <label className="recon-form-field">
+            <div className="recon-form-field">
               <span className="recon-form-label">收货日期</span>
-              <Input className="recon-form-control" disabled={locked} type="date" value={draft.receiptDate} onChange={(event) => setDraft((current) => ({ ...current, receiptDate: event.target.value }))} />
-            </label>
+              <DatePicker aria-label="收货日期" className="recon-form-control" disabled={locked} value={draft.receiptDate} onChange={(value) => setDraft((current) => ({ ...current, receiptDate: value }))} />
+            </div>
             <label className="recon-form-field">
               <span className="recon-form-label">收货数量</span>
               <Input
