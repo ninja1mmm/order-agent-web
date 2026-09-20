@@ -22,9 +22,11 @@ function buildRollingForecastQuery(params: RollingForecastQuerySchema): string {
 
 export function getRollingForecastSchema(
   params: RollingForecastQuerySchema,
+  signal?: AbortSignal,
 ): Promise<RollingForecastResponseSchema> {
   return apiRequest<RollingForecastResponseSchema>(
     `/api/orders/rolling-forecast/?${buildRollingForecastQuery(params)}`,
+    { signal },
   );
 }
 

@@ -44,8 +44,9 @@ export { classificationToKind, kindToClassification };
 
 export async function getRollingForecast(
   params: RollingForecastQuery,
+  signal?: AbortSignal,
 ): Promise<RollingForecastResponse> {
-  const response = await getRollingForecastSchema(params);
+  const response = await getRollingForecastSchema(params, signal);
   return transformRollingForecastResponseToModel(response);
 }
 

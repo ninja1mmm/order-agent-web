@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useMemo, useState } from "react";
-import { CloudDownload, History, Mail, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, CloudDownload, History, LoaderCircle, Mail, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
@@ -26,7 +26,7 @@ import { RightPanel } from "./right/right-panel";
 export function TaskWorkbenchPage() {
   const locale = useLocale();
   const params = useSearchParams();
-  const { mails, tasks, refresh } = useWorkspacePolling();
+  const { loading, error, mails, tasks, refresh } = useWorkspacePolling();
   const { customers } = useCustomerConfig();
   const [selectedMailId, setSelectedMailId] = useState<string>(() => params.get("mailId") ?? "");
   const [submitting, setSubmitting] = useState(false);
@@ -138,6 +138,8 @@ export function TaskWorkbenchPage() {
       form.reset();
       setModalOpen(false);
       await refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "新增邮件失败，请稍后重试");
     } finally {
       setSubmitting(false);
     }
@@ -154,12 +156,18 @@ export function TaskWorkbenchPage() {
           <div className="workbench-view-controls" role="group" aria-label="工作台视图">
             <Button variant="default" size="icon-sm" className={`workbench-icon-button${viewMode === "mail" ? " is-active" : ""}`} aria-label="邮件视图" aria-pressed={viewMode === "mail"} title="邮件视图" onClick={() => setViewMode("mail")}><Mail className="h-3.5 w-3.5" /></Button>
             <Button variant="default" size="icon-sm" className={`workbench-icon-button${viewMode === "customer" ? " is-active" : ""}`} aria-label="客户时间轴" aria-pressed={viewMode === "customer"} title="客户时间轴" onClick={() => setViewMode("customer")}><History className="h-3.5 w-3.5" /></Button>
-            <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="刷新" title="刷新" onClick={() => refresh()}><RefreshCw className="h-3.5 w-3.5" /></Button>
+            <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="刷新" title="刷新" disabled={loading} onClick={() => refresh()}>{loading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}</Button>
           </div>
           <Button variant="default" size="sm" className="workbench-pill-button" aria-label="同步邮箱" title="从邮件服务器拉取新邮件" disabled={isSyncingMailbox} onClick={handleMailboxSync}><CloudDownload className={`h-3.5 w-3.5 ${isSyncingMailbox ? "animate-spin" : ""}`} />同步邮箱</Button>
           <Button variant="default" size="sm" className="workbench-pill-button" onClick={() => setModalOpen(true)}><Plus className="h-3.5 w-3.5" />新增邮件</Button>
         </div>
       </div>
+      {error ? (
+        <div className="mx-3 mt-3 flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+          <span className="flex min-w-0 items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />工作台数据加载失败，当前内容可能不是最新。</span>
+          <Button variant="default" size="sm" disabled={loading} onClick={() => void refresh()}>重试</Button>
+        </div>
+      ) : null}
       <div className="inbox-grid screen-fill">
         <LeftPanel
           locale={locale}

@@ -157,6 +157,7 @@ function MailImages({ mail }: { mail: WorkspaceMail }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
       {allImages.map((img) => (
+        // eslint-disable-next-line @next/next/no-img-element -- Email artifact URLs and dimensions are only known at runtime; preserve the original image response without Next.js optimization.
         <img
           key={img.key}
           src={`${BACKEND_URL}/api/files/${img.artifactId}/content`}

@@ -21,8 +21,8 @@ export type {
   WorkspaceTask,
 } from "@/types/models/inbox";
 
-export function getInboxWorkspace(): Promise<InboxWorkspace> {
-  return getInboxWorkspaceSchema().then(normalizeInboxWorkspace);
+export function getInboxWorkspace(signal?: AbortSignal): Promise<InboxWorkspace> {
+  return getInboxWorkspaceSchema(signal).then(normalizeInboxWorkspace);
 }
 
 export function getInboxMails(params?: InboxMailListRequestParams): Promise<InboxMailListResponse> {

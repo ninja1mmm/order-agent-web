@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   getInboxWorkspace,
@@ -303,26 +303,52 @@ export function useWorkspacePolling() {
   const [mails, setMails] = useState<WorkspaceMail[]>([]);
   const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
+  const inFlightRef = useRef<Promise<void> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
-  const load = async () => {
-    try {
-      const workspace = await getInboxWorkspace();
-      setMails(workspace.mails);
-      setTasks(workspace.tasks);
-      setStats(workspace.stats ?? null);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Load failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const load = useCallback((): Promise<void> => {
+    if (inFlightRef.current) return inFlightRef.current;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const request = getInboxWorkspace(controller.signal)
+      .then((workspace) => {
+        if (!mountedRef.current || controller.signal.aborted) return;
+        setMails(workspace.mails);
+        setTasks(workspace.tasks);
+        setStats(workspace.stats ?? null);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (!mountedRef.current || controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : "Load failed");
+      })
+      .finally(() => {
+        if (inFlightRef.current === request) inFlightRef.current = null;
+        if (abortRef.current === controller) abortRef.current = null;
+        if (mountedRef.current && !controller.signal.aborted) setLoading(false);
+      });
+    inFlightRef.current = request;
+    return request;
+  }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(load, 10000);
-    window.setTimeout(load, 0);
-    return () => window.clearInterval(timer);
-  }, []);
+    mountedRef.current = true;
+    const poll = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    const timer = window.setInterval(poll, 10000);
+    const initialTimer = window.setTimeout(load, 0);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      mountedRef.current = false;
+      window.clearInterval(timer);
+      window.clearTimeout(initialTimer);
+      document.removeEventListener("visibilitychange", poll);
+      abortRef.current?.abort();
+    };
+  }, [load]);
 
   return { loading, error, mails, tasks, stats, refresh: load };
 }

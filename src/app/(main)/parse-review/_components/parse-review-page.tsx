@@ -275,8 +275,8 @@ export function ParseReviewPage() {
       return await request(revision);
     } catch (error) {
       if (!isRevisionConflict(error)) throw error;
-      const effective = await syncEffectiveTask(taskId);
-      return request(effective.resultRevision);
+      await syncEffectiveTask(taskId);
+      throw new RevisionConflictAfterRefreshError();
     }
   }, [syncEffectiveTask]);
 
@@ -442,6 +442,7 @@ export function ParseReviewPage() {
 
     const revision = localResultRevision ?? selectedTask.resultRevision;
     editCommitInFlightRef.current = true;
+    let preserveDraft = false;
     try {
       setReviewActionError(null);
       const res = await runWithFreshRevision(
@@ -463,11 +464,12 @@ export function ParseReviewPage() {
       });
     } catch (err) {
       console.error("Patch row failed:", err);
+      preserveDraft = err instanceof RevisionConflictAfterRefreshError;
       setReviewActionError(readableActionError(err, "保存修改失败"));
       refresh();
     } finally {
       editCommitInFlightRef.current = false;
-      cancelEditing();
+      if (!preserveDraft) cancelEditing();
     }
   }, [editingCell, editValue, selectedTask, localResultRevision, cancelEditing, refresh, runWithFreshRevision]);
 
@@ -1058,6 +1060,13 @@ function readableActionError(error: unknown, fallback: string) {
     }
   }
   return raw || fallback;
+}
+
+class RevisionConflictAfterRefreshError extends Error {
+  constructor() {
+    super("数据已被其他用户更新，已加载最新版本。请核对当前值后再次保存");
+    this.name = "RevisionConflictAfterRefreshError";
+  }
 }
 
 type PreviewPeriod = { key: string; label: string; start: string; end: string };

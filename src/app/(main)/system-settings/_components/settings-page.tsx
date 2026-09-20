@@ -110,10 +110,10 @@ export function SettingsPage() {
           },
         ];
       }
-      setInitialEditPN(urlAddPN);
     }
 
     const timer = window.setTimeout(() => {
+      if (urlAddPN) setInitialEditPN(urlAddPN);
       setSelectedId(customer.id);
       setDraft(newDraft);
       if (urlTab === "materials") setTab("materials");

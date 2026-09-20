@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil, Plus, Save, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -177,7 +177,7 @@ export function MaterialsTab({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [sheetDraft, setSheetDraft] = useState<MaterialMapping>(() => emptyMapping());
   const initialEditConsumed = useRef(false);
-  const mappings = draft.materialMappings ?? [];
+  const mappings = useMemo(() => draft.materialMappings ?? [], [draft.materialMappings]);
 
   useEffect(() => {
     if (initialEditConsumed.current || !initialEditPN) return;
@@ -185,10 +185,13 @@ export function MaterialsTab({
     if (idx === -1) return;
     initialEditConsumed.current = true;
     const targetPage = Math.ceil((idx + 1) / MATERIAL_PAGE_SIZE);
-    setPage(targetPage);
-    setEditingIndex(idx);
-    setSheetDraft({ ...mappings[idx] });
-    setSheetOpen(true);
+    const timer = window.setTimeout(() => {
+      setPage(targetPage);
+      setEditingIndex(idx);
+      setSheetDraft({ ...mappings[idx] });
+      setSheetOpen(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [initialEditPN, mappings]);
   const totalPages = Math.max(1, Math.ceil(mappings.length / MATERIAL_PAGE_SIZE));
   const safePage = Math.min(Math.max(1, page), totalPages);

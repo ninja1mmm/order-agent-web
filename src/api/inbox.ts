@@ -1,8 +1,8 @@
 import { apiRequest } from "./client";
 import type { InboxWorkspaceSchema, InboxMailListRequestParams, InboxMailListResponseSchema } from "@/types/schemas/inbox";
 
-export function getInboxWorkspaceSchema(): Promise<InboxWorkspaceSchema> {
-  return apiRequest<InboxWorkspaceSchema>("/api/inbox/workspace");
+export function getInboxWorkspaceSchema(signal?: AbortSignal): Promise<InboxWorkspaceSchema> {
+  return apiRequest<InboxWorkspaceSchema>("/api/inbox/workspace", { signal });
 }
 
 export function getInboxMailsSchema(params?: InboxMailListRequestParams): Promise<InboxMailListResponseSchema> {

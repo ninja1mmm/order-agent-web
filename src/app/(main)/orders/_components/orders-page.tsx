@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from "react";
-import { CalendarDays, Download, History, LoaderCircle, Save, Sparkles, Table2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Download, History, LoaderCircle, RefreshCw, Save, Sparkles, Table2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -102,12 +102,15 @@ export function OrdersPage() {
   const [totalGroups, setTotalGroups] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [selection, setSelection] = useState<CellSelection | null>(null);
   const [exporting, setExporting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [expandedMonthKey, setExpandedMonthKey] = useState<string | null>(null);
   const [expandedWeekKey, setExpandedWeekKey] = useState<string | null>(null);
   const pageCacheRef = useRef(new Map<string, OrdersCacheEntry>());
+  const queryGenerationRef = useRef(0);
+  const requestControllersRef = useRef(new Set<AbortController>());
   const currentDateKey = useMemo(() => todayKey(), []);
   const autoExpandedRangeRef = useRef<string | null>(null);
 
@@ -126,7 +129,10 @@ export function OrdersPage() {
     [customerFilter, materialFilter, timeFrom, timeTo],
   );
 
-  const fetchPage = useCallback((pageToLoad: number, mode: "replace" | "append") => {
+  const fetchPage = useCallback((pageToLoad: number, mode: "replace" | "append", generation = queryGenerationRef.current) => {
+    const requestQueryKey = queryKey;
+    const controller = new AbortController();
+    requestControllersRef.current.add(controller);
     if (mode === "replace") setLoading(true);
     else setLoadingMore(true);
     getRollingForecast({
@@ -136,39 +142,53 @@ export function OrdersPage() {
       size: PAGE_SIZE,
       customerId: customerFilter === "__all__" ? undefined : customerFilter,
       internalPartNumber: materialFilter.trim() || undefined,
-    })
+    }, controller.signal)
       .then((result: RollingForecastResponse) => {
+        if (controller.signal.aborted || generation !== queryGenerationRef.current) return;
+        setLoadError(false);
         setTotalGroups(result.totalGroups);
         setGroups((current) => {
           const next = mode === "replace" ? result.groups : mergeRowGroups(current, result.groups);
-          pageCacheRef.current.set(queryKey, { groups: next, totalGroups: result.totalGroups });
+          pageCacheRef.current.set(requestQueryKey, { groups: next, totalGroups: result.totalGroups });
           return next;
         });
       })
       .catch(() => {
-        if (mode === "replace") {
-          setGroups([]);
-          setTotalGroups(0);
-        }
+        if (controller.signal.aborted || generation !== queryGenerationRef.current) return;
+        if (mode === "replace") setLoadError(true);
         if (mode === "append") toast.error("加载更多订单失败");
       })
       .finally(() => {
+        requestControllersRef.current.delete(controller);
+        if (generation !== queryGenerationRef.current) return;
         if (mode === "replace") setLoading(false);
         else setLoadingMore(false);
       });
+    return controller;
   }, [customerFilter, materialFilter, queryKey, timeFrom, timeTo]);
 
   useEffect(() => {
+    const requestControllers = requestControllersRef.current;
+    const generation = queryGenerationRef.current + 1;
+    queryGenerationRef.current = generation;
+    for (const controller of requestControllers) controller.abort();
+    requestControllers.clear();
     const timer = window.setTimeout(() => {
       const cached = pageCacheRef.current.get(queryKey);
       if (cached) {
         setGroups(cached.groups);
         setTotalGroups(cached.totalGroups);
+        setLoadError(false);
+        setLoading(false);
         return;
       }
-      fetchPage(1, "replace");
+      fetchPage(1, "replace", generation);
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      for (const controller of requestControllers) controller.abort();
+      requestControllers.clear();
+    };
   }, [fetchPage, queryKey, reloadKey]);
 
   useEffect(() => {
@@ -310,6 +330,12 @@ export function OrdersPage() {
           />
 
           <div className="orders-table-fill">
+            {loadError ? (
+              <div className="mx-3 mt-3 flex items-center justify-between gap-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+                <span className="flex min-w-0 items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />订单数据加载失败，已保留上次成功结果。</span>
+                <Button variant="default" size="sm" disabled={loading} onClick={() => setReloadKey((value) => value + 1)}><RefreshCw className="h-3.5 w-3.5" />重试</Button>
+              </div>
+            ) : null}
             <RollingForecastTable
               locale={locale}
               rows={rows}
@@ -331,7 +357,7 @@ export function OrdersPage() {
                 同步订单数据...
               </div>
             ) : null}
-            {!loading && rows.length === 0 ? (
+            {!loading && !loadError && rows.length === 0 ? (
               <div className="orders-state">
                 <strong>暂无滚动预测数据</strong>
               </div>
