@@ -7,7 +7,8 @@ export const metadata: Metadata = {
   title: "Supply Chain Agent",
   description: "Supply chain order processing agent - Phase 1",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/FRVIA.PA.ico",
+    shortcut: "/FRVIA.PA.ico",
   },
 };
 

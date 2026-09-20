@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Bot } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -140,7 +141,14 @@ export function TopNav({ active }: { active: string }) {
   return (
     <header className="topbar">
       <Link className="brand" href="/intelligent-service">
-        <span className="brand-mark">SC</span>
+        <Image
+          className="brand-mark"
+          src="/FRVIA.PA.svg"
+          width={24}
+          height={24}
+          alt=""
+          priority
+        />
         <span>Supply Chain Agent</span>
       </Link>
       <nav className="nav-group">

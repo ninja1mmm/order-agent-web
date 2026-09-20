@@ -116,15 +116,10 @@ a {
 }
 
 .brand-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--forvia-blue), var(--forvia-blue-hover));
-  color: white;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  box-shadow: 0 12px 26px rgba(79, 95, 234, 0.22);
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  object-fit: contain;
 }
 
 .nav-group {
