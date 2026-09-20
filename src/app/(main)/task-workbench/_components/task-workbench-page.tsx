@@ -152,12 +152,12 @@ export function TaskWorkbenchPage() {
         </nav>
         <div className="workbench-page-actions">
           <div className="workbench-view-controls" role="group" aria-label="工作台视图">
-            <Button variant="default" size="icon-sm" className={viewMode === "mail" ? "is-active" : ""} aria-label="邮件视图" aria-pressed={viewMode === "mail"} title="邮件视图" onClick={() => setViewMode("mail")}><Mail className="h-3.5 w-3.5" /></Button>
-            <Button variant="default" size="icon-sm" className={viewMode === "customer" ? "is-active" : ""} aria-label="客户时间轴" aria-pressed={viewMode === "customer"} title="客户时间轴" onClick={() => setViewMode("customer")}><History className="h-3.5 w-3.5" /></Button>
+            <Button variant="default" size="icon-sm" className={`workbench-icon-button${viewMode === "mail" ? " is-active" : ""}`} aria-label="邮件视图" aria-pressed={viewMode === "mail"} title="邮件视图" onClick={() => setViewMode("mail")}><Mail className="h-3.5 w-3.5" /></Button>
+            <Button variant="default" size="icon-sm" className={`workbench-icon-button${viewMode === "customer" ? " is-active" : ""}`} aria-label="客户时间轴" aria-pressed={viewMode === "customer"} title="客户时间轴" onClick={() => setViewMode("customer")}><History className="h-3.5 w-3.5" /></Button>
+            <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="刷新" title="刷新" onClick={() => refresh()}><RefreshCw className="h-3.5 w-3.5" /></Button>
           </div>
-          <Button variant="default" size="sm" aria-label="同步邮箱" title="从邮件服务器拉取新邮件" disabled={isSyncingMailbox} onClick={handleMailboxSync}><CloudDownload className={`h-3.5 w-3.5 ${isSyncingMailbox ? "animate-spin" : ""}`} />同步邮箱</Button>
-          <Button variant="default" size="icon-sm" aria-label="刷新" title="刷新" onClick={() => refresh()}><RefreshCw className="h-3.5 w-3.5" /></Button>
-          <Button variant="default" size="sm" onClick={() => setModalOpen(true)}><Plus className="h-3.5 w-3.5" />新增邮件</Button>
+          <Button variant="default" size="sm" className="workbench-pill-button" aria-label="同步邮箱" title="从邮件服务器拉取新邮件" disabled={isSyncingMailbox} onClick={handleMailboxSync}><CloudDownload className={`h-3.5 w-3.5 ${isSyncingMailbox ? "animate-spin" : ""}`} />同步邮箱</Button>
+          <Button variant="default" size="sm" className="workbench-pill-button" onClick={() => setModalOpen(true)}><Plus className="h-3.5 w-3.5" />新增邮件</Button>
         </div>
       </div>
       <div className="inbox-grid screen-fill">

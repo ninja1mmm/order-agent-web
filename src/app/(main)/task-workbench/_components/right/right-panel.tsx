@@ -57,7 +57,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <Badge variant={pendingCount ? "amber" : "slate"}>{pendingCount ? `${pendingCount} 待确认` : `${tasks.length} 个任务`}</Badge>
           {mailId ? (
-            <Button variant="ghost" size="icon-sm" aria-label="同步邮件" title="从邮件服务器重新同步" disabled={isSyncing} onClick={handleResync}>
+            <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="同步邮件" title="从邮件服务器重新同步" disabled={isSyncing} onClick={handleResync}>
               <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
             </Button>
           ) : null}
@@ -129,7 +129,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
                     <Button
                       variant={isParsing ? "primary" : "default"}
                       size="sm"
-                      className={isParsing ? "btn-parsing" : ""}
+                      className={`workbench-pill-button${isParsing ? " btn-parsing" : ""}`}
                       onClick={() => onParse(mailId, [attachment.attachmentId])}
                     >
                       {isParsing ? "解析中..." : canReparse ? t.reparse : t.trigger}
@@ -137,7 +137,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
                   ) : null}
                   {reviewHref ? (
                     <Link href={reviewHref}>
-                      <Button variant={task?.status === "waiting_human_decision" ? "primary" : "default"} size="sm">{reviewLabel}</Button>
+                      <Button variant={task?.status === "waiting_human_decision" ? "primary" : "default"} size="sm" className="workbench-pill-button">{reviewLabel}</Button>
                     </Link>
                   ) : null}
                 </div>
@@ -207,13 +207,13 @@ function BodyTaskResult({
         <span className="item-meta">{taskStatusLabel(task.status, locale)}</span>
         <div className="result-actions">
           {showParseButton && mailId ? (
-            <Button variant="default" size="sm" onClick={() => onParse(mailId, [])}>
+            <Button variant="default" size="sm" className="workbench-pill-button" onClick={() => onParse(mailId, [])}>
               {canReparse ? t.reparse : t.trigger}
             </Button>
           ) : null}
           {reviewHref ? (
             <Link href={reviewHref}>
-              <Button variant={task.status === "waiting_human_decision" ? "primary" : "default"} size="sm">{reviewLabel}</Button>
+              <Button variant={task.status === "waiting_human_decision" ? "primary" : "default"} size="sm" className="workbench-pill-button">{reviewLabel}</Button>
             </Link>
           ) : null}
         </div>
