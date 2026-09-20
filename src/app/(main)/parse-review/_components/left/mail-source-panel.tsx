@@ -32,7 +32,7 @@ export function MailSourcePanel({
       <div className="panel-head parse-source-mail-head">
         <div className="source-tree-title"><strong title={mail?.subject}>{mail?.subject ?? "邮件解析确认"}</strong><span>{mail ? formatDateTime(mail.receivedAt, locale) : "未找到邮件"}</span></div>
       </div>
-      <div className="panel-body source-tree">
+      <div className="panel-body source-tree scrollbar-hidden">
         {!mail ? <p className="item-meta">未找到邮件。</p> : null}
         {mail ? (
           <SourceGroup title="邮件正文" icon={<Mail className="h-3.5 w-3.5" />} subtitle="Email Body" active={activeBody} defaultOpen onActivate={onSelectBody}>

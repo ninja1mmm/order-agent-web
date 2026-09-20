@@ -38,7 +38,7 @@ export function MiddlePanel({ locale, viewMode, mail, timelineMails, tasks, cust
           <Badge variant="slate">{timelineMails.length} 封</Badge>
         </div>
         <div className="customer-timeline-workspace">
-          <div className="vertical-mail-timeline" aria-label={`${customerName} 邮件时间线`}>
+          <div className="vertical-mail-timeline scrollbar-hidden" aria-label={`${customerName} 邮件时间线`}>
             {timelineMails.map((item) => (
               <button type="button" className={item.id === mail?.id ? "selected" : ""} key={item.id} onClick={() => onSelectMail(item.id)}>
                 <span className="timeline-dot" aria-hidden="true" />

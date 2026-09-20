@@ -89,7 +89,7 @@ export function LeftPanel({
         <h2 className="panel-title">{viewMode === "mail" ? <Inbox className="h-4 w-4" /> : <Users className="h-4 w-4" />}{viewMode === "mail" ? t.mailList : "客户列表"}</h2>
         <Badge variant="slate">{viewMode === "mail" ? `${mails.length} 封` : `${customerGroups.length} 个客户`}</Badge>
       </div>
-      <div className="panel-body stack">
+      <div className="panel-body stack scrollbar-hidden">
         {viewMode === "mail" ? <div className="filter-bar">
           <SearchableFilterSelect label={t.filterCustomer} value={customerFilter} options={customerOptions} onChange={onCustomerFilterChange} />
           <FilterSelect

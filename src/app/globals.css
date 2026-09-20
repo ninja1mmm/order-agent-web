@@ -8588,11 +8588,11 @@ tr.conflict-group-amber > td:first-child { border-left: 3px solid #ca8a04; }
 .pending-mail-subject { display: block; max-width: 100%; margin: 0 0 4px; font-size: 13px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pending-mail-task-count { color: var(--muted-strong); font-size: 11px; font-weight: 750; }
 .pending-mail-link { display: inline-flex; align-items: center; gap: 4px; color: var(--forvia-blue); font-size: 12px; font-weight: 850; }
-.service-priority-list { display: grid; gap: 8px; }
-.service-priority-list > button { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px; border: 1px solid transparent; border-bottom-color: var(--line); border-radius: 8px; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-.service-priority-list > button:last-child { border-bottom-color: transparent; }
+.service-priority-list { display: grid; gap: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; }
+.service-priority-list > button { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.service-priority-list > button:last-child { border-bottom: 0; }
 .service-priority-list > button:hover, .service-priority-list > button.selected { background: var(--forvia-blue-soft); }
-.service-priority-list > button.selected { border-color: var(--forvia-blue-border); }
+.service-priority-list > button.selected { box-shadow: inset 3px 0 0 var(--forvia-blue); }
 .service-priority-list > button:focus-visible, button.heat-cell:focus-visible, .today-mail-row:focus-visible, .pending-mail-filter button:focus-visible { outline: 2px solid var(--forvia-blue); outline-offset: 2px; }
 .service-priority-list span { font-size: 12px; font-weight: 800; }
 .service-priority-list strong { font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -8908,4 +8908,49 @@ tr.conflict-group-amber > td:first-child { border-left: 3px solid #ca8a04; }
   .mail-review-head { grid-template-columns: 1fr; }
   .parse-horizontal-workspace, .parse-horizontal-workspace.result-collapsed { grid-template-columns: 1fr; grid-template-rows: 250px 460px; }
   .parse-horizontal-workspace.result-collapsed .parse-edit-panel { display: none; }
+}
+
+/* System scrollbars: unobtrusive by default, visible on hover/focus. */
+html * {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+html *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+
+html *::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+html *::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: transparent !important;
+  background-clip: padding-box !important;
+}
+
+html *:hover,
+html *:focus-within {
+  scrollbar-color: rgba(100, 116, 139, 0.48) transparent;
+}
+
+html *:hover::-webkit-scrollbar-thumb,
+html *:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.48) !important;
+  background-clip: padding-box !important;
+}
+
+.scrollbar-hidden {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }

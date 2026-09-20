@@ -130,7 +130,7 @@ export function WeekOverviewPanel({
           ) : materials.length === 0 ? (
             <p className="item-meta">该客户暂无发运物料</p>
           ) : (
-            <div className="material-list-scroll">
+            <div className="material-list-scroll scrollbar-hidden">
               {materials.map((material) => (
                 <button
                   key={material.internalPartNumber}
@@ -203,7 +203,7 @@ export function WeekOverviewPanel({
                 >
                   <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
-                <div ref={rollingStripRef} className="rolling-strip profile-week-strip" data-profile-heatmap>
+                <div ref={rollingStripRef} className="rolling-strip profile-week-strip scrollbar-hidden" data-profile-heatmap>
                   {displayWeeks.map((week) => (
                     <button
                       key={week.weekKey}

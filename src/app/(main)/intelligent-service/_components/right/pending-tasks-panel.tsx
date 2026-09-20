@@ -63,7 +63,7 @@ export function PendingMailsPanel({ locale, mails, tasks, customers, filter, onC
           <Button variant="ghost" size="icon" aria-label="刷新" onClick={onRefresh}><RefreshCw className="h-3.5 w-3.5" /></Button>
         </div>
       </div>
-      <div className="panel-body stack" onScroll={handleScroll}>
+      <div className="panel-body stack scrollbar-hidden" onScroll={handleScroll}>
         {filterLabel ? (
           <div className="pending-mail-filter">
             <span title={filterLabel}>{locale === "en" ? "Filter: " : "筛选："}{filterLabel}</span>

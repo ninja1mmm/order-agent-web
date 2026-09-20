@@ -52,7 +52,7 @@ export function SummaryPanel({
       <div className="panel-head">
         <h2 className="panel-title"><ClipboardList className="h-4 w-4" />近期工作总结</h2>
       </div>
-      <div className="panel-body stack">
+      <div className="panel-body stack scrollbar-hidden">
         {loading ? <p className="item-meta">Loading...</p> : null}
         {error ? <p className="item-meta">{error}</p> : null}
         <div className="metric-grid">

@@ -36,7 +36,7 @@ export function CustomerListPanel({
           <RefreshCw className={`h-3.5 w-3.5${loading ? " animate-spin" : ""}`} />
         </Button>
       </div>
-      <div className="panel-body stack">
+      <div className="panel-body stack scrollbar-hidden">
         {customers.length === 0 ? (
           <p className="item-meta">{loading ? "加载中..." : "暂无发运客户数据"}</p>
         ) : (

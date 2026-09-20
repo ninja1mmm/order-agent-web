@@ -59,7 +59,7 @@ export function TaskListPanel({
           <RefreshCw className="h-3.5 w-3.5" />
         </Button>
       </div>
-      <div className="panel-body stack">
+      <div className="panel-body stack scrollbar-hidden">
         <div className="filter-bar" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
           <SearchableFilterSelect label={t.filterCustomer} value={customerFilter} options={customerOptions} onChange={onCustomerFilterChange} />
           <FilterSelect

@@ -240,7 +240,7 @@ function SearchableFilterSelect({
             placeholder={placeholder ?? "搜索..."}
             className="w-full px-2.5 py-1.5 mb-1 border border-[var(--line)] rounded-lg text-xs outline-none focus:border-[var(--forvia-blue-border)]"
           />
-          <div className="overflow-y-auto flex-1">
+          <div className="scrollbar-hidden flex-1 overflow-y-auto">
             {filtered.map((option) => {
               const currentValue = optionValue(option);
               const currentLabel = optionLabel(option);

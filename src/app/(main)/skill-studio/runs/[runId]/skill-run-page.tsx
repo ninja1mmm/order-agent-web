@@ -395,8 +395,8 @@ export function SkillRunPage({ runId }: { runId: string }) {
         </dl>
         {run.status === "succeeded" && <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[11px]"><SummaryStat label={t.statusValid} value={validationSummary.valid}/><SummaryStat label={t.statusBlocked} value={validationSummary.blocked}/><SummaryStat label={t.statusMerged} value={validationSummary.merged}/></div>}
       </aside>
-      <section className="min-h-0 overflow-auto p-5">
-        <div className="mb-5 grid grid-cols-3 gap-2">{[t.step1, t.step2, t.step3].map((label, index) => {
+      <section className="flex min-h-0 flex-col overflow-hidden p-5 max-[900px]:min-h-[680px]">
+        <div className="mb-5 grid flex-none grid-cols-3 gap-2">{[t.step1, t.step2, t.step3].map((label, index) => {
           const step = (index + 1) as 1 | 2 | 3;
           const enabled = run.status === "queued" ? step === 1 : run.status === "running" ? step === 2 : step < 3 || run.status === "succeeded";
           const complete = step === 1 ? run.status !== "queued" : step === 2 ? run.status === "succeeded" : run.mergeBatches.length > 0;
@@ -405,7 +405,7 @@ export function SkillRunPage({ runId }: { runId: string }) {
 
         {activeStep === 1 && <StepOne run={run} scope={scope} setScope={updateScope} invalidDates={invalidDates} snapshotting={snapshotting} snapshotDirty={snapshotDirty} materialSearch={materialSearch} setMaterialSearch={setMaterialSearch} materials={matchingMaterials} toggleMaterial={toggleMaterial} previewSnapshot={previewSnapshot} execute={execute} executing={executing} canExecute={canExecute} snapshot={snapshot}/>}
 
-        {activeStep === 2 && <div>
+        {activeStep === 2 && <div className="min-h-0 flex-1 overflow-auto">
           <div className="mb-3 flex items-center justify-between gap-3"><div><h2 className="text-sm font-black">{t.step2Title}</h2><p className="mt-1 text-xs text-slate-500">{t.step2Hint(customerName)}</p></div><div className="flex gap-2">{run.status === "succeeded" && <><Button disabled={validating} onClick={() => void revalidate()}>{validating ? <LoaderCircle className="animate-spin" size={14}/> : <RefreshCw size={14}/>}{t.revalidate}</Button><Button onClick={() => void (async () => { try { const next = await recreateSkillRun(run.id); router.push(`/skill-studio/runs/${next.id}`); } catch (error) { toast.error(errorText(error)); } })()}><RotateCcw size={14}/>{t.recreateRun}</Button></>}{run.status === "failed" && <Button onClick={() => void (async () => { try { const next = await recreateSkillRun(run.id); router.push(`/skill-studio/runs/${next.id}`); } catch (error) { toast.error(errorText(error)); } })()}><RotateCcw size={14}/>{t.recreateRun}</Button>}</div></div>
 
           <InputIssuesPanel issues={run.inputIssues} />
@@ -456,7 +456,7 @@ function StepOne({ run, scope, setScope, invalidDates, snapshotting, snapshotDir
   materialSearch: string; setMaterialSearch: (value: string) => void; materials: CustomerConfig["materialMappings"];
   toggleMaterial: (value: string) => void; previewSnapshot: () => Promise<void>; execute: () => Promise<void>; executing: boolean; canExecute: boolean; snapshot: SnapshotCell[] | null;
 }) {
-  return <div>
+  return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
     <div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-black">{t.step1Title}</h2><p className="mt-1 text-xs text-slate-500">{t.step1Hint}</p></div>{run.status === "queued" ? <Button variant="primary" disabled={!canExecute || executing} onClick={() => void execute()}><Play size={14}/>{t.confirmAndExecute}</Button> : <Badge variant="green">{t.immutableSnapshot}</Badge>}</div>
 
     <InputIssuesPanel issues={run.inputIssues} />
@@ -485,7 +485,7 @@ function StepThree({ run, selectedCorrections, restoreCount, applying, validatio
   run: SkillRun; selectedCorrections: SkillCorrection[]; restoreCount: number; applying: boolean;
   validationSummary: ValidationSummary; corrections: SkillCorrection[]; onDownload: () => Promise<void>; onMerge: () => Promise<void>;
 }) {
-  return <div>
+  return <div className="min-h-0 flex-1 overflow-auto">
     <h2 className="text-sm font-black">{t.step3Title}</h2>
     <p className="mt-1 text-xs text-slate-500">{t.step3Hint}</p>
 
@@ -528,7 +528,7 @@ function SummaryStat({ label, value: count }: { label: string; value: number }) 
 }
 
 function OrdersTable({ rows }: { rows: SnapshotCell[] }) {
-  return <div className="overflow-auto rounded-xl border border-[var(--line)]"><table className="w-full min-w-[980px] text-xs"><thead className="sticky top-0 bg-slate-50"><tr><th className="p-2 text-left font-black">{ordersLabels.customerPN}</th><th className="p-2 text-left font-black">{ordersLabels.internalPN}</th><th className="p-2 text-left font-black">Date</th><th className="p-2 text-left font-black">{ordersLabels.type}</th><th className="p-2 text-right font-black">Quantity</th><th className="p-2 text-left font-black">修订记录</th></tr></thead><tbody>{rows.map((row) => <SnapshotRow key={`${row.rowKey}:${row.colKey}`} row={row}/>)}</tbody></table></div>;
+  return <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-[var(--line)]"><table className="w-full min-w-[980px] text-xs"><thead className="sticky top-0 z-10 bg-slate-50"><tr><th className="p-2 text-left font-black">{ordersLabels.customerPN}</th><th className="p-2 text-left font-black">{ordersLabels.internalPN}</th><th className="p-2 text-left font-black">Date</th><th className="p-2 text-left font-black">{ordersLabels.type}</th><th className="p-2 text-right font-black">Quantity</th><th className="p-2 text-left font-black">修订记录</th></tr></thead><tbody>{rows.map((row) => <SnapshotRow key={`${row.rowKey}:${row.colKey}`} row={row}/>)}</tbody></table></div>;
 }
 
 function SnapshotRow({ row }: { row: SnapshotCell }) {

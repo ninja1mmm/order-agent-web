@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 function DialogOverlay({ className, open, onClose, children }: { className?: string; open: boolean; onClose: () => void; children: React.ReactNode }) {
   if (!open) return null;
   return (
-    <div className={cn("fixed inset-0 z-50 bg-black/30 flex items-start justify-center pt-8", className)} onClick={onClose}>
+    <div className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-5", className)} onClick={onClose}>
       {children}
     </div>
   );
