@@ -8,7 +8,7 @@ import type { WorkspaceAttachment, WorkspaceMail, WorkspaceTask } from "@/servic
 import { type Locale, copy } from "../../../_components/shared";
 import type { EditingCell, LocalNewRow, NewRowData, OrderType } from "../parse-review-types";
 import { AttachmentPreview } from "./attachment-preview";
-import { buildConflictReviewSummary } from "./conflict-review-summary";
+import { buildConflictReviewSummary, localizeReviewReason } from "./conflict-review-summary";
 import { ResultTable } from "./result-table";
 
 type MiddlePanelProps = {
@@ -114,10 +114,11 @@ export function MiddlePanel({
 }: MiddlePanelProps) {
   const t = copy[locale];
   const [resultCollapsed, setResultCollapsed] = useState(false);
-  const conflictReviewSummary = reviewType === "extraction_review"
+  const isConflictReview = /^\d+ rows have conflicts requiring review\.$/.test(reviewReason ?? "");
+  const conflictReviewSummary = isConflictReview
     ? buildConflictReviewSummary(rows)
     : null;
-  const displayedReviewReason = conflictReviewSummary?.message ?? reviewReason;
+  const displayedReviewReason = conflictReviewSummary?.message ?? localizeReviewReason(reviewReason);
   const displayedReviewTitle = conflictReviewSummary?.title ?? "需要人工确认";
 
   return (

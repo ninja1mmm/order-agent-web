@@ -2668,7 +2668,32 @@ button.week-block:disabled {
 }
 
 .material-week-grid .week-block {
+  min-width: 0;
   min-height: 50px;
+  font-variant-numeric: tabular-nums;
+}
+
+.material-week-grid .week-block > span {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+@media (max-width: 1600px) {
+  .material-week-grid {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .material-week-grid .week-block {
+    padding-inline: 4px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .material-week-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
 }
 
 .material-combo-card {

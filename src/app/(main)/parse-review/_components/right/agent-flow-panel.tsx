@@ -13,6 +13,7 @@ import {
   taskStatusLabel,
 } from "../../../_components/shared";
 import type { TimelineEntry } from "../parse-review-types";
+import { localizeReviewReason } from "../middle/conflict-review-summary";
 
 type StatusBadgeVariant = "green" | "amber" | "red" | "slate";
 
@@ -111,7 +112,7 @@ export function AgentFlowPanel({
                 </div>
                 {entry.summary ? <div className="step-meta">{entry.summary}</div> : null}
                 {entry.reviewReason ? (
-                  <div className="step-meta step-review-reason">{entry.reviewReason}</div>
+                  <div className="step-meta step-review-reason">{localizeReviewReason(entry.reviewReason)}</div>
                 ) : null}
                 {entry.state === "review" && isWaitingHuman ? (
                   <>
