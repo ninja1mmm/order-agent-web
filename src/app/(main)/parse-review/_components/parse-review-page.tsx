@@ -83,6 +83,7 @@ export function ParseReviewPage() {
   const [batchLoading, setBatchLoading] = useState(false);
   const [mergeConfirmOpen, setMergeConfirmOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [completedDetailsTaskId, setCompletedDetailsTaskId] = useState<string | null>(null);
   const [isResetLoading, setIsResetLoading] = useState(false);
   const [reviewActionError, setReviewActionError] = useState<string | null>(null);
   const [mailTaskList, setMailTaskList] = useState<MailTaskListResponse | null>(null);
@@ -199,6 +200,7 @@ export function ParseReviewPage() {
   }, [displayRowEntries]);
 
   const isWaitingHuman = selectedTask?.status === "waiting_human_decision";
+  const isReadOnly = selectedTask?.status === "completed" || selectedTask?.status === "published";
   const selectedTaskExcluded = mailTaskList?.tasks.find((task) => task.id === selectedTask?.id)?.excluded ?? false;
   const hasOrderTypeEdits = rowEntries.some(([rowId, row]) => {
     const original = String(row.classification ?? "uncertain");
@@ -645,6 +647,7 @@ export function ParseReviewPage() {
     setSelectedTaskId(taskId);
     setHasUserSelected(true);
     setReviewStep(1);
+    if (task?.status === "completed" || task?.status === "published") setCompletedDetailsTaskId(null);
     setPreviewSource(task?.attachmentId ? { kind: "attachment", attachmentId: task.attachmentId, sheetName: task.targetSheetName ?? undefined } : { kind: "body" });
   }, [selectedMailTasks]);
 
@@ -846,7 +849,7 @@ export function ParseReviewPage() {
           <Link className="mail-review-back" href="/task-workbench" aria-label="返回客户收件箱"><ArrowLeft className="h-4 w-4" /></Link>
           {selectedTask ? <Badge variant="slate">{taskStatusLabel(selectedTask.status, locale)}</Badge> : null}
         </div>
-        <ReviewStepper step={reviewStep} onChange={setReviewStep} />
+        <ReviewStepper step={reviewStep} readOnly={isReadOnly} onChange={setReviewStep} />
       </header>
 
       <div className="mail-review-workspace">
@@ -859,6 +862,7 @@ export function ParseReviewPage() {
           activeAttachmentId={selectedAttachment?.attachmentId ?? null}
           taskList={mailTaskList}
           busyTaskId={scopeTaskId}
+          readOnly={isReadOnly}
           onSelectBody={handleSelectBody}
           onSelectAttachment={handleSelectAttachment}
           onSelectTask={handleSelectTask}
@@ -888,8 +892,8 @@ export function ParseReviewPage() {
           )}
           {!selectedTask ? (
             <div className="panel parse-empty-state">当前邮件没有可审查的解析任务。</div>
-          ) : selectedTask.status === "completed" || selectedTask.status === "published" ? (
-            <CompletedState />
+          ) : isReadOnly && completedDetailsTaskId !== selectedTask.id ? (
+            <CompletedState onViewDetails={() => { setReviewStep(1); setCompletedDetailsTaskId(selectedTask.id); }} />
           ) : reviewStep === 4 ? (
             <MergePreview
               key={selectedTask.id}
@@ -903,12 +907,14 @@ export function ParseReviewPage() {
               updatedAt={selectedTask.requestedAt || selectedTask.receivedAt}
               preferEditedDate={preferEditedDate}
               footer={reviewFooter}
+              readOnly={isReadOnly}
             />
           ) : (
               <MiddlePanel
                 locale={locale}
-                actionBar={<ReviewActionBar step={reviewStep} dateOffset={dateOffset} mergeStrategy={mergeStrategy} disabled={!isWaitingHuman || batchLoading || isProceedLoading} loading={batchLoading} needsRevalidation={needsRevalidation} revalidating={isProceedLoading} onDateOffsetChange={setDateOffset} onMergeStrategyChange={setMergeStrategy} onApplyDateOffset={handleApplyDateOffset} onApplyMergeStrategy={handleApplyMergeStrategy} onRevalidate={handleProceed} onReset={() => setResetConfirmOpen(true)} />}
+                actionBar={isReadOnly ? <ReadOnlyActionBar /> : <ReviewActionBar step={reviewStep} dateOffset={dateOffset} mergeStrategy={mergeStrategy} disabled={!isWaitingHuman || batchLoading || isProceedLoading} loading={batchLoading} needsRevalidation={needsRevalidation} revalidating={isProceedLoading} onDateOffsetChange={setDateOffset} onMergeStrategyChange={setMergeStrategy} onApplyDateOffset={handleApplyDateOffset} onApplyMergeStrategy={handleApplyMergeStrategy} onRevalidate={handleProceed} onReset={() => setResetConfirmOpen(true)} />}
                 footer={reviewFooter}
+                readOnly={isReadOnly}
                 selectedTask={selectedTask}
                 selectedMail={selectedMail}
                 selectedAttachment={selectedAttachment}
@@ -1000,28 +1006,36 @@ function ReviewFooter({ step, needsRevalidation, hasBlockingConflicts, revalidat
   );
 }
 
-function CompletedState() {
+function CompletedState({ onViewDetails }: { onViewDetails: () => void }) {
   return (
     <section className="panel parse-complete-state">
       <div className="parse-complete-icon"><Check className="h-5 w-5" /></div>
       <h2>解析结果已合并</h2>
-      <p>审查后的结果已写入 Orders。</p>
-      <div><Link href="/task-workbench"><Button variant="default" size="sm">返回邮件</Button></Link><Link href="/orders"><Button variant="primary" size="sm"><Table2 className="h-3.5 w-3.5" />查看 Orders</Button></Link></div>
+      <p>审查后的结果已写入 Orders，可查看本次任务的附件与合并内容。</p>
+      <div>
+        <Link href="/task-workbench"><Button variant="default" size="sm">返回邮件</Button></Link>
+        <Button variant="primary" size="sm" onClick={onViewDetails}><Table2 className="h-3.5 w-3.5" />查看详情</Button>
+      </div>
     </section>
   );
 }
 
-function ReviewStepper({ step, onChange }: { step: 1 | 2 | 3 | 4; onChange: (step: 1 | 2 | 3 | 4) => void }) {
+function ReviewStepper({ step, readOnly, onChange }: { step: 1 | 2 | 3 | 4; readOnly: boolean; onChange: (step: 1 | 2 | 3 | 4) => void }) {
+  const steps = readOnly ? REVIEW_STEPS.filter((item) => item.id === 1 || item.id === 4) : REVIEW_STEPS;
   return (
     <nav className="review-stepper" aria-label="解析确认步骤">
-      {REVIEW_STEPS.map((item) => (
+      {steps.map((item, index) => (
         <button key={item.id} type="button" className={`${item.id === step ? "active" : ""}${item.id < step ? " complete" : ""}`} aria-current={item.id === step ? "step" : undefined} onClick={() => onChange(item.id)}>
-          <span>{item.id < step ? <Check className="h-3.5 w-3.5" /> : item.id}</span>
+          <span>{item.id < step ? <Check className="h-3.5 w-3.5" /> : index + 1}</span>
           <span><strong>{item.title}</strong></span>
         </button>
       ))}
     </nav>
   );
+}
+
+function ReadOnlyActionBar() {
+  return <div className="review-actionbar"><div><strong>物料核对</strong></div></div>;
 }
 
 function ReviewActionBar({ step, dateOffset, mergeStrategy, disabled, loading, needsRevalidation, revalidating, onDateOffsetChange, onMergeStrategyChange, onApplyDateOffset, onApplyMergeStrategy, onRevalidate, onReset }: { step: 1 | 2 | 3; dateOffset: string; mergeStrategy: BulkMergeStrategy; disabled: boolean; loading: boolean; needsRevalidation: boolean; revalidating: boolean; onDateOffsetChange: (value: string) => void; onMergeStrategyChange: (value: BulkMergeStrategy) => void; onApplyDateOffset: () => void; onApplyMergeStrategy: () => void; onRevalidate: () => Promise<boolean>; onReset: () => void }) {
@@ -1106,7 +1120,7 @@ function previewPeriod(value: string): PreviewPeriod | null {
   return null;
 }
 
-function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, customerId, customerOptions, updatedAt, preferEditedDate, footer }: { rows: Record<string, unknown>[]; rowIds: string[]; getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown; orderTypeMap: Map<string, OrderType>; customerName: string; customerId: string | null; customerOptions: { value: string; label: string }[]; updatedAt: string | null | undefined; preferEditedDate: boolean; footer: ReactNode }) {
+function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, customerId, customerOptions, updatedAt, preferEditedDate, footer, readOnly }: { rows: Record<string, unknown>[]; rowIds: string[]; getRowValue: (rowId: string, field: string, originalValue: unknown) => unknown; orderTypeMap: Map<string, OrderType>; customerName: string; customerId: string | null; customerOptions: { value: string; label: string }[]; updatedAt: string | null | undefined; preferEditedDate: boolean; footer: ReactNode; readOnly: boolean }) {
   const [materialQuery, setMaterialQuery] = useState("");
   const effectivePeriod = (rowId: string, row: Record<string, unknown>) => {
     const dateInfo = String(getRowValue(rowId, "dateInfo", row.dateInfo) ?? "").trim();
@@ -1167,7 +1181,7 @@ function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, c
     <section className="panel scroll-panel merge-preview-panel">
       <div className="panel-head">
         <h2 className="panel-title"><Table2 className="h-4 w-4" />Sales Forecast Plus 2.0</h2>
-        <div className="panel-head-actions">{periods.length ? <Button variant="default" size="sm" disabled>当前窗口：{periods[0].key} - {periods.at(-1)?.key}</Button> : null}<Button variant="primary" size="sm" onClick={exportPreview}><Download className="h-3.5 w-3.5" />导出</Button></div>
+        {!readOnly ? <div className="panel-head-actions">{periods.length ? <Button variant="default" size="sm" disabled>当前窗口：{periods[0].key} - {periods.at(-1)?.key}</Button> : null}<Button variant="primary" size="sm" onClick={exportPreview}><Download className="h-3.5 w-3.5" />导出</Button></div> : null}
       </div>
       <div className="panel-body orders-body merge-orders-preview-body">
         <OrdersFilters customerLabel="客户" materialLabel="物料" customerFilter={customerFilter} materialFilter={materialQuery} timeFrom={timeFrom} timeTo={timeTo} visibleDemandKinds={visibleDemandKinds} customerOptions={customerOptions} onCustomerFilterChange={setCustomerFilter} onMaterialFilterChange={setMaterialQuery} onDemandKindToggle={toggleDemandKind} onTimeFromChange={setTimeFrom} onTimeToChange={setTimeTo} />

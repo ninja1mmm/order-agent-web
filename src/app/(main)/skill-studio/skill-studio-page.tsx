@@ -127,7 +127,7 @@ export function SkillStudioPage() {
   }
 
   return <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
-    <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
+    <div className="flex items-center justify-between px-4 py-3">
       <Link href="/orders" className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-[var(--forvia-blue)]"><ArrowLeft size={15}/>{t.backToOrders}</Link>
       <span className="text-[11px] text-slate-400">{t.title}</span>
     </div>

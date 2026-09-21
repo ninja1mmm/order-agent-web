@@ -16,6 +16,7 @@ type ExistingResultRowProps = {
   orderType: OrderType;
   conflictClass: string;
   isWaitingHuman: boolean;
+  readOnly: boolean;
   editingCell: EditingCell;
   editValue: string;
   preferEditedDate: boolean;
@@ -38,6 +39,7 @@ export function ExistingResultRow({
   orderType,
   conflictClass,
   isWaitingHuman,
+  readOnly,
   editingCell,
   editValue,
   preferEditedDate,
@@ -104,24 +106,32 @@ export function ExistingResultRow({
         ))}
       </td>
       <td>
-        <button type="button" className="order-type-switch" aria-label="切换 Firm / Forecast" onClick={() => onToggleOrderType(rowId)}>
-          <span className={`order-type-option${orderType === "confirmed" ? " active-confirmed" : ""}`}>Firm</span>
-          <span className={`order-type-option${orderType === "forecast" ? " active-forecast" : ""}`}>Forecast</span>
-        </button>
+        {readOnly ? (
+          <span className={`orders-lane-badge ${orderType === "confirmed" ? "firm" : "forecast"}`}>{orderType === "confirmed" ? "Firm" : "Forecast"}</span>
+        ) : (
+          <button type="button" className="order-type-switch" aria-label="切换 Firm / Forecast" onClick={() => onToggleOrderType(rowId)}>
+            <span className={`order-type-option${orderType === "confirmed" ? " active-confirmed" : ""}`}>Firm</span>
+            <span className={`order-type-option${orderType === "forecast" ? " active-forecast" : ""}`}>Forecast</span>
+          </button>
+        )}
       </td>
       <td>
-        <Select
-          value={String(cellValue("mergeStrategy") ?? "replace")}
-          disabled={!isWaitingHuman}
-          onValueChange={(value) => onMergeStrategyChange(rowId, value as "replace" | "increment" | "decrement")}
-        >
-          <SelectTrigger className="merge-strategy-trigger" aria-label="合并策略"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="replace">替换</SelectItem>
-            <SelectItem value="increment">增加</SelectItem>
-            <SelectItem value="decrement">减少</SelectItem>
-          </SelectContent>
-        </Select>
+        {readOnly ? (
+          <span className="readonly-cell">{mergeStrategyLabel(String(cellValue("mergeStrategy") ?? "replace"))}</span>
+        ) : (
+          <Select
+            value={String(cellValue("mergeStrategy") ?? "replace")}
+            disabled={!isWaitingHuman}
+            onValueChange={(value) => onMergeStrategyChange(rowId, value as "replace" | "increment" | "decrement")}
+          >
+            <SelectTrigger className="merge-strategy-trigger" aria-label="合并策略"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="replace">替换</SelectItem>
+              <SelectItem value="increment">增加</SelectItem>
+              <SelectItem value="decrement">减少</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </td>
       <td>{derivedCell("conflictFlag", <ConflictBadge conflict={conflict} details={String(row.conflictDetails ?? "")} />)}</td>
       <td>
@@ -133,4 +143,10 @@ export function ExistingResultRow({
       </td>
     </tr>
   );
+}
+
+function mergeStrategyLabel(value: string) {
+  if (value === "increment") return "增加";
+  if (value === "decrement") return "减少";
+  return "替换";
 }

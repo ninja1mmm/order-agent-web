@@ -18,6 +18,7 @@ type ResultTableProps = {
   mappingSortOrder: "asc" | "desc" | null;
   conflictColorMap: Map<string, string>;
   isWaitingHuman: boolean;
+  readOnly: boolean;
   isAddingRow: boolean;
   editingCell: EditingCell;
   editValue: string;
@@ -62,6 +63,7 @@ export function ResultTable({
   mappingSortOrder,
   conflictColorMap,
   isWaitingHuman,
+  readOnly,
   isAddingRow,
   editingCell,
   editValue,
@@ -161,9 +163,11 @@ export function ResultTable({
           {allCollapsed ? <ChevronsUpDown className="h-3.5 w-3.5" /> : <ChevronsDownUp className="h-3.5 w-3.5" />}
           <span>{allCollapsed ? "展开全部" : "收起全部"}</span>
         </button>
-        <button type="button" className={`order-type-bulk-pill ${bulkOrderState}`} title="切换全部 Firm / Forecast" onClick={onBulkToggleOrderType}>
-          {bulkOrderState === "firm" ? "Firm" : bulkOrderState === "forecast" ? "Forecast" : "Firm / Forecast"}
-        </button>
+        {!readOnly ? (
+          <button type="button" className={`order-type-bulk-pill ${bulkOrderState}`} title="切换全部 Firm / Forecast" onClick={onBulkToggleOrderType}>
+            {bulkOrderState === "firm" ? "Firm" : bulkOrderState === "forecast" ? "Forecast" : "Firm / Forecast"}
+          </button>
+        ) : null}
       </div>
 
       {/* Per-part-number cards */}
@@ -221,6 +225,7 @@ export function ResultTable({
                             orderType={orderTypeMap.get(rowId) ?? "uncertain"}
                             conflictClass={conflictClassForRow(row, conflictColorMap)}
                             isWaitingHuman={isWaitingHuman}
+                            readOnly={readOnly}
                             editingCell={editingCell}
                             editValue={editValue}
                             preferEditedDate={preferEditedDate}

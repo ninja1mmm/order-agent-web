@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import DOMPurify from "dompurify";
 import { BACKEND_URL } from "@/api/client";
+import { replaceInlineImageCids, stripInlineImageCidPlaceholders } from "@/lib/mail-inline-images";
 import type { WorkspaceAttachment, WorkspaceMail } from "@/services/inbox";
 import { ExcelViewer, PdfViewer } from "../../../_components/shared-components";
 import { type Locale, copy } from "../../../_components/shared";
@@ -15,6 +16,7 @@ type AttachmentPreviewProps = {
   targetSheetName?: string | null;
   parsedSheetNames: string[];
   addingSource: boolean;
+  readOnly: boolean;
   onAddSheetSource: (sheetName: string) => void;
 };
 
@@ -26,6 +28,7 @@ export function AttachmentPreview({
   targetSheetName,
   parsedSheetNames,
   addingSource,
+  readOnly,
   onAddSheetSource,
 }: AttachmentPreviewProps) {
   const t = copy[locale];
@@ -37,7 +40,7 @@ export function AttachmentPreview({
     return (
       <div className="mail-body-viewer">
         <div style={{ whiteSpace: "pre-line", padding: 16, fontSize: 13, lineHeight: 1.7, color: "var(--ink-soft)" }}>
-          {normalizeMailBody(selectedMail.bodyText)}
+          {normalizeMailBody(stripInlineImageCidPlaceholders(selectedMail.bodyText, selectedMail.inlineImages))}
           <MailImages mail={selectedMail} />
         </div>
       </div>
@@ -46,7 +49,7 @@ export function AttachmentPreview({
 
   if (selectedAttachment?.fileArtifactId) {
     return isExcelFile(selectedAttachment.fileName)
-      ? <ExcelViewer key={`${selectedAttachment.fileArtifactId}:${targetSheetName ?? ""}`} fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} initialSheet={targetSheetName} parsedSheetNames={parsedSheetNames} parsingSheet={addingSource} parseSheetLabel="新增解析" onParseSheet={onAddSheetSource} />
+      ? <ExcelViewer key={`${selectedAttachment.fileArtifactId}:${targetSheetName ?? ""}`} fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} initialSheet={targetSheetName} parsedSheetNames={parsedSheetNames} parsingSheet={addingSource} parseSheetLabel="新增解析" onParseSheet={readOnly ? undefined : onAddSheetSource} />
       : <PdfViewer fileArtifactId={selectedAttachment.fileArtifactId} locale={locale} />;
   }
 
@@ -55,17 +58,7 @@ export function AttachmentPreview({
 
 function MailHtmlBody({ mail }: { mail: WorkspaceMail }) {
   const sanitizedHtml = useMemo(() => {
-    let html = mail.bodyHtml;
-    // Replace cid: references with backend file URLs
-    const cidMap = new Map<string, string>();
-    for (const img of mail.inlineImages ?? []) {
-      // img.imageId is the Content-ID (CID) without angle brackets
-      cidMap.set(img.imageId, `${BACKEND_URL}/api/files/${img.fileArtifactId}/content`);
-    }
-    html = html.replace(/src=["']cid:([^"']+)["']/gi, (match, cid: string) => {
-      const url = cidMap.get(cid);
-      return url ? `src="${url}"` : match;
-    });
+    const html = replaceInlineImageCids(mail.bodyHtml, mail.inlineImages ?? [], BACKEND_URL);
     return DOMPurify.sanitize(html, {
       ADD_TAGS: ["style"],
       ADD_ATTR: ["target"],

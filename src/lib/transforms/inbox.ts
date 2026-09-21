@@ -57,6 +57,7 @@ export function normalizeAttachment(raw: WorkspaceAttachmentSchema): WorkspaceAt
 export function normalizeInlineImage(raw: InlineImageSchema): InlineImage {
   return {
     imageId: raw.imageId,
+    contentId: raw.contentId ?? null,
     fileArtifactId: raw.fileArtifactId,
     contentType: raw.contentType,
   };
@@ -75,6 +76,9 @@ export function normalizeMail(raw: WorkspaceMailSchema): WorkspaceMail {
     customerId: raw.customerId,
     customerName: raw.customerName,
     mailStatus: raw.mailStatus,
+    processingState: raw.processingState,
+    focusTaskId: raw.focusTaskId,
+    pendingCategory: raw.pendingCategory,
     attachments: raw.attachments.map(normalizeAttachment),
     inlineImages: raw.inlineImages.map(normalizeInlineImage),
   };
@@ -163,6 +167,12 @@ function normalizeMailListStats(raw: NonNullable<InboxMailListResponseSchema["st
     pendingCount: raw.pendingCount,
     followUpCount: raw.followUpCount,
     mailCount: raw.mailCount,
+    notStartedMailCount: raw.notStartedMailCount,
+    processingMailCount: raw.processingMailCount,
+    completedMailCount: raw.completedMailCount,
+    failedMailCount: raw.failedMailCount,
+    reviewMailCount: raw.reviewMailCount,
+    mergeMailCount: raw.mergeMailCount,
     customerNames: raw.customerNames,
     pendingTasks: raw.pendingTasks.map(normalizePendingTask),
     aiSummary: raw.aiSummary,

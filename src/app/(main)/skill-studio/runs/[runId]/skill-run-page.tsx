@@ -379,7 +379,7 @@ export function SkillRunPage({ runId }: { runId: string }) {
   function updateDraft(id: string, changes: Partial<EditDraft>) { setDrafts((current) => ({ ...current, [id]: { ...current[id], ...changes } })); }
 
   return <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--line)] bg-white">
-    <header className="flex items-center justify-between gap-4 border-b border-[var(--line)] px-4 py-3">
+    <header className="flex items-center justify-between gap-4 px-4 py-3">
       <div className="min-w-0"><Link href="/skill-studio" className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-[var(--forvia-blue)]"><ArrowLeft size={15}/>{t.backToStudio}</Link><h1 className="mt-1 truncate text-lg font-black">{title}</h1></div>
       <div className="flex shrink-0 items-center gap-3 text-[11px] text-slate-500"><span>{modeLabels[run.mode]} · {run.inputCellCount} 个单元格</span><Badge variant={run.status === "succeeded" ? "green" : run.status === "failed" ? "red" : "amber"}>{statusLabels[run.status]}</Badge>{!run.mergeBatches.length && <Button size="sm" variant="destructive" disabled={deleting} onClick={() => void removeRun()}>{deleting ? <LoaderCircle className="animate-spin" size={13}/> : <Trash2 size={13}/>}{t.deleteRun}</Button>}</div>
     </header>

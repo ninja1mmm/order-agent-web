@@ -38,5 +38,8 @@ export function transformCreatedMailResponseToModel(
 export function transformResyncResponseToModel(
   response: ResyncResponseSchema,
 ): ResyncResponse {
-  return response;
+  return {
+    ...response,
+    repairedInlineImageCount: response.repairedInlineImageCount ?? 0,
+  };
 }

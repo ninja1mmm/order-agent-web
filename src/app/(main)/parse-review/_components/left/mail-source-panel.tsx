@@ -14,6 +14,7 @@ type MailSourcePanelProps = {
   activeAttachmentId: string | null;
   taskList: MailTaskListResponse | null;
   busyTaskId: string | null;
+  readOnly: boolean;
   onSelectBody: () => void;
   onSelectAttachment: (attachmentId: string, sheetName?: string) => void;
   onSelectTask: (taskId: string) => void;
@@ -22,7 +23,7 @@ type MailSourcePanelProps = {
 
 export function MailSourcePanel({
   locale, mail, tasks, selectedTaskId, activeBody, activeAttachmentId, taskList,
-  busyTaskId, onSelectBody, onSelectAttachment, onSelectTask, onToggleExcluded,
+  busyTaskId, readOnly, onSelectBody, onSelectAttachment, onSelectTask, onToggleExcluded,
 }: MailSourcePanelProps) {
   const taskMeta = useMemo(() => new Map((taskList?.tasks ?? []).map((task) => [task.id, task])), [taskList]);
   const bodyTasks = tasks.filter((task) => task.attachmentId === null);
@@ -37,7 +38,7 @@ export function MailSourcePanel({
         {mail ? (
           <SourceGroup title="邮件正文" icon={<Mail className="h-3.5 w-3.5" />} subtitle="Email Body" active={activeBody} defaultOpen onActivate={onSelectBody}>
             {bodyTasks.length ? bodyTasks.map((task) => (
-              <TaskNode key={task.id} locale={locale} task={task} selected={task.id === selectedTaskId} excluded={taskMeta.get(task.id)?.excluded ?? false} busy={busyTaskId === task.id} onSelect={onSelectTask} onToggleExcluded={onToggleExcluded} />
+              <TaskNode key={task.id} locale={locale} task={task} selected={task.id === selectedTaskId} excluded={taskMeta.get(task.id)?.excluded ?? false} busy={busyTaskId === task.id} readOnly={readOnly} onSelect={onSelectTask} onToggleExcluded={onToggleExcluded} />
             )) : <p className="source-empty">正文没有解析任务</p>}
           </SourceGroup>
         ) : null}
@@ -49,7 +50,7 @@ export function MailSourcePanel({
 
           return (
             <SourceGroup key={attachment.attachmentId} title={attachment.fileName} icon={excel ? <FileSpreadsheet className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />} subtitle={excel ? "Excel 附件" : isPdf(attachment.fileName, attachment.contentType) ? "PDF 附件" : "邮件附件"} statusLabel={summaryStatus ? taskStatusLabel(summaryStatus, locale) : undefined} status={summaryStatus} active={activeAttachmentId === attachment.attachmentId} defaultOpen={attachmentTasks.some((task) => task.id === selectedTaskId)} onActivate={() => onSelectAttachment(attachment.attachmentId)}>
-              {attachmentTasks.map((task) => <TaskNode key={task.id} locale={locale} task={task} selected={task.id === selectedTaskId} excluded={taskMeta.get(task.id)?.excluded ?? false} busy={busyTaskId === task.id} onSelect={onSelectTask} onToggleExcluded={onToggleExcluded} />)}
+              {attachmentTasks.map((task) => <TaskNode key={task.id} locale={locale} task={task} selected={task.id === selectedTaskId} excluded={taskMeta.get(task.id)?.excluded ?? false} busy={busyTaskId === task.id} readOnly={readOnly} onSelect={onSelectTask} onToggleExcluded={onToggleExcluded} />)}
               {attachmentTasks.length === 0 ? <p className="source-empty">此附件尚无解析任务</p> : null}
             </SourceGroup>
           );
@@ -69,11 +70,11 @@ function SourceGroup({ title, subtitle, statusLabel, status, icon, active, defau
   );
 }
 
-function TaskNode({ locale, task, selected, excluded, busy, onSelect, onToggleExcluded }: { locale: Locale; task: WorkspaceTask; selected: boolean; excluded: boolean; busy: boolean; onSelect: (taskId: string) => void; onToggleExcluded: (taskId: string, excluded: boolean) => void }) {
+function TaskNode({ locale, task, selected, excluded, busy, readOnly, onSelect, onToggleExcluded }: { locale: Locale; task: WorkspaceTask; selected: boolean; excluded: boolean; busy: boolean; readOnly: boolean; onSelect: (taskId: string) => void; onToggleExcluded: (taskId: string, excluded: boolean) => void }) {
   return (
     <div className={`source-task${selected ? " selected" : ""}${excluded ? " excluded" : ""}`}>
       <button type="button" onClick={() => onSelect(task.id)}><Bot className="h-3.5 w-3.5" /><span className="source-task-copy"><span className="source-task-title">{task.targetSheetName || (task.attachmentId ? "附件解析" : "正文解析")}</span><small>{taskStatusLabel(task.status, locale)}</small></span></button>
-      <div className="source-task-actions"><button type="button" className="source-scope-toggle" disabled={busy} onClick={() => onToggleExcluded(task.id, !excluded)}>{excluded ? "纳入" : "排除"}</button></div>
+      {!readOnly ? <div className="source-task-actions"><button type="button" className="source-scope-toggle" disabled={busy} onClick={() => onToggleExcluded(task.id, !excluded)}>{excluded ? "纳入" : "排除"}</button></div> : null}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useCallback, useMemo, useState } from "react";
-import { AlertTriangle, CloudDownload, History, LoaderCircle, Mail, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, CloudDownload, LoaderCircle, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
@@ -11,8 +11,6 @@ import { createManualMail, processMail } from "@/services/mail";
 import { triggerMailboxSync } from "@/services/settings";
 import {
   copy,
-  customerLabel,
-  backendDateMs,
   beijingDateKey,
   useLocale,
   useCustomerConfig,
@@ -22,6 +20,7 @@ import { NewMailModal } from "../../_components/shared-components";
 import { LeftPanel } from "./left/left-panel";
 import { MiddlePanel } from "./middle/middle-panel";
 import { RightPanel } from "./right/right-panel";
+import { getWorkbenchMailStatus, type WorkbenchStatusFilter } from "./workbench-utils";
 
 export function TaskWorkbenchPage() {
   const locale = useLocale();
@@ -33,7 +32,6 @@ export function TaskWorkbenchPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [parsingIds, setParsingIds] = useState<Set<string>>(new Set());
   const [isSyncingMailbox, setIsSyncingMailbox] = useState(false);
-  const [viewMode, setViewMode] = useState<"mail" | "customer">(() => params.get("view") === "customer" ? "customer" : "mail");
 
   const handleParse = useCallback(async (mailId: string, attachmentIds: string[]) => {
     for (const id of attachmentIds) setParsingIds((prev) => new Set(prev).add(id));
@@ -62,65 +60,28 @@ export function TaskWorkbenchPage() {
   }, [isSyncingMailbox, refresh]);
 
   const [customerFilter, setCustomerFilter] = useState("__all__");
-  const [timeFilter, setTimeFilter] = useState("最近 30 天");
   const [attachmentFilter, setAttachmentFilter] = useState("全部邮件");
-  const [statusFilter, setStatusFilter] = useState("全部状态");
+  const [statusFilter, setStatusFilter] = useState<WorkbenchStatusFilter>("processing");
   const [customerSearch, setCustomerSearch] = useState("");
   const [timelineStartDate, setTimelineStartDate] = useState("");
   const [timelineEndDate, setTimelineEndDate] = useState("");
-  const [referenceTime] = useState(() => Date.now());
   const t = copy[locale];
 
-  const customerOptions = useMemo(
-    () => [
-      { value: "__all__", label: t.all },
-      ...customers.map((customer) => ({ value: customer.id, label: customerLabel(customer) })),
-    ],
-    [customers, t.all],
-  );
-
-  const filteredMails = useMemo(() => {
-    const dayMs = 24 * 60 * 60 * 1000;
-    const timeLimit =
-      timeFilter === "今天"
-        ? dayMs
-        : timeFilter === "最近 7 天"
-          ? 7 * dayMs
-          : timeFilter === "最近 60 天"
-            ? 60 * dayMs
-            : 30 * dayMs;
-
-    return mails.filter((mail) => {
-      if (customerFilter !== "__all__" && mail.customerId !== customerFilter) return false;
-      if (referenceTime - backendDateMs(mail.receivedAt) > timeLimit) return false;
+  const filteredMails = useMemo(() => mails.filter((mail) => {
+      const date = beijingDateKey(mail.receivedAt);
+      if (timelineStartDate && date < timelineStartDate) return false;
+      if (timelineEndDate && date > timelineEndDate) return false;
       const hasAttachment = mail.attachments.length > 0;
       if (attachmentFilter === "有附件" && !hasAttachment) return false;
       if (attachmentFilter === "无附件" && hasAttachment) return false;
-      if (statusFilter !== "全部状态") {
-        const mailTasks = tasks.filter((task) => task.mailMessageId === mail.id);
-        const statusMap: Record<string, string[]> = {
-          待处理: ["queued"],
-          处理中: ["running"],
-          待人工确认: ["waiting_human_decision"],
-          已完成: ["completed"],
-          处理失败: ["failed"],
-        };
-        const allowed = statusMap[statusFilter] ?? [];
-        if (allowed.length && !mailTasks.some((task) => allowed.includes(task.status))) return false;
+      if (statusFilter !== "all") {
+        if (getWorkbenchMailStatus(mail.processingState) !== statusFilter) return false;
       }
       return true;
-    });
-  }, [attachmentFilter, customerFilter, mails, referenceTime, statusFilter, tasks, timeFilter]);
+  }), [attachmentFilter, mails, statusFilter, timelineEndDate, timelineStartDate]);
 
-  const timelineMails = useMemo(() => mails.filter((mail) => {
-    const date = beijingDateKey(mail.receivedAt);
-    if (timelineStartDate && date < timelineStartDate) return false;
-    if (timelineEndDate && date > timelineEndDate) return false;
-    return true;
-  }), [mails, timelineEndDate, timelineStartDate]);
-  const selectedCustomerMails = customerFilter === "__all__" ? timelineMails : timelineMails.filter((mail) => mail.customerId === customerFilter || (!mail.customerId && mail.customerName === customerFilter));
-  const activeMails = viewMode === "customer" ? selectedCustomerMails : filteredMails;
-  const selectedMail = activeMails.find((mail) => mail.id === selectedMailId) ?? activeMails[0] ?? (viewMode === "mail" ? mails[0] : undefined);
+  const selectedCustomerMails = customerFilter === "__all__" ? filteredMails : filteredMails.filter((mail) => mail.customerId === customerFilter || (!mail.customerId && mail.customerName === customerFilter));
+  const selectedMail = selectedCustomerMails.find((mail) => mail.id === selectedMailId) ?? selectedCustomerMails[0];
   const selectedTasks = tasks.filter((task) => task.mailMessageId === selectedMail?.id);
 
   const handleSelectCustomer = useCallback((customerId: string, firstMailId?: string) => {
@@ -153,11 +114,7 @@ export function TaskWorkbenchPage() {
           <Link href="/orders">{t.order}</Link>
         </nav>
         <div className="workbench-page-actions">
-          <div className="workbench-view-controls" role="group" aria-label="工作台视图">
-            <Button variant="default" size="icon-sm" className={`workbench-icon-button${viewMode === "mail" ? " is-active" : ""}`} aria-label="邮件视图" aria-pressed={viewMode === "mail"} title="邮件视图" onClick={() => setViewMode("mail")}><Mail className="h-3.5 w-3.5" /></Button>
-            <Button variant="default" size="icon-sm" className={`workbench-icon-button${viewMode === "customer" ? " is-active" : ""}`} aria-label="客户时间轴" aria-pressed={viewMode === "customer"} title="客户时间轴" onClick={() => setViewMode("customer")}><History className="h-3.5 w-3.5" /></Button>
-            <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="刷新" title="刷新" disabled={loading} onClick={() => refresh()}>{loading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}</Button>
-          </div>
+          <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="刷新" title="刷新" disabled={loading} onClick={() => refresh()}>{loading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}</Button>
           <Button variant="default" size="sm" className="workbench-pill-button" aria-label="同步邮箱" title="从邮件服务器拉取新邮件" disabled={isSyncingMailbox} onClick={handleMailboxSync}><CloudDownload className={`h-3.5 w-3.5 ${isSyncingMailbox ? "animate-spin" : ""}`} />同步邮箱</Button>
           <Button variant="default" size="sm" className="workbench-pill-button" onClick={() => setModalOpen(true)}><Plus className="h-3.5 w-3.5" />新增邮件</Button>
         </div>
@@ -171,30 +128,22 @@ export function TaskWorkbenchPage() {
       <div className="inbox-grid screen-fill">
         <LeftPanel
           locale={locale}
-          viewMode={viewMode}
-          mails={viewMode === "mail" ? filteredMails : timelineMails}
-          tasks={tasks}
+          mails={filteredMails}
           customers={customers}
-          selectedMailId={selectedMail?.id}
           customerFilter={customerFilter}
-          timeFilter={timeFilter}
           attachmentFilter={attachmentFilter}
           statusFilter={statusFilter}
           customerSearch={customerSearch}
           timelineStartDate={timelineStartDate}
           timelineEndDate={timelineEndDate}
-          customerOptions={customerOptions}
-          onCustomerFilterChange={setCustomerFilter}
-          onTimeFilterChange={setTimeFilter}
           onAttachmentFilterChange={setAttachmentFilter}
-          onStatusFilterChange={setStatusFilter}
+          onStatusFilterChange={(value) => setStatusFilter(value as WorkbenchStatusFilter)}
           onCustomerSearchChange={setCustomerSearch}
           onTimelineStartDateChange={setTimelineStartDate}
           onTimelineEndDateChange={setTimelineEndDate}
           onSelectCustomer={handleSelectCustomer}
-          onSelectMail={setSelectedMailId}
         />
-        <MiddlePanel locale={locale} viewMode={viewMode} mail={selectedMail} timelineMails={selectedCustomerMails} tasks={tasks} customers={customers} onSelectMail={setSelectedMailId} />
+        <MiddlePanel locale={locale} mail={selectedMail} timelineMails={selectedCustomerMails} customers={customers} onSelectMail={setSelectedMailId} />
         <RightPanel
           locale={locale}
           mail={selectedMail}

@@ -1,4 +1,44 @@
+import type { MailProcessingState } from "@/services/inbox";
 import type { Locale } from "../../_components/shared";
+
+export type WorkbenchMailStatus = MailProcessingState;
+export type WorkbenchStatusFilter = "all" | WorkbenchMailStatus;
+
+const workbenchStatusLabels: Record<Locale, Record<WorkbenchMailStatus, string>> = {
+  "zh-CN": {
+    not_started: "未开始",
+    processing: "处理中",
+    completed: "已完成",
+  },
+  "zh-TW": {
+    not_started: "未開始",
+    processing: "處理中",
+    completed: "已完成",
+  },
+  en: {
+    not_started: "Not started",
+    processing: "Processing",
+    completed: "Completed",
+  },
+};
+
+export function workbenchStatusOptions(locale: Locale) {
+  return [
+    { value: "all", label: locale === "en" ? "All statuses" : locale === "zh-TW" ? "全部狀態" : "全部状态" },
+    ...(["not_started", "processing", "completed"] as const).map((value) => ({
+      value,
+      label: workbenchStatusLabels[locale][value],
+    })),
+  ];
+}
+
+export function workbenchMailStatusLabel(status: WorkbenchMailStatus, locale: Locale) {
+  return workbenchStatusLabels[locale][status];
+}
+
+export function getWorkbenchMailStatus(processingState: MailProcessingState): WorkbenchMailStatus {
+  return processingState;
+}
 
 export const docTypeLabel: Record<string, Record<Locale, string>> = {
   supplier_release: { "zh-CN": "Sales Forecast", "zh-TW": "Sales Forecast", en: "Sales Forecast" },

@@ -9,6 +9,8 @@ export type {
   InboxMailListResponse,
   InboxWorkspace,
   InlineImage,
+  MailProcessingState,
+  PendingMailCategory,
   MailTaskListResponse,
   MailTaskSummary,
   PendingTaskSummary,
@@ -25,6 +27,6 @@ export function getInboxWorkspace(signal?: AbortSignal): Promise<InboxWorkspace>
   return getInboxWorkspaceSchema(signal).then(normalizeInboxWorkspace);
 }
 
-export function getInboxMails(params?: InboxMailListRequestParams): Promise<InboxMailListResponse> {
-  return getInboxMailsSchema(params).then(normalizeInboxMailList);
+export function getInboxMails(params?: InboxMailListRequestParams, signal?: AbortSignal): Promise<InboxMailListResponse> {
+  return getInboxMailsSchema(params, signal).then(normalizeInboxMailList);
 }

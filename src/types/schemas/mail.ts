@@ -40,6 +40,7 @@ export type ResyncResponseSchema = {
   newCustomerId: string | null;
   newAttachmentCount: number;
   newAttachmentNames: string[];
+  repairedInlineImageCount?: number;
   tasksCreated: number;
   message: string;
 };

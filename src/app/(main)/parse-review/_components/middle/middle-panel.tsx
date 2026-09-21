@@ -13,6 +13,7 @@ type MiddlePanelProps = {
   locale: Locale;
   actionBar: ReactNode;
   footer: ReactNode;
+  readOnly: boolean;
   selectedTask: WorkspaceTask | undefined;
   selectedMail: WorkspaceMail | undefined;
   selectedAttachment: WorkspaceAttachment | undefined;
@@ -63,6 +64,7 @@ export function MiddlePanel({
   locale,
   actionBar,
   footer,
+  readOnly,
   selectedTask,
   selectedMail,
   selectedAttachment,
@@ -117,7 +119,7 @@ export function MiddlePanel({
         <div className="panel-head">
           <div className="source-preview-title"><FileSearch className="h-4 w-4" /><span><strong title={isBodyTextTask ? "Email Body" : selectedAttachment?.fileName}>{isBodyTextTask ? "Email Body" : (selectedAttachment?.fileName ?? t.attachmentPreview)}</strong></span></div>
         </div>
-        <div className="panel-body source-preview-body"><AttachmentPreview locale={locale} isBodyTextTask={isBodyTextTask} selectedMail={selectedMail} selectedAttachment={selectedAttachment} targetSheetName={targetSheetName} parsedSheetNames={parsedSheetNames} addingSource={addingSource} onAddSheetSource={onAddSheetSource} /></div>
+        <div className="panel-body source-preview-body"><AttachmentPreview locale={locale} isBodyTextTask={isBodyTextTask} selectedMail={selectedMail} selectedAttachment={selectedAttachment} targetSheetName={targetSheetName} parsedSheetNames={parsedSheetNames} addingSource={addingSource} readOnly={readOnly} onAddSheetSource={onAddSheetSource} /></div>
       </section>
       <section className="panel scroll-panel parse-edit-panel">
         <div className="parse-result-toolbar">
@@ -160,6 +162,7 @@ export function MiddlePanel({
           mappingSortOrder={mappingSortOrder}
           conflictColorMap={conflictColorMap}
           isWaitingHuman={isWaitingHuman}
+          readOnly={readOnly}
           isAddingRow={isAddingRow}
           editingCell={editingCell}
           editValue={editValue}

@@ -36,6 +36,7 @@ export type ResyncResponse = {
   newCustomerId: string | null;
   newAttachmentCount: number;
   newAttachmentNames: string[];
+  repairedInlineImageCount: number;
   tasksCreated: number;
   message: string;
 };

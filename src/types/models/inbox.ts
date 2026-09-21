@@ -3,6 +3,9 @@ export type AiSummary = {
   detail: string;
 };
 
+export type MailProcessingState = "not_started" | "processing" | "completed";
+export type PendingMailCategory = "failed" | "review" | "merge";
+
 export type PendingTaskSummary = {
   taskId: string;
   fileName: string;
@@ -17,6 +20,12 @@ export type WorkspaceStats = {
   pendingCount: number;
   followUpCount: number;
   mailCount: number;
+  notStartedMailCount: number;
+  processingMailCount: number;
+  completedMailCount: number;
+  failedMailCount: number;
+  reviewMailCount: number;
+  mergeMailCount: number;
   customerNames: string[];
   pendingTasks: PendingTaskSummary[];
   aiSummary: AiSummary | null;
@@ -45,6 +54,7 @@ export type WorkspaceAttachment = {
 
 export type InlineImage = {
   imageId: string;
+  contentId: string | null;
   fileArtifactId: string;
   contentType: string;
 };
@@ -61,6 +71,9 @@ export type WorkspaceMail = {
   customerId: string | null;
   customerName: string | null;
   mailStatus: string;
+  processingState: MailProcessingState;
+  focusTaskId: string | null;
+  pendingCategory: PendingMailCategory | null;
   attachments: WorkspaceAttachment[];
   inlineImages: InlineImage[];
 };

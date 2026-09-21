@@ -49,9 +49,13 @@ export type WorkspaceAttachmentSchema = {
 
 export type InlineImageSchema = {
   imageId: string;
+  contentId?: string | null;
   fileArtifactId: string;
   contentType: string;
 };
+
+export type MailProcessingStateSchema = "not_started" | "processing" | "completed";
+export type PendingMailCategorySchema = "failed" | "review" | "merge";
 
 export type WorkspaceMailSchema = {
   id: string;
@@ -61,6 +65,9 @@ export type WorkspaceMailSchema = {
   subject: string;
   receivedAt: string;
   mailStatus: string;
+  processingState: MailProcessingStateSchema;
+  focusTaskId: string | null;
+  pendingCategory: PendingMailCategorySchema | null;
   attachments: WorkspaceAttachmentSchema[];
   bodyText: string;
   bodyHtml: string;
@@ -99,6 +106,12 @@ export type InboxStatsSchema = {
   pendingCount: number;
   followUpCount: number;
   mailCount: number;
+  notStartedMailCount: number;
+  processingMailCount: number;
+  completedMailCount: number;
+  failedMailCount: number;
+  reviewMailCount: number;
+  mergeMailCount: number;
   customerNames: string[];
   pendingTasks: PendingTaskSummarySchema[];
   aiSummary: { title: string; detail: string } | null;
@@ -116,6 +129,8 @@ export type InboxMailListRequestParams = {
   customerId?: string;
   dateFrom?: string;
   dateTo?: string;
+  processingState?: MailProcessingStateSchema;
+  pendingCategory?: PendingMailCategorySchema;
 };
 
 export type InboxMailListMailSchema = WorkspaceMailSchema;

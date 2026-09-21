@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Inbox, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,26 @@ import { SummaryPanel } from "./left/summary-panel";
 import { CustomerRhythmPanel } from "./middle/customer-rhythm-panel";
 import { PendingMailsPanel } from "./right/pending-tasks-panel";
 import type { MailFilter, PendingCategory } from "./mail-filters";
+import { useDashboardMails } from "./use-dashboard-mails";
 
 export function DashboardPage() {
   const [mailFilter, setMailFilter] = useState<MailFilter>(null);
   const locale = useLocale();
-  const { loading, error, mails, tasks, refresh } = useWorkspacePolling();
+  const workspace = useWorkspacePolling();
   const { customers } = useCustomerConfig();
+  const mailQuery = useMemo(() => {
+    const customerDay = mailFilter?.kind === "customer-day" ? mailFilter : null;
+    const customerId = customerDay?.customerKey.startsWith("id:") ? customerDay.customerKey.slice(3) : undefined;
+    return {
+      processingState: "processing" as const,
+      pendingCategory: mailFilter?.kind === "category" ? mailFilter.category : undefined,
+      customerId,
+      dateFrom: customerDay?.date,
+      dateTo: customerDay?.date,
+    };
+  }, [mailFilter]);
+  const dashboardMails = useDashboardMails(mailQuery);
+
   function selectCategory(category: PendingCategory) {
     setMailFilter((current) => current?.kind === "category" && current.category === category ? null : { kind: "category", category });
   }
@@ -30,6 +44,11 @@ export function DashboardPage() {
     : mailFilter?.kind === "customer-day"
       ? `day:${mailFilter.customerKey}:${mailFilter.date}`
       : "all";
+
+  function refresh() {
+    void Promise.all([workspace.refresh(), dashboardMails.refresh()]);
+  }
+
   return (
     <div className="service-page screen-fill">
       <div className="page-context-row">
@@ -44,15 +63,28 @@ export function DashboardPage() {
       <div className="grid-3 service-grid screen-fill">
         <SummaryPanel
           locale={locale}
-          loading={loading}
-          error={error}
-          mails={mails}
-          tasks={tasks}
+          loading={dashboardMails.loading && dashboardMails.stats === null}
+          error={dashboardMails.error}
+          stats={dashboardMails.stats}
           filter={mailFilter}
           onSelectCategory={selectCategory}
         />
-        <CustomerRhythmPanel locale={locale} mails={mails} tasks={tasks} customers={customers} filter={mailFilter} onSelectCustomerDay={selectCustomerDay} />
-        <PendingMailsPanel key={filterKey} locale={locale} mails={mails} tasks={tasks} customers={customers} filter={mailFilter} onClearFilter={() => setMailFilter(null)} onRefresh={refresh} />
+        <CustomerRhythmPanel locale={locale} mails={workspace.mails} tasks={workspace.tasks} customers={customers} filter={mailFilter} onSelectCustomerDay={selectCustomerDay} />
+        <PendingMailsPanel
+          key={filterKey}
+          locale={locale}
+          mails={dashboardMails.mails}
+          customers={customers}
+          filter={mailFilter}
+          total={dashboardMails.total}
+          loading={dashboardMails.loading}
+          loadingMore={dashboardMails.loadingMore}
+          error={dashboardMails.error}
+          hasMore={dashboardMails.hasMore}
+          onClearFilter={() => setMailFilter(null)}
+          onRefresh={() => void dashboardMails.refresh()}
+          onLoadMore={() => void dashboardMails.loadMore()}
+        />
       </div>
     </div>
   );
