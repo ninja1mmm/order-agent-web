@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, Check, ChevronLeft, ChevronRight, Download, GitMerge, Info, LoaderCircle, Play, RotateCcw, Table2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronLeft, ChevronRight, Download, GitMerge, LoaderCircle, RefreshCw, RotateCcw, Table2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogBody, DialogContent, DialogHeader, DialogOverlay, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
@@ -25,6 +25,7 @@ import {
   patchRow,
   publishTask,
   resetTaskReview,
+  rerunTask,
   getEffectiveRows,
   bulkMergeStrategy,
   setTaskExcluded,
@@ -39,6 +40,7 @@ import type { DemandKind } from "@/services/orders";
 import { OrdersFilters } from "../../orders/_components/orders-filters";
 import { MailSourcePanel } from "./left/mail-source-panel";
 import { MiddlePanel } from "./middle/middle-panel";
+import { TaskProcessingWorkspace } from "./task-processing-workspace";
 import type { LocalNewRow, NewRowData, OrderType } from "./parse-review-types";
 
 function detectDateFormat(input: string): { dateInfo: string; dateFormat: "day" | "week" | "month" } | null {
@@ -59,7 +61,8 @@ export function ParseReviewPage() {
   const locale = useLocale();
   const { customers } = useCustomerConfig();
   const params = useSearchParams();
-  const { tasks, mails, refresh } = useWorkspacePolling();
+  const router = useRouter();
+  const { loading, tasks, mails, refresh } = useWorkspacePolling();
   const targetTaskId = params.get("taskId");
   const targetMailId = params.get("mailId");
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
@@ -86,6 +89,7 @@ export function ParseReviewPage() {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [completedDetailsTaskId, setCompletedDetailsTaskId] = useState<string | null>(null);
   const [isResetLoading, setIsResetLoading] = useState(false);
+  const [isRerunLoading, setIsRerunLoading] = useState(false);
   const [reviewActionError, setReviewActionError] = useState<string | null>(null);
   const [mailTaskList, setMailTaskList] = useState<MailTaskListResponse | null>(null);
   const [mailTaskLoading, setMailTaskLoading] = useState(false);
@@ -202,12 +206,15 @@ export function ParseReviewPage() {
 
   const isWaitingHuman = selectedTask?.status === "waiting_human_decision";
   const isReadOnly = selectedTask?.status === "completed" || selectedTask?.status === "published";
+  const isTaskRunning = isProcessingStatus(selectedTask?.status);
+  const isTaskFailed = selectedTask?.status === "failed" || selectedTask?.status === "cancelled";
   const selectedTaskExcluded = mailTaskList?.tasks.find((task) => task.id === selectedTask?.id)?.excluded ?? false;
   const hasOrderTypeEdits = rowEntries.some(([rowId, row]) => {
     const original = String(row.classification ?? "uncertain");
     return (orderTypeMap.get(rowId) ?? "uncertain") !== original;
   });
-  const needsRevalidation = Boolean(taskStaleState?.pendingReevalSteps.length || hasOrderTypeEdits || deletedRowIds.size || localNewRows.length);
+  const hasPendingLocalChanges = hasOrderTypeEdits || deletedRowIds.size > 0 || localNewRows.length > 0;
+  const needsRevalidation = Boolean(taskStaleState?.pendingReevalSteps.length);
   const preferEditedDate = Boolean(taskStaleState?.staleFieldNames.includes("expanded_day"));
 
   const hasBlockingConflicts = useMemo(() => {
@@ -217,6 +224,13 @@ export function ParseReviewPage() {
       return BLOCKING.has(flag);
     });
   }, [visibleRowEntries]);
+  const requiresIssueRecheck = Boolean(
+    isWaitingHuman && (
+      needsRevalidation
+      || hasBlockingConflicts
+      || selectedTask?.reviewSummary?.reviewType !== "confirmation_required"
+    ),
+  );
 
   const loadMailTaskList = useCallback(async () => {
     if (!selectedMail) {
@@ -242,6 +256,10 @@ export function ParseReviewPage() {
     const taskId = workspaceSelectedTask?.id;
     if (!taskId) return;
 
+    if (!hasReviewResult(workspaceSelectedTask.status)) {
+      return;
+    }
+
     let cancelled = false;
     void getEffectiveRows(taskId)
       .then((response) => {
@@ -257,7 +275,7 @@ export function ParseReviewPage() {
       });
 
     return () => { cancelled = true; };
-  }, [workspaceSelectedTask?.id]);
+  }, [workspaceSelectedTask?.id, workspaceSelectedTask?.status]);
 
   const syncEffectiveTask = useCallback(async (taskId: string) => {
     const response = await getEffectiveRows(taskId);
@@ -825,6 +843,31 @@ export function ParseReviewPage() {
     setLocalNewRows((prev) => prev.filter((row) => row.id !== rowId));
   }, []);
 
+  const handleRerun = useCallback(async () => {
+    if (!selectedTask || isRerunLoading) return;
+    setIsRerunLoading(true);
+    setReviewActionError(null);
+    try {
+      const nextTask = await rerunTask(selectedTask.id);
+      const nextParams = new URLSearchParams(params.toString());
+      nextParams.set("taskId", nextTask.id);
+      if (selectedTask.mailMessageId) nextParams.set("mailId", selectedTask.mailMessageId);
+      setSelectedTaskId(nextTask.id);
+      setHasUserSelected(true);
+      setReviewStep(1);
+      setEffectiveTaskRows(null);
+      router.replace(`/parse-review?${nextParams.toString()}`);
+      await refresh();
+      toast.success("已重新启动解析，结果生成后将自动显示");
+    } catch (error) {
+      const message = readableActionError(error, "重新解析失败");
+      setReviewActionError(message);
+      toast.error(message);
+    } finally {
+      setIsRerunLoading(false);
+    }
+  }, [isRerunLoading, params, refresh, router, selectedTask]);
+
   const handleNewRowFieldChange = useCallback((field: keyof NewRowData, value: string) => {
     setNewRowData((prev) => ({ ...prev, [field]: value }));
     setNewRowErrors((prev) => {
@@ -834,23 +877,23 @@ export function ParseReviewPage() {
     });
   }, []);
 
-  const blockingConflictCount = useMemo(() => {
-    const BLOCKING = new Set(["quantity_conflict", "granularity_mismatch", "invalid_date", "uncertain"]);
-    return visibleRowEntries.filter(([, row]) => BLOCKING.has(String(row.conflictFlag ?? "none"))).length;
-  }, [visibleRowEntries]);
-
   const reviewFooter = selectedTask && selectedTask.status !== "completed" && selectedTask.status !== "published"
-    ? <ReviewFooter step={reviewStep} needsRevalidation={needsRevalidation} hasBlockingConflicts={hasBlockingConflicts} revalidating={isProceedLoading} publishing={isPublishLoading} canPublish={isWaitingHuman && !selectedTaskExcluded && !needsRevalidation && !hasBlockingConflicts} excluded={selectedTaskExcluded} onStepChange={setReviewStep} onRevalidate={handleProceed} onOpenMerge={() => setMergeConfirmOpen(true)} />
+    ? <ReviewFooter step={reviewStep} requiresIssueRecheck={requiresIssueRecheck} hasPendingChanges={hasPendingLocalChanges} hasBlockingConflicts={hasBlockingConflicts} saving={isProceedLoading} publishing={isPublishLoading} excluded={selectedTaskExcluded} onStepChange={setReviewStep} onSaveChanges={handleProceed} onOpenMerge={() => setMergeConfirmOpen(true)} />
     : null;
+
+  if (loading && mails.length === 0 && tasks.length === 0) {
+    return <ParseReviewLoadingState />;
+  }
 
   return (
     <div className="mail-review-screen screen-fill">
       <header className="mail-review-head">
         <div className="mail-review-statusbar">
           <Link className="mail-review-back" href="/task-workbench" aria-label="返回客户收件箱"><ArrowLeft className="h-4 w-4" /></Link>
-          {selectedTask ? <Badge variant="slate">{taskStatusLabel(selectedTask.status, locale)}</Badge> : null}
+          {selectedTask ? <Badge variant={isTaskFailed ? "red" : isTaskRunning ? "amber" : "slate"}>{isTaskRunning ? "解析中" : taskStatusLabel(selectedTask.status, locale)}</Badge> : null}
+          {selectedTask ? <Button variant="default" size="sm" className="parse-rerun-button" disabled={isRerunLoading} onClick={() => { void handleRerun(); }}>{isRerunLoading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}{isTaskRunning ? "重新启动" : "重新解析"}</Button> : null}
         </div>
-        <ReviewStepper step={reviewStep} readOnly={isReadOnly} onChange={setReviewStep} />
+        {isTaskRunning ? <div className="parse-running-head" role="status"><LoaderCircle className="h-4 w-4 animate-spin" /><span><strong>正在解析邮件内容</strong><small>结果生成后将自动进入物料核对</small></span></div> : isTaskFailed ? <div className="parse-running-head is-error"><AlertTriangle className="h-4 w-4" /><span><strong>{selectedTask?.status === "cancelled" ? "解析已取消" : "解析未完成"}</strong><small>可重新启动本次任务</small></span></div> : <ReviewStepper step={reviewStep} readOnly={isReadOnly} previewDisabled={!isReadOnly && (requiresIssueRecheck || hasPendingLocalChanges)} onChange={setReviewStep} />}
       </header>
 
       <div className="mail-review-workspace">
@@ -863,7 +906,7 @@ export function ParseReviewPage() {
           activeAttachmentId={selectedAttachment?.attachmentId ?? null}
           taskList={mailTaskList}
           busyTaskId={scopeTaskId}
-          readOnly={isReadOnly}
+          readOnly={isReadOnly || isTaskRunning || isTaskFailed}
           onSelectBody={handleSelectBody}
           onSelectAttachment={handleSelectAttachment}
           onSelectTask={handleSelectTask}
@@ -871,28 +914,20 @@ export function ParseReviewPage() {
         />
 
         <section className="parse-review-main">
-          {isWaitingHuman && (needsRevalidation || hasBlockingConflicts) && (
-            <div className="review-warning-banner">
-              {needsRevalidation && (
-                <div className="review-warning-item review-warning-stale">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  <span>存在未校验的修改</span>
-                  <button type="button" className="review-warning-action" onClick={() => { void handleProceed(); }}>
-                    {isProceedLoading ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
-                    执行修改
-                  </button>
-                </div>
-              )}
-              {hasBlockingConflicts && (
-                <div className="review-warning-item review-warning-blocking">
-                  <Info className="h-3.5 w-3.5" />
-                  <span>{blockingConflictCount} 项冲突待处理</span>
-                </div>
-              )}
-            </div>
-          )}
           {!selectedTask ? (
             <div className="panel parse-empty-state">当前邮件没有可审查的解析任务。</div>
+          ) : isTaskRunning || isTaskFailed ? (
+            <TaskProcessingWorkspace
+              key={selectedTask.id}
+              locale={locale}
+              task={selectedTask}
+              mail={selectedMail}
+              attachment={selectedAttachment}
+              isBodyTextTask={isBodyTextTask}
+              targetSheetName={previewSheetName}
+              parsedSheetNames={parsedSheetNames}
+              failed={isTaskFailed}
+            />
           ) : isReadOnly && completedDetailsTaskId !== selectedTask.id ? (
             <CompletedState onViewDetails={() => { setReviewStep(1); setCompletedDetailsTaskId(selectedTask.id); }} />
           ) : reviewStep === 4 ? (
@@ -913,7 +948,7 @@ export function ParseReviewPage() {
           ) : (
               <MiddlePanel
                 locale={locale}
-                actionBar={isReadOnly ? <ReadOnlyActionBar /> : <ReviewActionBar step={reviewStep} dateOffset={dateOffset} mergeStrategy={mergeStrategy} disabled={!isWaitingHuman || batchLoading || isProceedLoading} loading={batchLoading} needsRevalidation={needsRevalidation} revalidating={isProceedLoading} onDateOffsetChange={setDateOffset} onMergeStrategyChange={setMergeStrategy} onApplyDateOffset={handleApplyDateOffset} onApplyMergeStrategy={handleApplyMergeStrategy} onRevalidate={handleProceed} onReset={() => setResetConfirmOpen(true)} />}
+                actionBar={isReadOnly ? <ReadOnlyActionBar /> : <ReviewActionBar step={reviewStep} dateOffset={dateOffset} mergeStrategy={mergeStrategy} disabled={!isWaitingHuman || batchLoading || isProceedLoading} loading={batchLoading} onDateOffsetChange={setDateOffset} onMergeStrategyChange={setMergeStrategy} onApplyDateOffset={handleApplyDateOffset} onApplyMergeStrategy={handleApplyMergeStrategy} onReset={() => setResetConfirmOpen(true)} />}
                 footer={reviewFooter}
                 readOnly={isReadOnly}
                 selectedTask={selectedTask}
@@ -939,6 +974,7 @@ export function ParseReviewPage() {
                 reviewReason={selectedTask.reviewSummary?.reason ?? null}
                 reviewType={selectedTask.reviewSummary?.reviewType ?? null}
                 actionError={reviewActionError}
+                requiresIssueRecheck={requiresIssueRecheck}
                 isProceedLoading={isProceedLoading}
                 onProceed={() => { void handleProceed(); }}
                 preferEditedDate={preferEditedDate}
@@ -982,6 +1018,35 @@ export function ParseReviewPage() {
   );
 }
 
+function ParseReviewLoadingState() {
+  return (
+    <div className="mail-review-screen screen-fill" aria-busy="true" aria-live="polite">
+      <header className="mail-review-head">
+        <div className="mail-review-statusbar">
+          <Link className="mail-review-back" href="/task-workbench" aria-label="返回客户收件箱"><ArrowLeft className="h-4 w-4" /></Link>
+          <Badge variant="slate">加载中</Badge>
+        </div>
+        <div className="parse-running-head" role="status"><LoaderCircle className="h-4 w-4 animate-spin" /><span><strong>正在加载邮件与附件</strong><small>数据就绪后将自动显示解析内容</small></span></div>
+      </header>
+      <div className="mail-review-workspace">
+        <aside className="panel parse-source-panel parse-loading-source">
+          <div className="panel-head"><div className="loading-shimmer loading-title" /></div>
+          <div className="panel-body source-tree">
+            <div className="loading-shimmer loading-row" />
+            <div className="loading-shimmer loading-row is-short" />
+            <div className="loading-shimmer loading-row" />
+          </div>
+        </aside>
+        <section className="panel parse-initial-loading">
+          <div className="parse-processing-visual" aria-hidden="true"><LoaderCircle className="parse-processing-spinner" /></div>
+          <h2>正在准备解析工作区</h2>
+          <p>邮件正文、附件预览和任务状态正在加载，请稍候。</p>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 const REVIEW_STEPS = [
   { id: 1 as const, title: "物料核对" },
   { id: 2 as const, title: "日期语义" },
@@ -989,12 +1054,12 @@ const REVIEW_STEPS = [
   { id: 4 as const, title: "合并预览" },
 ];
 
-function ReviewFooter({ step, needsRevalidation, hasBlockingConflicts, revalidating, publishing, canPublish, excluded, onStepChange, onRevalidate, onOpenMerge }: { step: 1 | 2 | 3 | 4; needsRevalidation: boolean; hasBlockingConflicts: boolean; revalidating: boolean; publishing: boolean; canPublish: boolean; excluded: boolean; onStepChange: (step: 1 | 2 | 3 | 4) => void; onRevalidate: () => Promise<boolean>; onOpenMerge: () => void }) {
+function ReviewFooter({ step, requiresIssueRecheck, hasPendingChanges, hasBlockingConflicts, saving, publishing, excluded, onStepChange, onSaveChanges, onOpenMerge }: { step: 1 | 2 | 3 | 4; requiresIssueRecheck: boolean; hasPendingChanges: boolean; hasBlockingConflicts: boolean; saving: boolean; publishing: boolean; excluded: boolean; onStepChange: (step: 1 | 2 | 3 | 4) => void; onSaveChanges: () => Promise<boolean>; onOpenMerge: () => void }) {
   const previousLabel = step === 2 ? "返回物料" : step === 3 ? "返回日期" : "返回数量";
   const nextLabel = step === 1 ? "确认物料，继续日期" : step === 2 ? "确认日期，继续数量" : "生成 Orders 预览";
   const handleNext = async () => {
-    if (step === 3 && needsRevalidation) {
-      if (await onRevalidate()) onStepChange(4);
+    if (hasPendingChanges) {
+      if (await onSaveChanges()) onStepChange((step + 1) as 2 | 3 | 4);
       return;
     }
     onStepChange((step + 1) as 2 | 3 | 4);
@@ -1003,15 +1068,16 @@ function ReviewFooter({ step, needsRevalidation, hasBlockingConflicts, revalidat
     ? "当前来源已排除，请先重新纳入合并范围"
     : hasBlockingConflicts
       ? "存在未解决的冲突"
-      : needsRevalidation
-        ? "请先执行修改"
+      : requiresIssueRecheck
+        ? "请先返回核对步骤，在黄色提示中重新校验"
         : publishing
           ? "正在合并，请稍候"
           : null;
+  const nextButton = <Button variant="primary" size="sm" disabled={saving || (step === 3 && requiresIssueRecheck)} onClick={() => { void handleNext(); }}>{saving && hasPendingChanges ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : null}{nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button>;
   return (
     <footer className="parse-review-footer">
       <div>{step === 1 || step === 4 ? null : <Button variant="default" size="sm" onClick={() => onStepChange((step - 1) as 1 | 2 | 3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>}</div>
-      {step < 4 ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void handleNext(); }}>{step === 3 && needsRevalidation ? (revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />) : null}{step === 3 && needsRevalidation ? "执行修改，生成预览" : nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button> : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{needsRevalidation ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}执行修改并更新预览</Button> : publishDisabledReason ? <Tooltip><TooltipTrigger asChild><span className="inline-flex"><Button variant="primary" size="sm" disabled><GitMerge className="h-3.5 w-3.5" />确认合并</Button></span></TooltipTrigger><TooltipContent>{publishDisabledReason}</TooltipContent></Tooltip> : <Button variant="primary" size="sm" onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认合并</Button>}</div>}
+      {step < 4 ? (step === 3 && requiresIssueRecheck ? <Tooltip><TooltipTrigger asChild><span className="inline-flex">{nextButton}</span></TooltipTrigger><TooltipContent>请先在黄色提示中重新校验</TooltipContent></Tooltip> : nextButton) : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{publishDisabledReason ? <Tooltip><TooltipTrigger asChild><span className="inline-flex"><Button variant="primary" size="sm" disabled><GitMerge className="h-3.5 w-3.5" />确认合并</Button></span></TooltipTrigger><TooltipContent>{publishDisabledReason}</TooltipContent></Tooltip> : <Button variant="primary" size="sm" onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认合并</Button>}</div>}
     </footer>
   );
 }
@@ -1030,12 +1096,12 @@ function CompletedState({ onViewDetails }: { onViewDetails: () => void }) {
   );
 }
 
-function ReviewStepper({ step, readOnly, onChange }: { step: 1 | 2 | 3 | 4; readOnly: boolean; onChange: (step: 1 | 2 | 3 | 4) => void }) {
+function ReviewStepper({ step, readOnly, previewDisabled, onChange }: { step: 1 | 2 | 3 | 4; readOnly: boolean; previewDisabled: boolean; onChange: (step: 1 | 2 | 3 | 4) => void }) {
   const steps = readOnly ? REVIEW_STEPS.filter((item) => item.id === 1 || item.id === 4) : REVIEW_STEPS;
   return (
     <nav className="review-stepper" aria-label="解析确认步骤">
       {steps.map((item, index) => (
-        <button key={item.id} type="button" className={`${item.id === step ? "active" : ""}${item.id < step ? " complete" : ""}`} aria-current={item.id === step ? "step" : undefined} onClick={() => onChange(item.id)}>
+        <button key={item.id} type="button" className={`${item.id === step ? "active" : ""}${item.id < step ? " complete" : ""}`} aria-current={item.id === step ? "step" : undefined} disabled={item.id === 4 && previewDisabled} onClick={() => onChange(item.id)}>
           <span>{item.id < step ? <Check className="h-3.5 w-3.5" /> : index + 1}</span>
           <span><strong>{item.title}</strong></span>
         </button>
@@ -1048,20 +1114,19 @@ function ReadOnlyActionBar() {
   return <div className="review-actionbar"><div><strong>物料核对</strong></div></div>;
 }
 
-function ReviewActionBar({ step, dateOffset, mergeStrategy, disabled, loading, needsRevalidation, revalidating, onDateOffsetChange, onMergeStrategyChange, onApplyDateOffset, onApplyMergeStrategy, onRevalidate, onReset }: { step: 1 | 2 | 3; dateOffset: string; mergeStrategy: BulkMergeStrategy; disabled: boolean; loading: boolean; needsRevalidation: boolean; revalidating: boolean; onDateOffsetChange: (value: string) => void; onMergeStrategyChange: (value: BulkMergeStrategy) => void; onApplyDateOffset: () => void; onApplyMergeStrategy: () => void; onRevalidate: () => Promise<boolean>; onReset: () => void }) {
-  const executeButton = <Tooltip><TooltipTrigger asChild><span className="inline-flex"><Button className="review-icon-action" variant="default" size="icon-sm" disabled={disabled || !needsRevalidation} aria-label="执行当前修改" onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}</Button></span></TooltipTrigger><TooltipContent>{needsRevalidation ? "执行当前修改并更新校验结果" : "修改后可继续执行"}</TooltipContent></Tooltip>;
+function ReviewActionBar({ step, dateOffset, mergeStrategy, disabled, loading, onDateOffsetChange, onMergeStrategyChange, onApplyDateOffset, onApplyMergeStrategy, onReset }: { step: 1 | 2 | 3; dateOffset: string; mergeStrategy: BulkMergeStrategy; disabled: boolean; loading: boolean; onDateOffsetChange: (value: string) => void; onMergeStrategyChange: (value: BulkMergeStrategy) => void; onApplyDateOffset: () => void; onApplyMergeStrategy: () => void; onReset: () => void }) {
   const resetButton = <Tooltip><TooltipTrigger asChild><span className="inline-flex"><Button className="review-icon-action" variant="default" size="icon-sm" disabled={disabled} aria-label="恢复解析结果" onClick={onReset}><RotateCcw className="h-3.5 w-3.5" /></Button></span></TooltipTrigger><TooltipContent>恢复解析结果</TooltipContent></Tooltip>;
-  if (step === 1) return <div className="review-actionbar"><div><strong>物料核对</strong></div><div className="review-actionbar-actions">{executeButton}{resetButton}</div></div>;
+  if (step === 1) return <div className="review-actionbar"><div><strong>物料核对</strong></div><div className="review-actionbar-actions">{resetButton}</div></div>;
   if (step === 2) return (
     <div className="review-actionbar">
       <div><strong>日期语义</strong></div>
-      <div className="review-actionbar-actions"><div className="review-action-controls"><span>到货日期统一提前</span><input value={dateOffset} inputMode="numeric" aria-label="提前天数" onChange={(event) => onDateOffsetChange(event.target.value)} /><span>天，转换为提货日期</span><Button variant="primary" size="sm" disabled={disabled} onClick={onApplyDateOffset}>{loading ? "应用中…" : "应用到全部"}</Button></div>{executeButton}{resetButton}</div>
+      <div className="review-actionbar-actions"><div className="review-action-controls"><span>到货日期统一提前</span><input value={dateOffset} inputMode="numeric" aria-label="提前天数" onChange={(event) => onDateOffsetChange(event.target.value)} /><span>天，转换为提货日期</span><Button variant="primary" size="sm" disabled={disabled} onClick={onApplyDateOffset}>{loading ? "应用中…" : "应用到全部"}</Button></div>{resetButton}</div>
     </div>
   );
   return (
     <div className="review-actionbar">
       <div><strong>数量策略</strong></div>
-      <div className="review-actionbar-actions"><div className="review-action-controls"><span>统一合并策略</span><Select value={mergeStrategy} onValueChange={(value) => onMergeStrategyChange(value as BulkMergeStrategy)}><SelectTrigger className="w-[112px]" aria-label="统一合并策略"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="replace">替换</SelectItem><SelectItem value="increment">增加</SelectItem><SelectItem value="decrement">减少</SelectItem></SelectContent></Select><Button variant="primary" size="sm" disabled={disabled} onClick={onApplyMergeStrategy}>{loading ? "应用中…" : "应用到全部"}</Button></div>{executeButton}{resetButton}</div>
+      <div className="review-actionbar-actions"><div className="review-action-controls"><span>统一合并策略</span><Select value={mergeStrategy} onValueChange={(value) => onMergeStrategyChange(value as BulkMergeStrategy)}><SelectTrigger className="w-[112px]" aria-label="统一合并策略"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="replace">替换</SelectItem><SelectItem value="increment">增加</SelectItem><SelectItem value="decrement">减少</SelectItem></SelectContent></Select><Button variant="primary" size="sm" disabled={disabled} onClick={onApplyMergeStrategy}>{loading ? "应用中…" : "应用到全部"}</Button></div>{resetButton}</div>
     </div>
   );
 }
@@ -1233,4 +1298,12 @@ function isRevisionConflict(error: unknown) {
     || error.message.includes("Result revision conflict")
     || error.message.includes('"error_code":"CONFLICT"')
   );
+}
+
+function isProcessingStatus(status: string | null | undefined) {
+  return status === "queued" || status === "pending" || status === "processing" || status === "running";
+}
+
+function hasReviewResult(status: string | null | undefined) {
+  return status === "waiting_human_decision" || status === "completed" || status === "published";
 }

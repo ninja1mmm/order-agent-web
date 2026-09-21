@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 
-import { createManualMail, processMail } from "@/services/mail";
+import { createManualMail } from "@/services/mail";
 import { triggerMailboxSync } from "@/services/settings";
 import {
   copy,
@@ -30,20 +30,7 @@ export function TaskWorkbenchPage() {
   const [selectedMailId, setSelectedMailId] = useState<string>(() => params.get("mailId") ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [parsingIds, setParsingIds] = useState<Set<string>>(new Set());
   const [isSyncingMailbox, setIsSyncingMailbox] = useState(false);
-
-  const handleParse = useCallback(async (mailId: string, attachmentIds: string[]) => {
-    for (const id of attachmentIds) setParsingIds((prev) => new Set(prev).add(id));
-    try {
-      await processMail(mailId, attachmentIds.length > 0 ? attachmentIds : undefined);
-      await refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Parse failed");
-    } finally {
-      setParsingIds((prev) => { const next = new Set(prev); for (const id of attachmentIds) next.delete(id); return next; });
-    }
-  }, [refresh]);
 
   const handleMailboxSync = useCallback(async () => {
     if (isSyncingMailbox) return;
@@ -148,8 +135,6 @@ export function TaskWorkbenchPage() {
           locale={locale}
           mail={selectedMail}
           tasks={selectedTasks}
-          parsingIds={parsingIds}
-          onParse={handleParse}
           onRefresh={refresh}
         />
       </div>

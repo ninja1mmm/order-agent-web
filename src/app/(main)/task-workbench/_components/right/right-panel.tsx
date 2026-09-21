@@ -22,12 +22,10 @@ type RightPanelProps = {
   locale: Locale;
   mail: WorkspaceMail | undefined;
   tasks: WorkspaceTask[];
-  parsingIds: Set<string>;
-  onParse: (mailId: string, attachmentIds: string[]) => void;
   onRefresh: () => void;
 };
 
-export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh }: RightPanelProps) {
+export function RightPanel({ locale, mail, tasks, onRefresh }: RightPanelProps) {
   const t = copy[locale];
   const mailId = mail?.id;
   const [isSyncing, setIsSyncing] = useState(false);
@@ -66,7 +64,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
       </div>
       <div className="panel-body stack">
         {bodyTasks.length ? bodyTasks.map((task) => (
-            <BodyTaskResult key={task.id} locale={locale} mailId={mail?.id} task={task} onParse={onParse} />
+            <BodyTaskResult key={task.id} locale={locale} mailId={mail?.id} task={task} />
           )) : mail ? <BodySourceResult bodyText={mail.bodyText} /> : null}
         {visibleAttachments.map((attachment) => {
           const task = tasks.find((item) => item.attachmentId === attachment.attachmentId);
@@ -91,10 +89,6 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
           const isSkipped = attachment.status === "skipped" || task?.status === "skipped";
           const targetLabel = dtype && docTypeLabel[dtype] ? docTypeLabel[dtype][locale] : null;
           const targetBadgeVariant = dtype && docTypeBadge[dtype] ? docTypeBadge[dtype] : "slate";
-          const isParsing = parsingIds.has(attachment.attachmentId);
-          const canStartParse = task?.status === "waiting_human_decision";
-          const canReparse = task?.status === "completed" || attachment.status === "published" || task?.status === "failed" || task?.status === "cancelled";
-          const showParseButton = canStartParse || canReparse || isParsing;
           const reviewHref = task?.id && mailId
             ? `/parse-review?mailId=${encodeURIComponent(mailId)}&attachmentId=${encodeURIComponent(attachment.attachmentId)}&taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
             : "";
@@ -126,16 +120,6 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
               <div className="result-footer">
                 <span className="item-meta">{taskStatusLabel(task?.status ?? attachment.status, locale)}</span>
                 <div className="result-actions">
-                  {showParseButton && mailId ? (
-                    <Button
-                      variant={isParsing ? "primary" : "default"}
-                      size="sm"
-                      className={`workbench-pill-button${isParsing ? " btn-parsing" : ""}`}
-                      onClick={() => onParse(mailId, [attachment.attachmentId])}
-                    >
-                      {isParsing ? "解析中..." : canReparse ? t.reparse : t.trigger}
-                    </Button>
-                  ) : null}
                   {reviewHref ? (
                     <Link href={reviewHref}>
                       <Button variant={task?.status === "waiting_human_decision" ? "primary" : "default"} size="sm" className="workbench-pill-button">{reviewLabel}</Button>
@@ -173,20 +157,14 @@ function BodyTaskResult({
   locale,
   mailId,
   task,
-  onParse,
 }: {
   locale: Locale;
   mailId: string | undefined;
   task: WorkspaceTask;
-  onParse: (mailId: string, attachmentIds: string[]) => void;
 }) {
-  const t = copy[locale];
   const dtype = task.taskType?.replace("extract_", "") || null;
   const targetLabel = dtype && docTypeLabel[dtype] ? docTypeLabel[dtype][locale] : null;
   const targetBadgeVariant = dtype && docTypeBadge[dtype] ? docTypeBadge[dtype] : "slate";
-  const canReparse = task.status === "completed" || task.status === "published" || task.status === "failed" || task.status === "cancelled";
-  const canStartParse = task.status === "waiting_human_decision";
-  const showParseButton = canStartParse || canReparse;
   const reviewHref = task.id
     ? `/parse-review?mailId=${encodeURIComponent(mailId ?? "")}&taskId=${encodeURIComponent(task.id)}&status=${encodeURIComponent(parseReviewStatus(task.status))}`
     : "";
@@ -207,11 +185,6 @@ function BodyTaskResult({
       <div className="result-footer">
         <span className="item-meta">{taskStatusLabel(task.status, locale)}</span>
         <div className="result-actions">
-          {showParseButton && mailId ? (
-            <Button variant="default" size="sm" className="workbench-pill-button" onClick={() => onParse(mailId, [])}>
-              {canReparse ? t.reparse : t.trigger}
-            </Button>
-          ) : null}
           {reviewHref ? (
             <Link href={reviewHref}>
               <Button variant={task.status === "waiting_human_decision" ? "primary" : "default"} size="sm" className="workbench-pill-button">{reviewLabel}</Button>

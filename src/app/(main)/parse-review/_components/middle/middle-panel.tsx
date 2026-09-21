@@ -39,6 +39,7 @@ type MiddlePanelProps = {
   reviewReason: string | null;
   reviewType: string | null;
   actionError: string | null;
+  requiresIssueRecheck: boolean;
   isProceedLoading: boolean;
   onProceed: () => void;
   preferEditedDate: boolean;
@@ -90,6 +91,7 @@ export function MiddlePanel({
   reviewReason,
   reviewType,
   actionError,
+  requiresIssueRecheck,
   isProceedLoading,
   onProceed,
   preferEditedDate,
@@ -141,8 +143,17 @@ export function MiddlePanel({
               <div><strong>操作未完成</strong><span>{actionError}</span></div>
             </div>
           ) : null}
-          {displayedReviewReason ? (
-            reviewType === "confirmation_required" ? (
+          {displayedReviewReason || requiresIssueRecheck ? (
+            requiresIssueRecheck ? (
+              <div className="review-feedback warning">
+                <AlertTriangle className="h-4 w-4" />
+                <div><strong>{displayedReviewReason ? displayedReviewTitle : "修改已保存，请重新校验"}</strong><span>{displayedReviewReason ? `${displayedReviewReason} ` : ""}处理完成后，点击“重新校验”更新结果并消除已解决的异常。</span></div>
+                <button type="button" className="review-feedback-action review-attention-button" disabled={isProceedLoading} onClick={onProceed}>
+                  {isProceedLoading ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                  重新校验
+                </button>
+              </div>
+            ) : reviewType === "confirmation_required" ? (
               <div className="review-feedback info">
                 <CheckCircle className="h-4 w-4" />
                 <div><strong>解析完成，请确认</strong><span>{displayedReviewReason}</span></div>
@@ -151,12 +162,6 @@ export function MiddlePanel({
               <div className="review-feedback warning">
                 <AlertTriangle className="h-4 w-4" />
                 <div><strong>{displayedReviewTitle}</strong><span>{displayedReviewReason}</span></div>
-                {isWaitingHuman && (
-                  <button type="button" className="review-feedback-action" disabled={isProceedLoading} onClick={onProceed}>
-                    {isProceedLoading ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                    重新校验
-                  </button>
-                )}
               </div>
             )
           ) : null}

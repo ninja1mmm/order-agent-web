@@ -133,8 +133,9 @@ export async function cancelTask(taskId: string): Promise<void> {
   await cancelTaskSchema(taskId);
 }
 
-export async function rerunTask(taskId: string): Promise<void> {
-  await rerunTaskSchema(taskId);
+export async function rerunTask(taskId: string): Promise<{ id: string }> {
+  const task = await rerunTaskSchema(taskId);
+  return { id: task.id };
 }
 
 export async function setTaskExcluded(taskId: string, excluded: boolean): Promise<void> {
