@@ -114,8 +114,8 @@ export function TaskWorkbenchPage() {
           <Link href="/orders">{t.order}</Link>
         </nav>
         <div className="workbench-page-actions">
-          <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="刷新" title="刷新" disabled={loading} onClick={() => refresh()}>{loading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}</Button>
-          <Button variant="default" size="sm" className="workbench-pill-button" aria-label="同步邮箱" title="从邮件服务器拉取新邮件" disabled={isSyncingMailbox} onClick={handleMailboxSync}><CloudDownload className={`h-3.5 w-3.5 ${isSyncingMailbox ? "animate-spin" : ""}`} />同步邮箱</Button>
+          <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="刷新" tooltip="刷新" disabled={loading} onClick={() => refresh()}>{loading ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}</Button>
+          <Button variant="default" size="sm" className="workbench-pill-button" aria-label="同步邮箱" tooltip="从邮件服务器拉取新邮件" disabled={isSyncingMailbox} onClick={handleMailboxSync}><CloudDownload className={`h-3.5 w-3.5 ${isSyncingMailbox ? "animate-spin" : ""}`} />同步邮箱</Button>
           <Button variant="default" size="sm" className="workbench-pill-button" onClick={() => setModalOpen(true)}><Plus className="h-3.5 w-3.5" />新增邮件</Button>
         </div>
       </div>

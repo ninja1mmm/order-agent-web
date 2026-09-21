@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { NewRowData } from "../parse-review-types";
 
 type AddResultRowProps = {
@@ -54,12 +55,12 @@ export function AddResultRow({
       <td>—</td>
       <td>
         <div className="add-row-actions">
-          <button type="button" className="row-action-btn save" title="保存" onClick={onSave}>
+          <Tooltip><TooltipTrigger asChild><button type="button" className="row-action-btn save" aria-label="保存" onClick={onSave}>
             <Check className="h-3 w-3" />
-          </button>
-          <button type="button" className="row-action-btn cancel" title="取消" onClick={onCancel}>
+          </button></TooltipTrigger><TooltipContent>保存</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><button type="button" className="row-action-btn cancel" aria-label="取消" onClick={onCancel}>
             <X className="h-3 w-3" />
-          </button>
+          </button></TooltipTrigger><TooltipContent>取消</TooltipContent></Tooltip>
         </div>
       </td>
     </tr>

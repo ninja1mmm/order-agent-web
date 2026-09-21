@@ -476,7 +476,7 @@ export function ReceiptImportDialog({ open, customers, onOpenChange, onMerged }:
                           </td>
                           <td>
                             <div className="stack-tight">
-                              <Badge variant={issueVariant(row)} title={presentation.text ?? undefined}>
+                              <Badge variant={issueVariant(row)} tooltip={presentation.text ?? undefined}>
                                 {presentation.label}
                               </Badge>
                               {presentation.text ? <span className="recon-issue-text">{presentation.text}</span> : null}

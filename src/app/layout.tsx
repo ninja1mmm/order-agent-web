@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "../context/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
   title: "Supply Chain Agent",
@@ -16,7 +17,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-CN">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <TooltipProvider delayDuration={300} skipDelayDuration={100}>
+          <AuthProvider>{children}</AuthProvider>
+        </TooltipProvider>
         <Toaster position="bottom-right" richColors />
       </body>
     </html>

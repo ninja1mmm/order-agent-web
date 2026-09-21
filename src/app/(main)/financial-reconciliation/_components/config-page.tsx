@@ -127,13 +127,13 @@ export function ConfigPage() {
                   <td>{row.schedule ? nextScheduleTaskLabel(row.schedule) : <span className="recon-muted-inline">未配置</span>}</td>
                   <td>
                     <div className="recon-row-actions">
-                      <Button size="icon-sm" title={row.schedule ? "编辑" : "新增"} onClick={() => setEditingRow(row)}>
+                      <Button size="icon-sm" tooltip={row.schedule ? "编辑" : "新增"} onClick={() => setEditingRow(row)}>
                         {row.schedule ? <Pencil className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
                       </Button>
                       <Button
                         variant="destructive"
                         size="icon-sm"
-                        title="删除计划"
+                        tooltip="删除计划"
                         disabled={!row.schedule}
                         onClick={() => { void handleDelete(row); }}
                       >

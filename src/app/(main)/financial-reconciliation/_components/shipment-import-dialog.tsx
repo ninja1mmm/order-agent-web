@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DialogBody,
   DialogContent,
@@ -153,7 +154,7 @@ function UploadSlot({ icon, title, fileName, required = false, onFile }: UploadS
       <Icon className="h-5 w-5" />
       <div className="min-w-0">
         <strong>{title}</strong>
-        <span title={fileName ?? undefined}>{fileName ?? "请选择 .xlsx 文件"}</span>
+        {fileName ? <Tooltip><TooltipTrigger asChild><span tabIndex={0}>{fileName}</span></TooltipTrigger><TooltipContent>{fileName}</TooltipContent></Tooltip> : <span>请选择 .xlsx 文件</span>}
       </div>
       <label className="recon-upload-picker">
         <input
@@ -471,10 +472,10 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
                   {hasUnresolvedCustomers ? (
                     <div className="shipment-unresolved-list" aria-label="未维护 SAP 客户码">
                       {unresolvedCustomers.slice(0, 6).map((item) => (
-                        <span key={item.sapCustomerCode} title={item.sapCustomerName ?? undefined}>
+                        <Tooltip key={item.sapCustomerCode}><TooltipTrigger asChild><span tabIndex={0}>
                           {item.sapCustomerCode}
                           <strong>{item.rowCount} 行</strong>
-                        </span>
+                        </span></TooltipTrigger><TooltipContent>{item.sapCustomerName ?? item.sapCustomerCode}</TooltipContent></Tooltip>
                       ))}
                       {unresolvedCustomers.length > 6 ? <span>另 {unresolvedCustomers.length - 6} 个</span> : null}
                     </div>
@@ -645,7 +646,7 @@ export function ShipmentImportDialog({ open, onOpenChange, onMerged }: ShipmentI
                           </td>
                           <td>
                             <div className="stack-tight">
-                              <Badge variant={issueVariant(row)} title={presentation.text ?? undefined}>
+                              <Badge variant={issueVariant(row)} tooltip={presentation.text ?? undefined}>
                                 {presentation.label}
                               </Badge>
                               {presentation.text ? <span className="recon-issue-text">{presentation.text}</span> : null}

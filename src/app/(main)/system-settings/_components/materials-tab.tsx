@@ -227,7 +227,7 @@ export function MaterialsTab({
       <div className="row" style={{ marginBottom: 8 }}>
         <p className="mini-title" style={{ marginBottom: 0 }}>物料映射</p>
         <div className="list-actions">
-          <Button variant="default" size="sm" disabled title="导入接口暂未开放">
+          <Button variant="default" size="sm" disabled tooltip="导入接口暂未开放">
             <Upload className="h-3.5 w-3.5" /> 导入
           </Button>
           <Button variant="primary" size="sm" onClick={openCreateSheet}>
@@ -265,13 +265,13 @@ export function MaterialsTab({
                   <td>{displayValue(mapping.deliveryLocation)}</td>
                   <td>
                     <div className="recon-row-actions">
-                      <Button size="icon-sm" title="编辑" onClick={() => openEditSheet(mappingIndex, mapping)}>
+                      <Button size="icon-sm" tooltip="编辑" onClick={() => openEditSheet(mappingIndex, mapping)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="destructive"
                         size="icon-sm"
-                        title="删除"
+                        tooltip="删除"
                         onClick={() => onRemoveMaterial(mappingIndex)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />

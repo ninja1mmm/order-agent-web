@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogBody, DialogContent, DialogHeader, DialogOverlay, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -998,10 +999,19 @@ function ReviewFooter({ step, needsRevalidation, hasBlockingConflicts, revalidat
     }
     onStepChange((step + 1) as 2 | 3 | 4);
   };
+  const publishDisabledReason = excluded
+    ? "当前来源已排除，请先重新纳入合并范围"
+    : hasBlockingConflicts
+      ? "存在未解决的冲突"
+      : needsRevalidation
+        ? "请先执行修改"
+        : publishing
+          ? "正在合并，请稍候"
+          : null;
   return (
     <footer className="parse-review-footer">
       <div>{step === 1 || step === 4 ? null : <Button variant="default" size="sm" onClick={() => onStepChange((step - 1) as 1 | 2 | 3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>}</div>
-      {step < 4 ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void handleNext(); }}>{step === 3 && needsRevalidation ? (revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />) : null}{step === 3 && needsRevalidation ? "执行修改，生成预览" : nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button> : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{needsRevalidation ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}执行修改并更新预览</Button> : <Button variant="primary" size="sm" disabled={!canPublish || publishing} title={excluded ? "当前来源已排除，请先重新纳入合并范围" : hasBlockingConflicts ? "存在未解决的冲突" : needsRevalidation ? "请先执行修改" : undefined} onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认合并</Button>}</div>}
+      {step < 4 ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void handleNext(); }}>{step === 3 && needsRevalidation ? (revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />) : null}{step === 3 && needsRevalidation ? "执行修改，生成预览" : nextLabel}<ChevronRight className="h-3.5 w-3.5" /></Button> : <div className="parse-footer-actions"><Button variant="default" size="sm" onClick={() => onStepChange(3)}><ChevronLeft className="h-3.5 w-3.5" />{previousLabel}</Button>{needsRevalidation ? <Button variant="primary" size="sm" disabled={revalidating} onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}执行修改并更新预览</Button> : publishDisabledReason ? <Tooltip><TooltipTrigger asChild><span className="inline-flex"><Button variant="primary" size="sm" disabled><GitMerge className="h-3.5 w-3.5" />确认合并</Button></span></TooltipTrigger><TooltipContent>{publishDisabledReason}</TooltipContent></Tooltip> : <Button variant="primary" size="sm" onClick={onOpenMerge}><GitMerge className="h-3.5 w-3.5" />确认合并</Button>}</div>}
     </footer>
   );
 }
@@ -1039,8 +1049,8 @@ function ReadOnlyActionBar() {
 }
 
 function ReviewActionBar({ step, dateOffset, mergeStrategy, disabled, loading, needsRevalidation, revalidating, onDateOffsetChange, onMergeStrategyChange, onApplyDateOffset, onApplyMergeStrategy, onRevalidate, onReset }: { step: 1 | 2 | 3; dateOffset: string; mergeStrategy: BulkMergeStrategy; disabled: boolean; loading: boolean; needsRevalidation: boolean; revalidating: boolean; onDateOffsetChange: (value: string) => void; onMergeStrategyChange: (value: BulkMergeStrategy) => void; onApplyDateOffset: () => void; onApplyMergeStrategy: () => void; onRevalidate: () => Promise<boolean>; onReset: () => void }) {
-  const executeButton = <Button className="review-icon-action" variant="default" size="icon-sm" disabled={disabled || !needsRevalidation} aria-label="执行当前修改" title={needsRevalidation ? "执行当前修改并更新校验结果" : "修改后可继续执行"} onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}</Button>;
-  const resetButton = <Button className="review-icon-action" variant="default" size="icon-sm" disabled={disabled} aria-label="恢复解析结果" title="恢复解析结果" onClick={onReset}><RotateCcw className="h-3.5 w-3.5" /></Button>;
+  const executeButton = <Tooltip><TooltipTrigger asChild><span className="inline-flex"><Button className="review-icon-action" variant="default" size="icon-sm" disabled={disabled || !needsRevalidation} aria-label="执行当前修改" onClick={() => { void onRevalidate(); }}>{revalidating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}</Button></span></TooltipTrigger><TooltipContent>{needsRevalidation ? "执行当前修改并更新校验结果" : "修改后可继续执行"}</TooltipContent></Tooltip>;
+  const resetButton = <Tooltip><TooltipTrigger asChild><span className="inline-flex"><Button className="review-icon-action" variant="default" size="icon-sm" disabled={disabled} aria-label="恢复解析结果" onClick={onReset}><RotateCcw className="h-3.5 w-3.5" /></Button></span></TooltipTrigger><TooltipContent>恢复解析结果</TooltipContent></Tooltip>;
   if (step === 1) return <div className="review-actionbar"><div><strong>物料核对</strong></div><div className="review-actionbar-actions">{executeButton}{resetButton}</div></div>;
   if (step === 2) return (
     <div className="review-actionbar">
@@ -1190,7 +1200,7 @@ function MergePreview({ rows, rowIds, getRowValue, orderTypeMap, customerName, c
             <div className="order2-shell merge-preview-shell">
               <table className="order2-table merge-preview-table" style={{ minWidth: Math.max(980, 840 + periods.length * 108) }}>
                 <colgroup><col style={{ width: 112 }} /><col style={{ width: 114 }} /><col style={{ width: 114 }} /><col style={{ width: 180 }} /><col style={{ width: 100 }} /><col style={{ width: 112 }} />{periods.map((period) => <col key={period.key} style={{ width: 108 }} />)}<col style={{ width: 108 }} /></colgroup>
-                <thead><tr><th>Customer</th><th>Customer P/N</th><th>Faurecia P/N</th><th>Updated Time</th><th>Type</th><th>合并策略</th>{periods.map((period) => <th key={period.key} title={period.key}>{period.label}</th>)}<th>Total</th></tr></thead>
+                <thead><tr><th>Customer</th><th>Customer P/N</th><th>Faurecia P/N</th><th>Updated Time</th><th>Type</th><th>合并策略</th>{periods.map((period) => <Tooltip key={period.key}><TooltipTrigger asChild><th>{period.label}</th></TooltipTrigger><TooltipContent>{period.key}</TooltipContent></Tooltip>)}<th>Total</th></tr></thead>
                 <tbody>{visibleGroups.map(([key, group]) => { const total = periods.reduce((sum, period) => sum + (group.quantities.get(period.key) ?? 0), 0); return <tr key={key}><td>{customerName || "当前客户"}</td><td>{group.customerPartNumber}</td><td>{group.internalPartNumber}</td><td className="merge-preview-updated-time">{updatedAt ? formatDateTime(updatedAt, "zh-CN") : "—"}</td><td><span className={`orders-lane-badge ${group.type.toLowerCase()}`}>{group.type}</span></td><td>{strategyLabel(group.strategy)}</td>{periods.map((period) => <td key={period.key} className={group.quantities.has(period.key) ? `order-quantity-cell ${group.type.toLowerCase()}` : ""}>{group.quantities.has(period.key) ? group.quantities.get(period.key)?.toLocaleString() : ""}</td>)}<td><strong>{total.toLocaleString()}</strong></td></tr>; })}</tbody>
               </table>
               {visibleGroups.length === 0 ? <div className="orders-state"><strong>当前筛选条件下没有待合并数据</strong></div> : null}

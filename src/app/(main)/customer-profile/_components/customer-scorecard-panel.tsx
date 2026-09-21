@@ -120,7 +120,7 @@ export function CustomerScorecardPanel({ customerId }: CustomerScorecardPanelPro
         </h2>
         <Button
           aria-label="查看计算说明"
-          title="查看计算说明"
+          tooltip="查看计算说明"
           size="icon-sm"
           onClick={() => setShowHelp((current) => !current)}
         >

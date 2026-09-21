@@ -3,6 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CustomerConfig } from "@/services/settings";
 
 type CustomerListProps = {
@@ -43,22 +44,21 @@ export function CustomerList({
             className={`list-item customer-card ${customer.id === selectedId ? "selected" : ""}`}
           >
             <button type="button" className="customer-card-main" onClick={() => onSelectCustomer(customer)}>
-              <p className="item-title" title={customer.id === selectedId && draft ? draft.name : customer.name}>
+              <Tooltip><TooltipTrigger asChild><p className="item-title">
                 {customer.id === selectedId && draft ? draft.name : customer.name}
-              </p>
+              </p></TooltipTrigger><TooltipContent>{customer.id === selectedId && draft ? draft.name : customer.name}</TooltipContent></Tooltip>
               <p className="item-meta">
                 {(customer.id === selectedId && draft ? draft.code : customer.code) || "-"}
               </p>
             </button>
-            <button
+            <Tooltip><TooltipTrigger asChild><button
               type="button"
               className="icon-link customer-card-delete"
               onClick={() => onDeleteCustomer(customer)}
-              title="删除客户"
               aria-label={`删除客户 ${customer.name}`}
             >
               <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            </button></TooltipTrigger><TooltipContent>删除客户</TooltipContent></Tooltip>
           </div>
         ))}
         {customers.length === 0 ? <p className="item-meta">暂无客户配置</p> : null}

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { SearchableFilterSelect } from "@/components/ui/select";
 import { DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogBody } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { type Locale, beijingDateKey, copy, customerLabel, customerLabelFromId, customerMailKey, formatShortDate } from "./shared";
 
 function buildHeatmapColumns(days = 14) {
@@ -129,15 +130,13 @@ export function CustomerHeatmap({
                     const hasIssue = issueDays.has(key);
                     const selected = selectedCustomerDay?.customerKey === customer.key && selectedCustomerDay.date === date;
                     return (
-                      <button
+                      <Tooltip key={key}><TooltipTrigger asChild><button
                         type="button"
-                        key={key}
                         className={`heat-cell ${heatLevel(count)}${hasIssue ? " issue" : ""}${selected ? " selected" : ""}`}
                         aria-label={`${customer.label} ${date}，${count} 封邮件${hasIssue ? "，有待处理任务" : ""}`}
                         aria-pressed={selected}
-                        title={`${customer.label} · ${date} · ${count} 封邮件`}
                         onClick={() => onSelectCustomerDay(customer.key, customer.label, date)}
-                      >{hasIssue ? "!" : ""}</button>
+                      >{hasIssue ? "!" : ""}</button></TooltipTrigger><TooltipContent>{customer.label} · {date} · {count} 封邮件</TooltipContent></Tooltip>
                     );
                   })}
                 </React.Fragment>

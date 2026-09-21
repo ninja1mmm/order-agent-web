@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bot } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/context/auth-provider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const mainNav = [
   { key: "intelligent-service", title: "智能客服", href: "/intelligent-service" },
@@ -163,14 +164,13 @@ export function TopNav({ active }: { active: string }) {
         ))}
       </nav>
       <div className="topbar-actions">
-        <Link
+        <Tooltip><TooltipTrigger asChild><Link
           className={`agent-nav-button${active === "/SCAgent" ? " active" : ""}`}
           href="/SCAgent"
           aria-label="Open SCAgent"
-          title="SCAgent"
         >
           <Bot size={18} aria-hidden="true" />
-        </Link>
+        </Link></TooltipTrigger><TooltipContent>SCAgent</TooltipContent></Tooltip>
         <UserMenu />
       </div>
     </header>

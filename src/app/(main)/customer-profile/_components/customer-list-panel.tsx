@@ -29,7 +29,7 @@ export function CustomerListPanel({
           variant="primary"
           size="icon-sm"
           aria-label="刷新画像"
-          title="刷新画像"
+          tooltip="刷新画像"
           onClick={onRefresh}
           disabled={loading}
         >

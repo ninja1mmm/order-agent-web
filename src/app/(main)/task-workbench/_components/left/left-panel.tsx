@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { FilterSelect } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceMail } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
 import {
@@ -106,7 +107,7 @@ export function LeftPanel({
           return (
             <button type="button" className={`customer-summary-card${customerFilter === id ? " selected" : ""}`} key={id} onClick={() => onSelectCustomer(id, latestMail?.id)}>
               <div><strong>{label}</strong><span>{customerMails.length} 封</span></div>
-              <p title={latestMail?.subject}>{latestMail?.subject || "暂无邮件主题"}</p>
+              <Tooltip><TooltipTrigger asChild><p>{latestMail?.subject || "暂无邮件主题"}</p></TooltipTrigger><TooltipContent>{latestMail?.subject || "暂无邮件主题"}</TooltipContent></Tooltip>
               {pendingCount ? <small>{pendingCount} 封邮件待处理</small> : <small>当前无待处理邮件</small>}
             </button>
           );

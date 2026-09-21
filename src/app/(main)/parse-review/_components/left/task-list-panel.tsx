@@ -3,6 +3,7 @@
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilterSelect, SearchableFilterSelect } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceTask } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
 import {
@@ -86,7 +87,7 @@ export function TaskListPanel({
               className={`list-item ${instanceKey === selectedKey ? "selected" : ""}`}
               onClick={() => onSelectTask(task.id)}
             >
-              <p className="item-title task-filename" title={taskLabel}>{taskLabel}</p>
+              <Tooltip><TooltipTrigger asChild><p className="item-title task-filename">{taskLabel}</p></TooltipTrigger><TooltipContent>{taskLabel}</TooltipContent></Tooltip>
               <p className="item-meta task-status-desc">
                 {customerLabelFromId(customers, task.customerId, task.customerName)} · {t.receivedAt} {formatDateTime(task.receivedAt ?? task.mailCreatedAt, locale)} ·{" "}
                 {taskStatusLabel(task.status, locale)}

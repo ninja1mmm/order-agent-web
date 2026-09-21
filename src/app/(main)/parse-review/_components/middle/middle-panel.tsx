@@ -3,10 +3,12 @@
 import { useState, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle, FileSearch, LoaderCircle, PanelRightClose, PanelRightOpen, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceAttachment, WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import { type Locale, copy } from "../../../_components/shared";
 import type { EditingCell, LocalNewRow, NewRowData, OrderType } from "../parse-review-types";
 import { AttachmentPreview } from "./attachment-preview";
+import { buildConflictReviewSummary } from "./conflict-review-summary";
 import { ResultTable } from "./result-table";
 
 type MiddlePanelProps = {
@@ -112,19 +114,24 @@ export function MiddlePanel({
 }: MiddlePanelProps) {
   const t = copy[locale];
   const [resultCollapsed, setResultCollapsed] = useState(false);
+  const conflictReviewSummary = reviewType === "extraction_review"
+    ? buildConflictReviewSummary(rows)
+    : null;
+  const displayedReviewReason = conflictReviewSummary?.message ?? reviewReason;
+  const displayedReviewTitle = conflictReviewSummary?.title ?? "需要人工确认";
 
   return (
     <div className={`parse-horizontal-workspace${resultCollapsed ? " result-collapsed" : ""}`}>
       <section className="panel scroll-panel source-preview-panel">
         <div className="panel-head">
-          <div className="source-preview-title"><FileSearch className="h-4 w-4" /><span><strong title={isBodyTextTask ? "Email Body" : selectedAttachment?.fileName}>{isBodyTextTask ? "Email Body" : (selectedAttachment?.fileName ?? t.attachmentPreview)}</strong></span></div>
+          <div className="source-preview-title"><FileSearch className="h-4 w-4" /><span><Tooltip><TooltipTrigger asChild><strong tabIndex={0}>{isBodyTextTask ? "Email Body" : (selectedAttachment?.fileName ?? t.attachmentPreview)}</strong></TooltipTrigger><TooltipContent>{isBodyTextTask ? "Email Body" : (selectedAttachment?.fileName ?? t.attachmentPreview)}</TooltipContent></Tooltip></span></div>
         </div>
         <div className="panel-body source-preview-body"><AttachmentPreview locale={locale} isBodyTextTask={isBodyTextTask} selectedMail={selectedMail} selectedAttachment={selectedAttachment} targetSheetName={targetSheetName} parsedSheetNames={parsedSheetNames} addingSource={addingSource} readOnly={readOnly} onAddSheetSource={onAddSheetSource} /></div>
       </section>
       <section className="panel scroll-panel parse-edit-panel">
         <div className="parse-result-toolbar">
           {resultCollapsed ? null : actionBar}
-          <Button className={`parse-collapse-button${resultCollapsed ? " is-collapsed" : ""}`} variant="default" size="icon-sm" aria-label={resultCollapsed ? "展开解析" : "收起解析"} title={resultCollapsed ? "展开解析" : "收起解析"} onClick={() => setResultCollapsed((value) => !value)}>{resultCollapsed ? <PanelRightOpen className="h-3.5 w-3.5" /> : <PanelRightClose className="h-3.5 w-3.5" />}</Button>
+          <Tooltip><TooltipTrigger asChild><Button className={`parse-collapse-button${resultCollapsed ? " is-collapsed" : ""}`} variant="default" size="icon-sm" aria-label={resultCollapsed ? "展开解析" : "收起解析"} onClick={() => setResultCollapsed((value) => !value)}>{resultCollapsed ? <PanelRightOpen className="h-3.5 w-3.5" /> : <PanelRightClose className="h-3.5 w-3.5" />}</Button></TooltipTrigger><TooltipContent>{resultCollapsed ? "展开解析" : "收起解析"}</TooltipContent></Tooltip>
         </div>
         {!resultCollapsed ? <div className="parse-result-body">
           {actionError ? (
@@ -133,16 +140,16 @@ export function MiddlePanel({
               <div><strong>操作未完成</strong><span>{actionError}</span></div>
             </div>
           ) : null}
-          {reviewReason ? (
+          {displayedReviewReason ? (
             reviewType === "confirmation_required" ? (
               <div className="review-feedback info">
                 <CheckCircle className="h-4 w-4" />
-                <div><strong>解析完成，请确认</strong><span>{reviewReason}</span></div>
+                <div><strong>解析完成，请确认</strong><span>{displayedReviewReason}</span></div>
               </div>
             ) : (
               <div className="review-feedback warning">
                 <AlertTriangle className="h-4 w-4" />
-                <div><strong>需要人工确认</strong><span>{reviewReason}</span></div>
+                <div><strong>{displayedReviewTitle}</strong><span>{displayedReviewReason}</span></div>
                 {isWaitingHuman && (
                   <button type="button" className="review-feedback-action" disabled={isProceedLoading} onClick={onProceed}>
                     {isProceedLoading ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}

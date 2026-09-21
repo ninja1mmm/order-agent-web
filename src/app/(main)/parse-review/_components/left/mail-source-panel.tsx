@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Bot, ChevronDown, FileSpreadsheet, FileText, Mail } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { MailTaskListResponse, WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import { formatDateTime, type Locale, taskStatusLabel } from "../../../_components/shared";
 
@@ -31,7 +32,7 @@ export function MailSourcePanel({
   return (
     <aside className="panel scroll-panel parse-source-panel">
       <div className="panel-head parse-source-mail-head">
-        <div className="source-tree-title"><strong title={mail?.subject}>{mail?.subject ?? "邮件解析确认"}</strong><span>{mail ? formatDateTime(mail.receivedAt, locale) : "未找到邮件"}</span></div>
+        <div className="source-tree-title"><Tooltip><TooltipTrigger asChild><strong tabIndex={0}>{mail?.subject ?? "邮件解析确认"}</strong></TooltipTrigger><TooltipContent>{mail?.subject ?? "邮件解析确认"}</TooltipContent></Tooltip><span>{mail ? formatDateTime(mail.receivedAt, locale) : "未找到邮件"}</span></div>
       </div>
       <div className="panel-body source-tree scrollbar-hidden">
         {!mail ? <p className="item-meta">未找到邮件。</p> : null}
@@ -64,7 +65,7 @@ function SourceGroup({ title, subtitle, statusLabel, status, icon, active, defau
   const [open, setOpen] = useState(defaultOpen);
   return (
     <section className={`source-group${active ? " active" : ""}`}>
-      <button type="button" className="source-group-head" aria-expanded={open} onClick={() => { onActivate(); setOpen((value) => !value); }}>{icon}<span className="source-group-copy"><strong title={title}>{title}</strong><span className="source-group-meta">{subtitle ? <small>{subtitle}</small> : null}<span className={`source-group-status ${status ?? ""}${statusLabel ? "" : " empty"}`}>{statusLabel}</span></span></span><ChevronDown className={`h-3.5 w-3.5${open ? " is-open" : ""}`} /></button>
+      <button type="button" className="source-group-head" aria-expanded={open} onClick={() => { onActivate(); setOpen((value) => !value); }}>{icon}<span className="source-group-copy"><Tooltip><TooltipTrigger asChild><strong>{title}</strong></TooltipTrigger><TooltipContent>{title}</TooltipContent></Tooltip><span className="source-group-meta">{subtitle ? <small>{subtitle}</small> : null}<span className={`source-group-status ${status ?? ""}${statusLabel ? "" : " empty"}`}>{statusLabel}</span></span></span><ChevronDown className={`h-3.5 w-3.5${open ? " is-open" : ""}`} /></button>
       {open ? <div className="source-group-body">{children}</div> : null}
     </section>
   );

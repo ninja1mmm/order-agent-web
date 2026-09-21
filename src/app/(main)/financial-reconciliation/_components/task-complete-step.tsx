@@ -16,10 +16,10 @@ export function TaskCompleteStep({ task }: { task: ReconciliationTask | null }) 
           <p className="item-meta">任务关闭后可在此查看关闭信息；导出和打印等待后端 API 提供。</p>
         </div>
         <div className="list-actions">
-          <Button variant="default" disabled title="后端暂未提供 export API">
+          <Button variant="default" disabled tooltip="后端暂未提供 export API">
             <Download className="h-3.5 w-3.5" /> 导出
           </Button>
-          <Button variant="default" disabled title="后端暂未提供 print API">
+          <Button variant="default" disabled tooltip="后端暂未提供 print API">
             <Printer className="h-3.5 w-3.5" /> 打印
           </Button>
         </div>

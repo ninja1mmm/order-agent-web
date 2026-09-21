@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { BACKEND_URL } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceMail, WorkspaceTask } from "@/services/inbox";
 import { resyncMail } from "@/services/mail";
 import {
@@ -57,7 +58,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <Badge variant={pendingCount ? "amber" : "slate"}>{pendingCount ? `${pendingCount} 待确认` : `${tasks.length} 个任务`}</Badge>
           {mailId ? (
-            <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="同步邮件" title="从邮件服务器重新同步" disabled={isSyncing} onClick={handleResync}>
+            <Button variant="default" size="icon-sm" className="workbench-icon-button" aria-label="同步邮件" tooltip="从邮件服务器重新同步" disabled={isSyncing} onClick={handleResync}>
               <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
             </Button>
           ) : null}
@@ -75,7 +76,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
               <div className="result-block archive-result-block" key={attachment.attachmentId}>
                 <div className="result-title">
                   <Paperclip className="result-type-icon" aria-hidden="true" />
-                  <span className="result-name" title={attachment.fileName}>{truncateMiddle(attachment.fileName)}</span>
+                  <Tooltip><TooltipTrigger asChild><span className="result-name" tabIndex={0}>{truncateMiddle(attachment.fileName)}</span></TooltipTrigger><TooltipContent>{attachment.fileName}</TooltipContent></Tooltip>
                 </div>
                 <div className="result-footer archive-result-footer">
                   <span className="item-meta">压缩附件</span>
@@ -103,7 +104,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
             <div className="result-block" key={attachment.attachmentId}>
               <div className="result-title">
                 <Paperclip className="result-type-icon" aria-hidden="true" />
-                <span className="result-name" title={attachment.fileName}>
+                <Tooltip><TooltipTrigger asChild><span className="result-name" tabIndex={0}>
                   {truncateMiddle(attachment.fileName)}
                   <a
                     className="icon-link"
@@ -113,7 +114,7 @@ export function RightPanel({ locale, mail, tasks, parsingIds, onParse, onRefresh
                   >
                     <Download className="h-3 w-3" />
                   </a>
-                </span>
+                </span></TooltipTrigger><TooltipContent>{attachment.fileName}</TooltipContent></Tooltip>
                 {targetLabel && !isSkipped && (
                   <Badge variant={targetBadgeVariant}>{targetLabel}</Badge>
                 )}

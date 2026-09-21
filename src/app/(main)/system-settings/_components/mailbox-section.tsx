@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { MailboxSettings } from "@/services/settings";
 import { formatDateTime } from "../../_components/shared";
 
@@ -59,14 +60,15 @@ function EditableNumber({
   }
 
   return (
-    <span
+    <Tooltip><TooltipTrigger asChild><span
       className="editable-value"
       onClick={() => setEditing(String(value))}
-      title="点击编辑"
+      tabIndex={0}
+      onKeyDown={(event) => { if (event.key === "Enter") setEditing(String(value)); }}
     >
       {value} {suffix}
       <Pencil className="h-3 w-3 editable-icon" />
-    </span>
+    </span></TooltipTrigger><TooltipContent>点击编辑</TooltipContent></Tooltip>
   );
 }
 

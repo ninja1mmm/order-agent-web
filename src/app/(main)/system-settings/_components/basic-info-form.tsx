@@ -3,6 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CustomerConfig } from "@/services/settings";
 
 type BasicInfoFormProps = {
@@ -95,14 +96,14 @@ export function BasicInfoForm({
                   />
                 </td>
                 <td>
-                  <button
+                  <Tooltip><TooltipTrigger asChild><button
                     type="button"
                     className="icon-link"
                     onClick={() => onRemoveContact(index)}
-                    title="删除"
+                    aria-label="删除联系人"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  </button></TooltipTrigger><TooltipContent>删除联系人</TooltipContent></Tooltip>
                 </td>
               </tr>
             ))}

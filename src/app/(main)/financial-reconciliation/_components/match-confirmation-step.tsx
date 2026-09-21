@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   confirmReconciliationMatch,
   createManualReconciliationMatch,
@@ -597,14 +598,13 @@ export function MatchConfirmationStep({ task, groups, loading, loadingState, onC
           {canDrag ? (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
               {row.shipment ? (
-                <button
+                <Tooltip><TooltipTrigger asChild><span className="inline-flex"><button
                   aria-label="移出收货对应"
                   disabled={savingChanges}
                   onClick={(event) => {
                     event.stopPropagation();
                     detachReceiptFromRow(row);
                   }}
-                  title="移出收货对应"
                   type="button"
                   style={{
                     display: "inline-flex",
@@ -620,7 +620,7 @@ export function MatchConfirmationStep({ task, groups, loading, loadingState, onC
                   }}
                 >
                   <Unlink2 className="h-3 w-3" />
-                </button>
+                </button></span></TooltipTrigger><TooltipContent>移出收货对应</TooltipContent></Tooltip>
               ) : null}
               <GripVertical className="h-3.5 w-3.5" />
             </span>
@@ -781,7 +781,7 @@ export function MatchConfirmationStep({ task, groups, loading, loadingState, onC
                         <div style={judgementDetailsStyle}>
                           <div style={judgementLineStyle}>
                             <span style={{ ...mutedText, flex: "0 0 auto" }}>对账方式</span>
-                            <strong style={judgementValueStyle} title={row.matchMethod}>{row.matchMethodLabel}</strong>
+                            <Tooltip><TooltipTrigger asChild><strong style={judgementValueStyle} tabIndex={0}>{row.matchMethodLabel}</strong></TooltipTrigger><TooltipContent>{row.matchMethod}</TooltipContent></Tooltip>
                           </div>
                           <div style={judgementLineStyle}>
                             <span style={{ ...mutedText, flex: "0 0 auto" }}>置信</span>
@@ -805,7 +805,7 @@ export function MatchConfirmationStep({ task, groups, loading, loadingState, onC
                         <Button
                           size="icon-sm"
                           disabled={!canToggleConfirm}
-                          title={isConfirmed ? "取消确认" : "直接确认"}
+                          tooltip={isConfirmed ? "取消确认" : "直接确认"}
                           onClick={() => {
                             if (!row.match) return;
                             if (isConfirmed) void unconfirm(row.match);
@@ -814,7 +814,7 @@ export function MatchConfirmationStep({ task, groups, loading, loadingState, onC
                         >
                           {isConfirmed ? <RotateCcw className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                         </Button>
-                        <Button variant="destructive" size="icon-sm" disabled={!canReject} title="拒绝匹配" onClick={() => { if (row.match) void reject(row.match); }}>
+                        <Button variant="destructive" size="icon-sm" disabled={!canReject} tooltip="拒绝匹配" onClick={() => { if (row.match) void reject(row.match); }}>
                           <XCircle className="h-3.5 w-3.5" />
                         </Button>
                       </div>

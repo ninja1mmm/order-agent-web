@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 import { BLOCKING_CONFLICT_FLAGS } from "@/types/schemas/tasks";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceTask } from "@/services/inbox";
 import type { EditingCell, LocalNewRow, NewRowData, OrderType } from "../parse-review-types";
 import { AddResultRow } from "./add-result-row";
@@ -159,14 +160,14 @@ export function ResultTable({
     <div className="pn-card-container">
       {/* Global action bar */}
       <div className="pn-card-global-bar">
-        <button type="button" className="pn-card-collapse-all" title={allCollapsed ? "展开全部" : "收起全部"} onClick={toggleAllCards}>
+        <Tooltip><TooltipTrigger asChild><button type="button" className="pn-card-collapse-all" onClick={toggleAllCards}>
           {allCollapsed ? <ChevronsUpDown className="h-3.5 w-3.5" /> : <ChevronsDownUp className="h-3.5 w-3.5" />}
           <span>{allCollapsed ? "展开全部" : "收起全部"}</span>
-        </button>
+        </button></TooltipTrigger><TooltipContent>{allCollapsed ? "展开全部物料" : "收起全部物料"}</TooltipContent></Tooltip>
         {!readOnly ? (
-          <button type="button" className={`order-type-bulk-pill ${bulkOrderState}`} title="切换全部 Firm / Forecast" onClick={onBulkToggleOrderType}>
+          <Tooltip><TooltipTrigger asChild><button type="button" className={`order-type-bulk-pill ${bulkOrderState}`} onClick={onBulkToggleOrderType}>
             {bulkOrderState === "firm" ? "Firm" : bulkOrderState === "forecast" ? "Forecast" : "Firm / Forecast"}
-          </button>
+          </button></TooltipTrigger><TooltipContent>切换全部 Firm / Forecast</TooltipContent></Tooltip>
         ) : null}
       </div>
 
@@ -199,14 +200,14 @@ export function ResultTable({
                         <th>Quantity{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
                         <th>Collection Date{isWaitingHuman && <span className="th-edit-tag">可编辑</span>}</th>
                         <th>Week</th>
-                        <th style={{ cursor: "pointer", userSelect: "none" }} title="点击按映射状态排序" onClick={onToggleMappingSort}>
+                        <Tooltip><TooltipTrigger asChild><th style={{ cursor: "pointer", userSelect: "none" }} tabIndex={0} onClick={onToggleMappingSort} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onToggleMappingSort(); }}>
                           Mapping{mappingSortOrder === "asc" ? " ▲" : mappingSortOrder === "desc" ? " ▼" : ""}
-                        </th>
-                        <th className="order-type-header" style={{ cursor: isWaitingHuman ? "pointer" : undefined, userSelect: "none" }} title={isWaitingHuman ? "切换该物料全部 Firm / Forecast" : undefined} onClick={isWaitingHuman ? () => onBulkToggleCardOrderType(cardRowIds) : undefined}>
+                        </th></TooltipTrigger><TooltipContent>点击按映射状态排序</TooltipContent></Tooltip>
+                        {isWaitingHuman ? <Tooltip><TooltipTrigger asChild><th className="order-type-header" style={{ cursor: "pointer", userSelect: "none" }} tabIndex={0} onClick={() => onBulkToggleCardOrderType(cardRowIds)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onBulkToggleCardOrderType(cardRowIds); }}>
                           <span className={`order-type-card-pill ${cardOrderState}`}>
                             {cardOrderState === "firm" ? "Firm" : cardOrderState === "forecast" ? "Forecast" : "Firm / Forecast"}
                           </span>
-                        </th>
+                        </th></TooltipTrigger><TooltipContent>切换该物料全部 Firm / Forecast</TooltipContent></Tooltip> : <th className="order-type-header"><span className={`order-type-card-pill ${cardOrderState}`}>{cardOrderState === "firm" ? "Firm" : cardOrderState === "forecast" ? "Forecast" : "Firm / Forecast"}</span></th>}
                         <th>合并策略</th>
                         <th>Conflict</th>
                         <th style={{ width: 36 }} />
@@ -246,10 +247,10 @@ export function ResultTable({
                   </table>
                 </div>
                 {isWaitingHuman && (
-                  <button type="button" className="pn-card-add-btn" title={`为 ${group.partNumber} 添加行`} onClick={() => onStartAddingRow(group.partNumber)}>
+                  <Tooltip><TooltipTrigger asChild><button type="button" className="pn-card-add-btn" onClick={() => onStartAddingRow(group.partNumber)}>
                     <Plus className="h-3 w-3" />
                     添加行
-                  </button>
+                  </button></TooltipTrigger><TooltipContent>为 {group.partNumber} 添加行</TooltipContent></Tooltip>
                 )}
               </div>
             )}

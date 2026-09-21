@@ -5,6 +5,7 @@ import DOMPurify from "dompurify";
 import { History } from "lucide-react";
 import { BACKEND_URL } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { replaceInlineImageCids, stripInlineImageCidPlaceholders } from "@/lib/mail-inline-images";
 import type { WorkspaceMail } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
@@ -38,7 +39,7 @@ export function MiddlePanel({ locale, mail, timelineMails, customers, onSelectMa
           {timelineMails.map((item) => (
             <button type="button" className={item.id === mail?.id ? "selected" : ""} key={item.id} onClick={() => onSelectMail(item.id)}>
               <span className="timeline-dot" aria-hidden="true" />
-              <span className="workbench-mail-copy"><strong title={item.subject}>{item.subject || "(无主题)"}</strong><small>{formatDateTime(item.receivedAt, locale)} · {item.attachments.length} 个附件</small></span>
+              <span className="workbench-mail-copy"><Tooltip><TooltipTrigger asChild><strong>{item.subject || "(无主题)"}</strong></TooltipTrigger><TooltipContent>{item.subject || "(无主题)"}</TooltipContent></Tooltip><small>{formatDateTime(item.receivedAt, locale)} · {item.attachments.length} 个附件</small></span>
             </button>
           ))}
           {timelineMails.length === 0 ? <p className="item-meta">该客户在当前日期范围内没有邮件。</p> : null}
@@ -47,9 +48,9 @@ export function MiddlePanel({ locale, mail, timelineMails, customers, onSelectMa
           {mail ? (
             <>
               <div className="customer-detail-head">
-                <strong title={mail.subject}>{mail.subject || "(无主题)"}</strong>
+                <Tooltip><TooltipTrigger asChild><strong tabIndex={0}>{mail.subject || "(无主题)"}</strong></TooltipTrigger><TooltipContent>{mail.subject || "(无主题)"}</TooltipContent></Tooltip>
                 <div className="customer-detail-meta">
-                  <span title={`From: ${mail.fromEmail} · 收件：${formatDateTime(mail.receivedAt, locale)}`}>From: {mail.fromEmail} · 收件：{formatDateTime(mail.receivedAt, locale)}</span>
+                  <Tooltip><TooltipTrigger asChild><span tabIndex={0}>From: {mail.fromEmail} · 收件：{formatDateTime(mail.receivedAt, locale)}</span></TooltipTrigger><TooltipContent>From: {mail.fromEmail} · 收件：{formatDateTime(mail.receivedAt, locale)}</TooltipContent></Tooltip>
                   <Badge className="customer-mail-status" variant="slate">{workbenchMailStatusLabel(getWorkbenchMailStatus(mail.processingState), locale)}</Badge>
                 </div>
               </div>

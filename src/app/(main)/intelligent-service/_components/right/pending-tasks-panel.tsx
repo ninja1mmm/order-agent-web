@@ -6,6 +6,7 @@ import { ArrowRight, LoaderCircle, Mail, RefreshCw, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceMail } from "@/services/inbox";
 import type { CustomerConfig } from "@/services/settings";
 import { type Locale, customerLabelFromId, formatDateTime } from "../../../_components/shared";
@@ -49,7 +50,7 @@ export function PendingMailsPanel({ locale, mails, customers, filter, total, loa
         </div>
       </div>
       <div className="panel-body stack scrollbar-hidden" onScroll={handleScroll}>
-        {filterLabel ? <div className="pending-mail-filter"><span title={filterLabel}>{isEnglish ? "Filter: " : "筛选："}{filterLabel}</span><button type="button" onClick={onClearFilter}><X className="h-3.5 w-3.5" />{isEnglish ? "Clear" : "清除筛选"}</button></div> : null}
+        {filterLabel ? <div className="pending-mail-filter"><Tooltip><TooltipTrigger asChild><span tabIndex={0}>{isEnglish ? "Filter: " : "筛选："}{filterLabel}</span></TooltipTrigger><TooltipContent>{filterLabel}</TooltipContent></Tooltip><button type="button" onClick={onClearFilter}><X className="h-3.5 w-3.5" />{isEnglish ? "Clear" : "清除筛选"}</button></div> : null}
         {error ? <p className="item-meta" role="alert">{error}</p> : null}
         {loading && mails.length === 0 ? <p className="item-meta">{isEnglish ? "Loading pending mails..." : "正在加载待处理邮件..."}</p> : null}
         {mails.map((mail) => {
@@ -57,7 +58,7 @@ export function PendingMailsPanel({ locale, mails, customers, filter, total, loa
           return (
             <article className="pending-mail-card" key={mail.id}>
               <div className="pending-mail-card-head">
-                <div className="min-w-0"><p className="pending-mail-subject" title={mail.subject}>{mail.subject || (isEnglish ? "(No subject)" : "(无主题)")}</p><p className="item-meta">{customerLabelFromId(customers, mail.customerId, mail.customerName)} · {formatDateTime(mail.receivedAt, locale)}</p></div>
+                <div className="min-w-0"><Tooltip><TooltipTrigger asChild><p className="pending-mail-subject" tabIndex={0}>{mail.subject || (isEnglish ? "(No subject)" : "(无主题)")}</p></TooltipTrigger><TooltipContent>{mail.subject || (isEnglish ? "(No subject)" : "(无主题)")}</TooltipContent></Tooltip><p className="item-meta">{customerLabelFromId(customers, mail.customerId, mail.customerName)} · {formatDateTime(mail.receivedAt, locale)}</p></div>
                 <Badge variant="slate">{mail.pendingCategory ? categoryLabel(mail.pendingCategory, locale) : (isEnglish ? "Processing" : "处理中")}</Badge>
               </div>
               <div className="result-footer"><span className="pending-mail-task-count">{isEnglish ? `${mail.attachments.length} attachment(s)` : `${mail.attachments.length} 个附件`}</span><Link className="pending-mail-link" href={href}>{isEnglish ? "Open mail" : "处理邮件"}<ArrowRight className="h-3.5 w-3.5" /></Link></div>

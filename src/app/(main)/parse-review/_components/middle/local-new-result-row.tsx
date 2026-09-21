@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { EditingCell, LocalNewRow } from "../parse-review-types";
 import { InlineEditInput } from "./inline-edit-input";
 
@@ -40,9 +41,9 @@ export function LocalNewResultRow({
     }
 
     return (
-      <span className="editable-cell editable" onClick={() => onStartEditing(row.id, field, value)} title="点击编辑">
+      <Tooltip><TooltipTrigger asChild><span className="editable-cell editable" tabIndex={0} onClick={() => onStartEditing(row.id, field, value)} onKeyDown={(event) => { if (event.key === "Enter") onStartEditing(row.id, field, value); }}>
         {String(value) || <span className="cell-placeholder">—</span>}
-      </span>
+      </span></TooltipTrigger><TooltipContent>点击编辑</TooltipContent></Tooltip>
     );
   };
 
@@ -58,9 +59,9 @@ export function LocalNewResultRow({
       <td>替换</td>
       <td>—</td>
       <td>
-        <button type="button" className="row-delete-btn" title="移除新增行" onClick={() => onRemove(row.id)}>
+        <Tooltip><TooltipTrigger asChild><button type="button" className="row-delete-btn" aria-label="移除新增行" onClick={() => onRemove(row.id)}>
           <Trash2 className="h-3 w-3" />
-        </button>
+        </button></TooltipTrigger><TooltipContent>移除新增行</TooltipContent></Tooltip>
       </td>
     </tr>
   );

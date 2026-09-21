@@ -14,6 +14,7 @@ import {
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip as UiTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type {
   CustomerProfileMaterial,
   CustomerProfileViewMode,
@@ -180,23 +181,20 @@ export function WeekOverviewPanel({
             ) : viewMode === "year" ? (
               <div className="year-grid material-week-grid" data-profile-heatmap>
                 {displayWeeks.map((week) => (
-                  <button
-                    key={week.weekKey}
-                    type="button"
+                  <UiTooltip key={week.weekKey}><TooltipTrigger asChild><span
                     className={`week-block ${shippingHeatLevel(week.shippingQty)}`}
-                    disabled={week.shippingQty <= 0}
-                    title={`${week.weekKey} shipping ${formatQuantity(week.shippingQty)}`}
+                    tabIndex={0}
                   >
                     <span>{weekShortLabel(week.weekKey)}</span>
                     <span className="week-count">{formatQuantity(week.shippingQty)}</span>
-                  </button>
+                  </span></TooltipTrigger><TooltipContent>{week.weekKey} 发运量 {formatQuantity(week.shippingQty)}</TooltipContent></UiTooltip>
                 ))}
               </div>
             ) : (
               <div className="rolling-week-shell">
                 <Button
                   aria-label="向左滚动物料发运周"
-                  title="向左滚动物料发运周"
+                  tooltip="向左滚动物料发运周"
                   className="rolling-scroll-button"
                   size="icon-sm"
                   onClick={() => scrollRollingWeeks("left")}
@@ -205,21 +203,18 @@ export function WeekOverviewPanel({
                 </Button>
                 <div ref={rollingStripRef} className="rolling-strip profile-week-strip scrollbar-hidden" data-profile-heatmap>
                   {displayWeeks.map((week) => (
-                    <button
-                      key={week.weekKey}
-                      type="button"
+                    <UiTooltip key={week.weekKey}><TooltipTrigger asChild><span
                       className={`rolling-week ${shippingHeatLevel(week.shippingQty)}`}
-                      disabled={week.shippingQty <= 0}
-                      title={`${week.weekKey} shipping ${formatQuantity(week.shippingQty)}`}
+                      tabIndex={0}
                     >
                       <span>{week.weekKey}</span>
                       <span className="week-count">{formatQuantity(week.shippingQty)}</span>
-                    </button>
+                    </span></TooltipTrigger><TooltipContent>{week.weekKey} 发运量 {formatQuantity(week.shippingQty)}</TooltipContent></UiTooltip>
                   ))}
                 </div>
                 <Button
                   aria-label="向右滚动物料发运周"
-                  title="向右滚动物料发运周"
+                  tooltip="向右滚动物料发运周"
                   className="rolling-scroll-button"
                   size="icon-sm"
                   onClick={() => scrollRollingWeeks("right")}

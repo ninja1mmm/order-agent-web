@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const badgeVariants = cva(
   "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold transition-colors",
@@ -21,10 +22,15 @@ const badgeVariants = cva(
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  tooltip?: React.ReactNode;
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <span className={cn(badgeVariants({ variant }), className)} {...props} />;
+function Badge({ className, variant, tooltip, title, tabIndex, ...props }: BadgeProps) {
+  const tooltipContent = tooltip ?? title;
+  const badge = <span className={cn(badgeVariants({ variant }), tooltipContent && "cursor-help", className)} tabIndex={tabIndex ?? (tooltipContent ? 0 : undefined)} {...props} />;
+  if (!tooltipContent) return badge;
+  return <Tooltip><TooltipTrigger asChild>{badge}</TooltipTrigger><TooltipContent>{tooltipContent}</TooltipContent></Tooltip>;
 }
 
 export { Badge, badgeVariants };

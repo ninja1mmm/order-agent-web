@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FilterSelect, SearchableFilterSelect } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCustomerConfig } from "../../_components/shared";
 import {
   cancelReconciliationTask,
@@ -157,36 +158,35 @@ export function TaskCenterPage() {
                   <td>{formatDateTime(task.updatedAt ?? task.createdAt)}</td>
                   <td>
                     <div className="recon-row-actions task-center-actions">
-                      <Link
+                      <Tooltip><TooltipTrigger asChild><Link
                         className={`${buttonVariants({ variant: "default", size: "icon-sm" })} recon-action-link`}
                         href={`/financial-reconciliation/tasks/${task.id}`}
-                        title="查看详情"
                         aria-label={`查看任务 ${task.taskNo}`}
                       >
                         <Eye className="h-3.5 w-3.5" />
-                      </Link>
+                      </Link></TooltipTrigger><TooltipContent>查看详情</TooltipContent></Tooltip>
                       {task.status === "draft" && !task.isTransitioning ? (
-                        <Button size="icon-sm" title="开始对账" aria-label={`开始对账任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "start"); }}>
+                        <Button size="icon-sm" tooltip="开始对账" aria-label={`开始对账任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "start"); }}>
                           <Play className="h-3.5 w-3.5" />
                         </Button>
                       ) : null}
                       {task.status === "closed" && !task.isTransitioning ? (
-                        <Button size="icon-sm" title="重开任务" aria-label={`重开任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "reopen"); }}>
+                        <Button size="icon-sm" tooltip="重开任务" aria-label={`重开任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "reopen"); }}>
                           <RotateCcw className="h-3.5 w-3.5" />
                         </Button>
                       ) : null}
                       {task.status === "in_progress" && !task.isTransitioning ? (
-                        <Button size="icon-sm" title="重新对账" aria-label={`重新对账任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "regenerate"); }}>
+                        <Button size="icon-sm" tooltip="重新对账" aria-label={`重新对账任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "regenerate"); }}>
                           <RefreshCcw className="h-3.5 w-3.5" />
                         </Button>
                       ) : null}
                       {(task.status === "draft" || task.status === "in_progress") && !task.isTransitioning ? (
-                        <Button variant="destructive" size="icon-sm" title="取消任务" aria-label={`取消任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "cancel"); }}>
+                        <Button variant="destructive" size="icon-sm" tooltip="取消任务" aria-label={`取消任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "cancel"); }}>
                           <Ban className="h-3.5 w-3.5" />
                         </Button>
                       ) : null}
                       {task.status === "closed" && !task.isTransitioning ? (
-                        <Button variant="destructive" size="icon-sm" title="作废任务" aria-label={`作废任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "void"); }}>
+                        <Button variant="destructive" size="icon-sm" tooltip="作废任务" aria-label={`作废任务 ${task.taskNo}`} disabled={busyId === task.id} onClick={() => { void runAction(task, "void"); }}>
                           <FileX className="h-3.5 w-3.5" />
                         </Button>
                       ) : null}

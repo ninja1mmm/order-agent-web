@@ -172,13 +172,13 @@ export function ReceiptRecordsPage() {
                     <td>{record.sourceFileId ? "本次导入" : "手工新增"}</td>
                     <td>
                       <div className="recon-row-actions">
-                        <Button size="icon-sm" title={display.locked ? "查看" : "编辑"} onClick={() => setEditingRecord(record)}>
+                        <Button size="icon-sm" tooltip={display.locked ? "查看" : "编辑"} onClick={() => setEditingRecord(record)}>
                           {display.locked ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
                         </Button>
                         <Button
                           variant="destructive"
                           size="icon-sm"
-                          title={display.lockReason ?? "删除"}
+                          tooltip={display.lockReason ?? "删除"}
                           disabled={display.locked}
                           onClick={() => { void handleDelete(record); }}
                         >

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--forvia-blue-soft)] disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
@@ -25,12 +26,25 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+    VariantProps<typeof buttonVariants> {
+  tooltip?: React.ReactNode;
+}
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => (
-    <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} type="button" {...props} />
-  ),
+  ({ className, variant, size, tooltip, title, ...props }, ref) => {
+    const tooltipContent = tooltip ?? title;
+    const button = <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} type="button" {...props} />;
+    if (!tooltipContent) return button;
+
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {props.disabled ? <span className="inline-flex">{button}</span> : button}
+        </TooltipTrigger>
+        <TooltipContent>{tooltipContent}</TooltipContent>
+      </Tooltip>
+    );
+  },
 );
 Button.displayName = "Button";
 

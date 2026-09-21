@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { WorkspaceTask } from "@/services/inbox";
 import type { EditingCell, OrderType } from "../parse-review-types";
 import { ConflictBadge } from "./conflict-badge";
@@ -75,15 +76,15 @@ export function ExistingResultRow({
       );
     }
 
-    return (
-      <span
+    const content = <span
         className={`editable-cell${isWaitingHuman ? " editable" : ""}`}
         onClick={() => onStartEditing(rowId, field, value)}
-        title={isWaitingHuman ? "点击编辑" : undefined}
+        tabIndex={isWaitingHuman ? 0 : undefined}
+        onKeyDown={(event) => { if (isWaitingHuman && event.key === "Enter") onStartEditing(rowId, field, value); }}
       >
         {display || <span className="cell-placeholder">—</span>}
-      </span>
-    );
+      </span>;
+    return isWaitingHuman ? <Tooltip><TooltipTrigger asChild>{content}</TooltipTrigger><TooltipContent>点击编辑</TooltipContent></Tooltip> : content;
   };
 
   const derivedCell = (_field: string, content: ReactNode) => <span className="readonly-cell">{content}</span>;
@@ -136,9 +137,9 @@ export function ExistingResultRow({
       <td>{derivedCell("conflictFlag", <ConflictBadge conflict={conflict} details={String(row.conflictDetails ?? "")} />)}</td>
       <td>
         {isWaitingHuman && (
-          <button type="button" className="row-delete-btn" title="删除此行" onClick={() => onDeleteRow(rowId)}>
+          <Tooltip><TooltipTrigger asChild><button type="button" className="row-delete-btn" aria-label="删除此行" onClick={() => onDeleteRow(rowId)}>
             <Trash2 className="h-3 w-3" />
-          </button>
+          </button></TooltipTrigger><TooltipContent>删除此行</TooltipContent></Tooltip>
         )}
       </td>
     </tr>
